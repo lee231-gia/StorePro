@@ -5,9 +5,6 @@ import '../../models/customer_model.dart';
 import '../../repositories/customer_repository.dart';
 import '../../repositories/sale_repository.dart';
 import '../../repositories/utang_repository.dart';
-import '../../shared/controllers/list_query_controller.dart';
-import '../../shared/widgets/list_controls.dart';
-import '../../shared/widgets/state_views.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 
@@ -28,27 +25,17 @@ class CustomersPage extends StatefulWidget {
 class _CustomersPageState extends State<CustomersPage> {
   List<CustomerModel> _customers = [];
   bool _loading = true;
+  String _search = '';
   final _searchCtrl = TextEditingController();
-  late final ListQueryController<CustomerModel> _query;
 
   @override
   void initState() {
     super.initState();
-    _query =
-        ListQueryController<CustomerModel>(
-          searchMatcher: (customer, query) {
-            return customer.name.toLowerCase().contains(query) ||
-                customer.phone.toLowerCase().contains(query);
-          },
-        )..addListener(() {
-          if (mounted) setState(() {});
-        });
     _load();
   }
 
   @override
   void dispose() {
-    _query.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -78,7 +65,16 @@ class _CustomersPageState extends State<CustomersPage> {
     });
   }
 
-  List<CustomerModel> get _filtered => _query.apply(_customers);
+  List<CustomerModel> get _filtered {
+    if (_search.isEmpty) return _customers;
+    return _customers
+        .where(
+          (c) =>
+              c.name.toLowerCase().contains(_search.toLowerCase()) ||
+              c.phone.contains(_search),
+        )
+        .toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,10 +97,13 @@ class _CustomersPageState extends State<CustomersPage> {
           // Search
           Padding(
             padding: const EdgeInsets.all(16),
-            child: AppSearchField(
+            child: TextField(
               controller: _searchCtrl,
-              hint: 'Search customers...',
-              onChanged: (value) => _query.query = value,
+              onChanged: (v) => setState(() => _search = v),
+              decoration: AppInput.field(
+                'Search customers...',
+                icon: Icons.search,
+              ),
             ),
           ),
 
@@ -124,12 +123,14 @@ class _CustomersPageState extends State<CustomersPage> {
           const SizedBox(height: 8),
 
           // List
-          AppLoadingLine(visible: _loading),
+          if (_loading) const LinearProgressIndicator(color: kRed),
           Expanded(
             child: _filtered.isEmpty
-                ? const AppEmptyState(
-                    icon: Icons.people_outline,
-                    title: 'No customers yet.',
+                ? const Center(
+                    child: Text(
+                      'No customers yet.',
+                      style: TextStyle(color: kGrey),
+                    ),
                   )
                 : RefreshIndicator(
                     color: kRed,

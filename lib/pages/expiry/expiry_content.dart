@@ -12,7 +12,7 @@ extension _ExpiryContent on _ExpiryPageState {
       );
     }
 
-    if (_viewMode == ProductViewMode.grid) {
+    if (_viewMode == 'grid') {
       return GridView.builder(
         padding: const EdgeInsets.all(16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -26,7 +26,7 @@ extension _ExpiryContent on _ExpiryPageState {
       );
     }
 
-    if (_viewMode == ProductViewMode.compact) {
+    if (_viewMode == 'compact') {
       return ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         itemCount: entries.length,
@@ -34,7 +34,7 @@ extension _ExpiryContent on _ExpiryPageState {
       );
     }
 
-    if (_viewMode == ProductViewMode.details) {
+    if (_viewMode == 'details') {
       return ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: entries.length,

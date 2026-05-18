@@ -331,14 +331,12 @@ class SalesHistoryCard extends StatelessWidget {
   final SaleModel sale;
   final VoidCallback onTap;
   final VoidCallback onDelete;
-  final VoidCallback? onEdit;
 
   const SalesHistoryCard({
     super.key,
     required this.sale,
     required this.onTap,
     required this.onDelete,
-    this.onEdit,
   });
 
   @override
@@ -440,18 +438,6 @@ class SalesHistoryCard extends StatelessWidget {
                   ),
 
                   const SizedBox(width: 8),
-                  if (onEdit != null)
-                    GestureDetector(
-                      onTap: onEdit,
-                      child: const Padding(
-                        padding: EdgeInsets.only(right: 8),
-                        child: Icon(
-                          Icons.edit_outlined,
-                          color: kGrey,
-                          size: 20,
-                        ),
-                      ),
-                    ),
                   GestureDetector(
                     onTap: onDelete,
                     child: const Icon(

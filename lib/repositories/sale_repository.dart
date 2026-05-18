@@ -63,19 +63,6 @@ class SaleRepository {
     return updated;
   }
 
-  static Future<SaleModel> updateEdited(SaleModel sale) async {
-    final updated = sale.copyWith(updatedAt: AppHelpers.nowStr());
-    await SyncService.write(
-      _col,
-      updated.id,
-      updated.toMap(),
-      _table,
-      updated.toSql(),
-    );
-    _log('edit_sale', updated.id, updated.customerName);
-    return updated;
-  }
-
   static Future<SaleModel> refund(SaleModel original, SaleModel edited) async {
     final history = List<Map<String, dynamic>>.from(original.editHistory)
       ..add({
@@ -111,7 +98,6 @@ class SaleRepository {
       _table,
       updated.toSql(),
     );
-    _log('refund_sale', updated.id, updated.customerName);
     return updated;
   }
 

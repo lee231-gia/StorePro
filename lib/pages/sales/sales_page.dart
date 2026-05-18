@@ -1,27 +1,28 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:storepro/widgets/sale_widgets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
-import '../../core/enums/product_browser_enums.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../core/services/sync_service.dart';
-import '../../features/sales/services/sale_operations_service.dart';
 import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
 import '../../models/utang_model.dart';
+import '../../models/customer_model.dart';
+import '../../models/inventory_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../repositories/sale_repository.dart';
 import '../../repositories/utang_repository.dart';
-import '../../shared/controllers/product_browser_controller.dart';
+import '../../repositories/customer_repository.dart';
+import '../../repositories/inventory_repository.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/employee_picker.dart';
 import '../../widgets/product_card.dart';
 import 'sales_sheets.dart';
 import 'receipt_page.dart';
-part 'sales_history.dart';
 
 class SalesPage extends StatefulWidget {
   final Function(int) changeTab;
@@ -40,29 +41,23 @@ class SalesPage extends StatefulWidget {
 class _SalesPageState extends State<SalesPage> {
   // ── STATE ─────────────────────────────────────────────────
   int _tab = 0; // 0=new sale, 1=history
-  String _search = '', _sortBy = 'a-z';
-  String _catFilter = 'All';
+  String _search = '';
+  String _sortBy = 'a-z';
   bool _groupVariants = false;
   bool _loading = true;
 
   List<ProductModel> _products = [];
-  List<String> _categories = ['All'];
   List<SaleModel> _sales = [];
   final List<CartItem> _cart = [];
 
   final _searchCtrl = TextEditingController();
   final _customerCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
-  late final ProductBrowserController _browser;
   StreamSubscription<String>? _changeSub;
 
   @override
   void initState() {
     super.initState();
-    _browser = ProductBrowserController(
-      sortOption: ProductSortOption.nameAsc,
-      groupVariants: _groupVariants,
-    );
     _changeSub = SyncService.changes.listen((collection) {
       if (collection == 'products' || collection == 'sales') _load();
     });
@@ -72,7 +67,6 @@ class _SalesPageState extends State<SalesPage> {
   @override
   void dispose() {
     _changeSub?.cancel();
-    _browser.dispose();
     _searchCtrl.dispose();
     _customerCtrl.dispose();
     _notesCtrl.dispose();
@@ -98,13 +92,6 @@ class _SalesPageState extends State<SalesPage> {
     if (mounted) {
       setState(() {
         _products = products;
-        _categories = [
-          'All',
-          ...products
-              .map((p) => p.categoryName)
-              .where((c) => c.isNotEmpty)
-              .toSet(),
-        ];
         _sales = sales;
         _loading = false;
       });
@@ -125,12 +112,31 @@ class _SalesPageState extends State<SalesPage> {
   int get _cartCount => _cart.fold(0, (s, i) => s + i.qty);
 
   List<ProductModel> get _searchResults {
-    _browser
-      ..search = _search
-      ..categoryFilter = _catFilter
-      ..sortOption = ProductSortOption.fromValue(_sortBy)
-      ..groupVariants = _groupVariants;
-    return _browser.apply(_products);
+    var list = List<ProductModel>.from(_products);
+    final q = _search.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list
+          .where(
+            (p) =>
+                p.name.toLowerCase().contains(q) ||
+                p.variants.any((v) => v.name.toLowerCase().contains(q)),
+          )
+          .toList();
+    }
+    switch (_sortBy) {
+      case 'stock-high':
+        list.sort((a, b) => b.totalStock.compareTo(a.totalStock));
+        break;
+      case 'stock-low':
+        list.sort((a, b) => a.totalStock.compareTo(b.totalStock));
+        break;
+      case 'price-low':
+        list.sort((a, b) => a.lowestPrice.compareTo(b.lowestPrice));
+        break;
+      default:
+        list.sort((a, b) => a.name.compareTo(b.name));
+    }
+    return list;
   }
 
   List<ProductDisplayItem> get _saleItems => ProductDisplayItem.fromProducts(
@@ -314,13 +320,6 @@ class _SalesPageState extends State<SalesPage> {
 
     // Save sale
     final saved = await SaleRepository.save(sale);
-    final linkedCustomer = await SaleOperationsService.linkCustomerPurchase(
-      customerId: customerId,
-      customerName: customerName,
-      customerPhone: customerPhone,
-      customerAddress: customerAddress,
-      amount: _cartTotal,
-    );
 
     // Deduct stock (FIFO) for each item
     for (final item in _cart) {
@@ -334,11 +333,30 @@ class _SalesPageState extends State<SalesPage> {
     // If utang or multi — create debt record
     if (paymentType == 'utang' ||
         (paymentType == 'multi' && amountPaid < _cartTotal)) {
+      // Save/find customer
+      final custList = await CustomerRepository.getAll();
+      CustomerModel? customer =
+          custList.where((c) => c.name == customerName).isNotEmpty
+          ? custList.firstWhere((c) => c.name == customerName)
+          : null;
+
+      customer ??= await CustomerRepository.save(
+        CustomerModel(
+          id: '',
+          storeId: Session.storeId,
+          name: customerName,
+          phone: customerPhone,
+          address: customerAddress,
+          createdAt: AppHelpers.nowStr(),
+          updatedAt: AppHelpers.nowStr(),
+        ),
+      );
+
       final paidSoFar = paymentType == 'multi' ? amountPaid : 0.0;
       final utang = UtangModel(
         id: '',
         storeId: Session.storeId,
-        customerId: linkedCustomer?.id ?? customerId,
+        customerId: customer.id,
         customerName: customerName,
         customerPhone: customerPhone,
         saleId: saved.id,
@@ -366,9 +384,18 @@ class _SalesPageState extends State<SalesPage> {
         updatedAt: AppHelpers.nowStr(),
       );
       await UtangRepository.save(utang);
+
+      // Update customer total purchases
+      await CustomerRepository.addPurchase(customer.id, _cartTotal);
     } else {
       // Cash sale — update customer if named
-      if (customerName != 'Walk-in') {}
+      if (customerName != 'Walk-in') {
+        final custList = await CustomerRepository.getAll();
+        final match = custList.where((c) => c.name == customerName).toList();
+        if (match.isNotEmpty) {
+          await CustomerRepository.addPurchase(match.first.id, _cartTotal);
+        }
+      }
     }
 
     if (!mounted) return;
@@ -466,7 +493,6 @@ class _SalesPageState extends State<SalesPage> {
                     onSelected: (v) => setState(() => _sortBy = v),
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'a-z', child: Text('Name A-Z')),
-                      PopupMenuItem(value: 'z-a', child: Text('Name Z-A')),
                       PopupMenuItem(
                         value: 'stock-high',
                         child: Text('Stock: High-Low'),
@@ -482,45 +508,6 @@ class _SalesPageState extends State<SalesPage> {
                     ],
                   ),
                 ],
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 30,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _categories.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 6),
-                  itemBuilder: (_, i) {
-                    final category = _categories[i];
-                    final active = _catFilter == category;
-                    return GestureDetector(
-                      onTap: () => setState(() => _catFilter = category),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: active ? kRed : kCard,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: active ? kRed : Colors.grey.shade300,
-                          ),
-                        ),
-                        child: Text(
-                          category,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: active ? Colors.white : kGrey,
-                            fontWeight: active
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
               ),
               Row(
                 children: [
@@ -697,4 +684,96 @@ class _SalesPageState extends State<SalesPage> {
   }
 
   // ── HISTORY VIEW ──────────────────────────────────────────
+  Widget _buildHistory() {
+    if (_sales.isEmpty) {
+      return const Center(
+        child: Text('No sales yet.', style: TextStyle(color: kGrey)),
+      );
+    }
+
+    return RefreshIndicator(
+      color: kRed,
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: _sales.length,
+        itemBuilder: (_, i) {
+          final sale = _sales[i];
+          return SalesHistoryCard(
+            sale: sale,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ReceiptPage(sale: sale)),
+            ),
+            onDelete: () => _confirmDelete(i),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(int index) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Sale?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: kRed)),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true && mounted) {
+      final sale = _sales[index];
+      await _restoreSaleStock(sale);
+      await SaleRepository.delete(sale.id);
+      _load();
+    }
+  }
+
+  Future<void> _restoreSaleStock(SaleModel sale) async {
+    for (final item in sale.items) {
+      final product = await ProductRepository.getOne(item.productId);
+      if (product == null) continue;
+      final variantIndex = product.variants.indexWhere(
+        (variant) => variant.id == item.variantId,
+      );
+      if (variantIndex < 0) continue;
+
+      final variant = product.variants[variantIndex];
+      final restoredBatch = BatchModel(
+        id: 'refund_${DateTime.now().microsecondsSinceEpoch}',
+        qty: item.qty,
+        costPrice: item.costPrice,
+        addedOn: AppHelpers.todayStr(),
+      );
+      final variants = List<VariantModel>.from(product.variants);
+      variants[variantIndex] = variant.copyWith(
+        batches: [...variant.batches, restoredBatch],
+      );
+      await ProductRepository.save(product.copyWith(variants: variants));
+      await InventoryRepository.log(
+        InventoryLogModel(
+          id: '',
+          storeId: Session.storeId,
+          productId: product.id,
+          productName: product.name,
+          variantId: variant.id,
+          variantName: variant.name,
+          type: 'refund',
+          qty: item.qty,
+          costPrice: item.costPrice,
+          reason: 'sale_deleted_refund',
+          date: AppHelpers.todayStr(),
+          updatedAt: AppHelpers.nowStr(),
+        ),
+      );
+    }
+  }
 }

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
-import '../../core/enums/product_browser_enums.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../core/services/alert_service.dart';
@@ -12,7 +11,6 @@ import '../../models/product_model.dart';
 import '../../models/inventory_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../repositories/inventory_repository.dart';
-import '../../shared/controllers/product_browser_controller.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/employee_picker.dart';
@@ -54,7 +52,6 @@ class _InventoryPageState extends State<InventoryPage>
   List<String> _categories = ['All'];
 
   final _searchCtrl = TextEditingController();
-  late final ProductBrowserController _browser;
   StreamSubscription<String>? _changeSub;
 
   void _update(VoidCallback fn) => setState(fn);
@@ -62,7 +59,6 @@ class _InventoryPageState extends State<InventoryPage>
   @override
   void initState() {
     super.initState();
-    _browser = ProductBrowserController();
     _tabCtrl = TabController(length: 3, vsync: this);
     _changeSub = SyncService.changes.listen((collection) {
       if (collection == 'products' || collection == 'inventory_logs') _load();
@@ -73,7 +69,6 @@ class _InventoryPageState extends State<InventoryPage>
   @override
   void dispose() {
     _tabCtrl.dispose();
-    _browser.dispose();
     _changeSub?.cancel();
     _searchCtrl.dispose();
     super.dispose();
@@ -114,13 +109,54 @@ class _InventoryPageState extends State<InventoryPage>
 
   // ── SORTED + FILTERED ─────────────────────────────────────
   List<ProductModel> get _filtered {
-    _browser
-      ..search = _search
-      ..categoryFilter = _catFilter
-      ..sortOption = ProductSortOption.fromValue(_sortBy)
-      ..viewMode = ProductViewMode.fromValue(_viewMode)
-      ..groupVariants = _groupVariants;
-    return _browser.apply(_products);
+    var list = List<ProductModel>.from(_products);
+
+    if (_search.isNotEmpty) {
+      list = list
+          .where((p) => p.name.toLowerCase().contains(_search.toLowerCase()))
+          .toList();
+    }
+    if (_catFilter != 'All') {
+      list = list.where((p) => p.categoryName == _catFilter).toList();
+    }
+
+    switch (_sortBy) {
+      case 'a-z':
+        list.sort((a, b) => a.name.compareTo(b.name));
+        break;
+      case 'z-a':
+        list.sort((a, b) => b.name.compareTo(a.name));
+        break;
+      case 'cat-a-z':
+        list.sort((a, b) => a.categoryName.compareTo(b.categoryName));
+        break;
+      case 'cat-z-a':
+        list.sort((a, b) => b.categoryName.compareTo(a.categoryName));
+        break;
+      case 'stock-low':
+        list.sort((a, b) => a.totalStock.compareTo(b.totalStock));
+        break;
+      case 'stock-high':
+        list.sort((a, b) => b.totalStock.compareTo(a.totalStock));
+        break;
+      case 'expiry-asc':
+        list.sort((a, b) {
+          if (a.nearestExpiry.isEmpty) return 1;
+          if (b.nearestExpiry.isEmpty) return -1;
+          return a.nearestExpiry.compareTo(b.nearestExpiry);
+        });
+        break;
+      case 'expiry-desc':
+        list.sort((a, b) {
+          if (a.nearestExpiry.isEmpty) return 1;
+          if (b.nearestExpiry.isEmpty) return -1;
+          return b.nearestExpiry.compareTo(a.nearestExpiry);
+        });
+        break;
+      default: // recent
+        list.sort((a, b) => b.addedOn.compareTo(a.addedOn));
+    }
+    return list;
   }
 
   // ── BUILD ─────────────────────────────────────────────────

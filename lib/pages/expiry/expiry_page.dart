@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
-import '../../core/enums/product_browser_enums.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/product_model.dart';
 import '../../repositories/product_repository.dart';
@@ -31,12 +30,12 @@ class _ExpiryPageState extends State<ExpiryPage> {
   List<ProductModel> _products = [];
   bool _loading = true;
 
-  // â”€â”€ FILTERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── FILTERS ───────────────────────────────────────────────
   String _tier = 'all';
   // all | expired | urgent | standard | good | excellent | no_date
   String _catFilter = 'All';
-  ProductViewMode _viewMode = ProductViewMode.list;
-  ProductSortOption _sortBy = ProductSortOption.expiryAsc;
+  String _viewMode = 'list';
+  String _sortBy = 'expiry-asc';
   String _search = '';
   String _liFilter = 'all'; // product life indicator filter
   List<String> _categories = ['All'];
@@ -93,7 +92,7 @@ class _ExpiryPageState extends State<ExpiryPage> {
     });
   }
 
-  // â”€â”€ EXPIRY TIER HELPERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── EXPIRY TIER HELPERS ───────────────────────────────────
   static String _tierLabel(String tier) {
     switch (tier) {
       case 'expired':
@@ -101,9 +100,9 @@ class _ExpiryPageState extends State<ExpiryPage> {
       case 'urgent':
         return 'Urgent (<30d)';
       case 'standard':
-        return 'Standard (1-3mo)';
+        return 'Standard (1–3mo)';
       case 'good':
-        return 'Good (3-6mo)';
+        return 'Good (3–6mo)';
       case 'excellent':
         return 'Excellent (6mo+)';
       case 'no_date':
@@ -147,29 +146,70 @@ class _ExpiryPageState extends State<ExpiryPage> {
     }
   }
 
-  // â”€â”€ ENTRIES BUILDER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── ENTRIES BUILDER ───────────────────────────────────────
   List<Map<String, dynamic>> get _entries {
     final list = <Map<String, dynamic>>[];
+
     for (final product in _products) {
       if (_catFilter != 'All' && product.categoryName != _catFilter) continue;
       if (_search.isNotEmpty &&
           !product.name.toLowerCase().contains(_search.toLowerCase())) {
         continue;
       }
+
       for (final variant in product.variants) {
+        // Collect all life indicators across batches
         final allIndicators = <LifeIndicator>[];
         for (final b in variant.batches) {
           allIndicators.addAll(b.indicators);
         }
-        if (_liFilter != 'all' &&
-            !allIndicators.any((i) => i.type == _liFilter)) {
-          continue;
+
+        // Life indicator filter
+        if (_liFilter != 'all') {
+          final hasLi = allIndicators.any((i) => i.type == _liFilter);
+          if (!hasLi) continue;
         }
 
         final expiry = variant.nearestExpiry;
         final tier = variant.expiryTier;
+
+        // Tier filter
         if (_tier != 'all' && tier != _tier) continue;
-        if (!_passesDateRange(expiry)) continue;
+
+        // Date range filter
+        if (_dateRange != 'all' && expiry.isNotEmpty) {
+          try {
+            final expDt = DateTime.parse(expiry);
+            final now = DateTime.now();
+            bool pass = true;
+
+            if (_selectedDate != null) {
+              // Specific date
+              pass =
+                  expDt.year == _selectedDate!.year &&
+                  expDt.month == _selectedDate!.month &&
+                  expDt.day == _selectedDate!.day;
+            } else {
+              switch (_dateRange) {
+                case 'today':
+                  pass =
+                      AppHelpers.expiryStatus(expiry) == 'expired' ||
+                      AppHelpers.daysLeft(expiry) == 0;
+                  break;
+                case 'week':
+                  pass = expDt.isBefore(now.add(const Duration(days: 7)));
+                  break;
+                case 'month':
+                  pass = expDt.isBefore(now.add(const Duration(days: 30)));
+                  break;
+                case 'year':
+                  pass = expDt.isBefore(now.add(const Duration(days: 365)));
+                  break;
+              }
+            }
+            if (!pass) continue;
+          } catch (_) {}
+        }
 
         list.add({
           'product': product,
@@ -181,84 +221,56 @@ class _ExpiryPageState extends State<ExpiryPage> {
         });
       }
     }
-    list.sort(_compareEntries);
+
+    // Sort
+    list.sort((a, b) {
+      final ae = a['expiry'] as String;
+      final be = b['expiry'] as String;
+      switch (_sortBy) {
+        case 'expiry-desc':
+          if (ae.isEmpty) return 1;
+          if (be.isEmpty) return -1;
+          return be.compareTo(ae);
+        case 'a-z':
+          return (a['product'] as ProductModel).name.compareTo(
+            (b['product'] as ProductModel).name,
+          );
+        case 'z-a':
+          return (b['product'] as ProductModel).name.compareTo(
+            (a['product'] as ProductModel).name,
+          );
+        case 'cat-a-z':
+          return (a['product'] as ProductModel).categoryName.compareTo(
+            (b['product'] as ProductModel).categoryName,
+          );
+        case 'cat-z-a':
+          return (b['product'] as ProductModel).categoryName.compareTo(
+            (a['product'] as ProductModel).categoryName,
+          );
+        case 'stock-low':
+          return (a['variant'] as VariantModel).totalStock.compareTo(
+            (b['variant'] as VariantModel).totalStock,
+          );
+        case 'stock-high':
+          return (b['variant'] as VariantModel).totalStock.compareTo(
+            (a['variant'] as VariantModel).totalStock,
+          );
+        default: // expiry-asc
+          if (ae.isEmpty) return 1;
+          if (be.isEmpty) return -1;
+          // Expired first, then nearest
+          final at = a['tier'] as String;
+          final bt = b['tier'] as String;
+          if (at == 'expired' && bt != 'expired') return -1;
+          if (bt == 'expired' && at != 'expired') return 1;
+          return ae.compareTo(be);
+      }
+    });
+
     return list;
   }
 
-  bool _passesDateRange(String expiry) {
-    if (_dateRange == 'all' || expiry.isEmpty) return true;
-    try {
-      final expDt = DateTime.parse(expiry);
-      final now = DateTime.now();
-      if (_selectedDate != null) {
-        return expDt.year == _selectedDate!.year &&
-            expDt.month == _selectedDate!.month &&
-            expDt.day == _selectedDate!.day;
-      }
-      switch (_dateRange) {
-        case 'today':
-          return AppHelpers.expiryStatus(expiry) == 'expired' ||
-              AppHelpers.daysLeft(expiry) == 0;
-        case 'week':
-          return expDt.isBefore(now.add(const Duration(days: 7)));
-        case 'month':
-          return expDt.isBefore(now.add(const Duration(days: 30)));
-        case 'year':
-          return expDt.isBefore(now.add(const Duration(days: 365)));
-        default:
-          return true;
-      }
-    } catch (_) {
-      return true;
-    }
-  }
-
-  int _compareEntries(Map<String, dynamic> a, Map<String, dynamic> b) {
-    final ae = a['expiry'] as String;
-    final be = b['expiry'] as String;
-    switch (_sortBy) {
-      case ProductSortOption.expiryDesc:
-        if (ae.isEmpty) return 1;
-        if (be.isEmpty) return -1;
-        return be.compareTo(ae);
-      case ProductSortOption.nameAsc:
-        return (a['product'] as ProductModel).name.compareTo(
-          (b['product'] as ProductModel).name,
-        );
-      case ProductSortOption.nameDesc:
-        return (b['product'] as ProductModel).name.compareTo(
-          (a['product'] as ProductModel).name,
-        );
-      case ProductSortOption.categoryAsc:
-        return (a['product'] as ProductModel).categoryName.compareTo(
-          (b['product'] as ProductModel).categoryName,
-        );
-      case ProductSortOption.categoryDesc:
-        return (b['product'] as ProductModel).categoryName.compareTo(
-          (a['product'] as ProductModel).categoryName,
-        );
-      case ProductSortOption.stockAsc:
-        return (a['variant'] as VariantModel).totalStock.compareTo(
-          (b['variant'] as VariantModel).totalStock,
-        );
-      case ProductSortOption.stockDesc:
-        return (b['variant'] as VariantModel).totalStock.compareTo(
-          (a['variant'] as VariantModel).totalStock,
-        );
-      case ProductSortOption.recent:
-      case ProductSortOption.priceAsc:
-      case ProductSortOption.expiryAsc:
-        if (ae.isEmpty) return 1;
-        if (be.isEmpty) return -1;
-        final at = a['tier'] as String;
-        final bt = b['tier'] as String;
-        if (at == 'expired' && bt != 'expired') return -1;
-        if (bt == 'expired' && at != 'expired') return 1;
-        return ae.compareTo(be);
-    }
-  }
-
-  // â”€â”€ TIER COUNTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── TIER COUNTS ───────────────────────────────────────────
   Map<String, int> get _tierCounts {
     final counts = {
       'expired': 0,
@@ -277,7 +289,7 @@ class _ExpiryPageState extends State<ExpiryPage> {
     return counts;
   }
 
-  // â”€â”€ BUILD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── BUILD ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -286,25 +298,43 @@ class _ExpiryPageState extends State<ExpiryPage> {
         title: 'Expiry Tracker',
         context: context,
         actions: [
-          PopupMenuButton<ProductViewMode>(
+          // View mode
+          PopupMenuButton<String>(
             icon: const Icon(Icons.view_module),
             onSelected: (v) => setState(() => _viewMode = v),
-            itemBuilder: (_) => ProductViewMode.values
-                .map(
-                  (mode) => PopupMenuItem(value: mode, child: Text(mode.label)),
-                )
-                .toList(),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'list', child: Text('List')),
+              PopupMenuItem(value: 'compact', child: Text('Compact')),
+              PopupMenuItem(value: 'grid', child: Text('Grid')),
+              PopupMenuItem(value: 'details', child: Text('Details')),
+            ],
           ),
-          PopupMenuButton<ProductSortOption>(
+          // Sort
+          PopupMenuButton<String>(
             icon: const Icon(Icons.sort),
             onSelected: (v) => setState(() => _sortBy = v),
-            itemBuilder: (_) => ProductSortOption.values
-                .where((option) => option != ProductSortOption.priceAsc)
-                .map(
-                  (option) =>
-                      PopupMenuItem(value: option, child: Text(option.label)),
-                )
-                .toList(),
+            itemBuilder: (_) => const [
+              PopupMenuItem(
+                value: 'expiry-asc',
+                child: Text('Expiry: Nearest First'),
+              ),
+              PopupMenuItem(
+                value: 'expiry-desc',
+                child: Text('Expiry: Furthest First'),
+              ),
+              PopupMenuItem(value: 'a-z', child: Text('Name A → Z')),
+              PopupMenuItem(value: 'z-a', child: Text('Name Z → A')),
+              PopupMenuItem(value: 'cat-a-z', child: Text('Category A → Z')),
+              PopupMenuItem(value: 'cat-z-a', child: Text('Category Z → A')),
+              PopupMenuItem(
+                value: 'stock-low',
+                child: Text('Stock: Low → High'),
+              ),
+              PopupMenuItem(
+                value: 'stock-high',
+                child: Text('Stock: High → Low'),
+              ),
+            ],
           ),
         ],
       ),
@@ -325,5 +355,5 @@ class _ExpiryPageState extends State<ExpiryPage> {
     );
   }
 
-  // â”€â”€ FILTERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── FILTERS ───────────────────────────────────────────────
 }
