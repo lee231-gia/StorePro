@@ -9,9 +9,18 @@ class Session {
   static String activeEmployeeId = '';
   static String activeEmployeeName = '';
   static bool trackActivity = true;
-  static bool employeeFeature = true; // NEW — toggle in settings
+  static bool employeeFeature = true;
   static bool isOnline = true;
-  static bool employeeSelected = false; // NEW — set once at app start
+  static bool employeeSelected = false;
+
+  static String get safeEmployeeId =>
+      activeEmployeeId.trim().isNotEmpty ? activeEmployeeId : 'owner';
+
+  static String get safeEmployeeName {
+    if (activeEmployeeName.trim().isNotEmpty) return activeEmployeeName.trim();
+    if (ownerName.trim().isNotEmpty) return ownerName.trim();
+    return 'Owner';
+  }
 
   static void clear() {
     storeId = '';

@@ -6,6 +6,7 @@ import '../../models/product_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
+import '../../widgets/product_card.dart';
 
 part 'expiry_filters.dart';
 part 'expiry_content.dart';

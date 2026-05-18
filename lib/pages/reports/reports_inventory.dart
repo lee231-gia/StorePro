@@ -19,10 +19,13 @@ extension _ReportsInventory on _ReportsPageState {
             ),
           );
         }
-        if (!snap.hasData) return const SizedBox.shrink();
+        final data = snap.data;
+        if (data == null || data.length < 2) return const SizedBox.shrink();
 
-        final logs = snap.data![0] as List;
-        final products = snap.data![1] as List<ProductModel>;
+        final logs = List<dynamic>.from(data[0]);
+        final products = List<dynamic>.from(
+          data[1],
+        ).whereType<ProductModel>().toList();
 
         final added = logs.fold(
           0,

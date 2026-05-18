@@ -5,14 +5,14 @@ import '../../core/constants/app_colors.dart';
 import '../../core/services/sync_service.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/product_model.dart';
-import '../../repositories/product_repository.dart';
 import '../../repositories/category_repository.dart';
-import '../../widgets/shared_widgets.dart';
+import '../../repositories/product_repository.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/product_card.dart' hide FilterChip;
 import '../../widgets/product_card.dart' as pc;
-import 'product_detail_page.dart';
+import '../../widgets/shared_widgets.dart';
 import 'add_product_page.dart';
+import 'product_detail_page.dart';
 
 class ProductsPage extends StatefulWidget {
   final Function(int) changeTab;
@@ -34,22 +34,33 @@ class _ProductsPageState extends State<ProductsPage> {
   // ── STATE ─────────────────────────────────────────────────
   List<ProductModel> _products = [];
   List<String> _categories = ['All'];
+
   bool _loading = true;
+
   String _search = '';
   String _catFilter = 'All';
   late String _statusFilter;
-  String _viewMode = 'list'; // list|compact|grid
+
+  String _viewMode = 'list'; // list | compact | grid | details
   String _sortBy = 'recent';
+
+  bool _groupVariants = true;
+
   final _searchCtrl = TextEditingController();
   StreamSubscription<String>? _changeSub;
 
   @override
   void initState() {
     super.initState();
+
     _statusFilter = widget.initialFilter;
+
     _changeSub = SyncService.changes.listen((collection) {
-      if (collection == 'products' || collection == 'categories') _load();
+      if (collection == 'products' || collection == 'categories') {
+        _load();
+      }
     });
+
     _load();
   }
 
@@ -65,7 +76,7 @@ class _ProductsPageState extends State<ProductsPage> {
     setState(() => _loading = true);
 
     List<ProductModel> products = [];
-    var catNames = <String>['All'];
+    List<String> catNames = ['All'];
 
     try {
       final results = await Future.wait([
@@ -74,7 +85,9 @@ class _ProductsPageState extends State<ProductsPage> {
       ]).timeout(const Duration(seconds: 3));
 
       products = results[0] as List<ProductModel>;
+
       final categories = results[1] as List;
+
       catNames = ['All', ...categories.map((c) => c.name as String)];
     } catch (_) {}
 
@@ -86,26 +99,31 @@ class _ProductsPageState extends State<ProductsPage> {
       });
     }
 
-    // 2. Firebase in background — updates UI silently
     ProductRepository.syncInBackground((fresh) {
       if (mounted) setState(() => _products = fresh);
     });
+
     CategoryRepository.syncInBackground((fresh) {
       if (mounted) {
-        setState(() => _categories = ['All', ...fresh.map((c) => c.name)]);
+        setState(() {
+          _categories = ['All', ...fresh.map((c) => c.name)];
+        });
       }
     });
   }
 
-  // ── FILTERED + SORTED LIST ────────────────────────────────
+  // ── FILTERED + SORTED ─────────────────────────────────────
   List<ProductModel> get _filtered {
     var list = List<ProductModel>.from(_products);
 
     // Search
     if (_search.isNotEmpty) {
-      list = list
-          .where((p) => p.name.toLowerCase().contains(_search.toLowerCase()))
-          .toList();
+      final q = _search.toLowerCase();
+
+      list = list.where((p) {
+        return p.name.toLowerCase().contains(q) ||
+            p.variants.any((v) => v.name.toLowerCase().contains(q));
+      }).toList();
     }
 
     // Category
@@ -122,16 +140,19 @@ class _ProductsPageState extends State<ProductsPage> {
             )
             .toList();
         break;
+
       case 'Expired':
         list = list
             .where((p) => AppHelpers.expiryStatus(p.nearestExpiry) == 'expired')
             .toList();
         break;
+
       case 'Low Stock':
         list = list
             .where((p) => p.totalStock > 0 && p.totalStock <= 10)
             .toList();
         break;
+
       case 'No Stock':
         list = list.where((p) => p.totalStock == 0).toList();
         break;
@@ -142,24 +163,52 @@ class _ProductsPageState extends State<ProductsPage> {
       case 'a-z':
         list.sort((a, b) => a.name.compareTo(b.name));
         break;
+
       case 'z-a':
         list.sort((a, b) => b.name.compareTo(a.name));
         break;
+
+      case 'cat-a-z':
+        list.sort((a, b) => a.categoryName.compareTo(b.categoryName));
+        break;
+
+      case 'cat-z-a':
+        list.sort((a, b) => b.categoryName.compareTo(a.categoryName));
+        break;
+
       case 'stock-low':
         list.sort((a, b) => a.totalStock.compareTo(b.totalStock));
         break;
-      case 'expiry':
+
+      case 'stock-high':
+        list.sort((a, b) => b.totalStock.compareTo(a.totalStock));
+        break;
+
+      case 'expiry-asc':
         list.sort((a, b) {
           if (a.nearestExpiry.isEmpty) return 1;
           if (b.nearestExpiry.isEmpty) return -1;
           return a.nearestExpiry.compareTo(b.nearestExpiry);
         });
         break;
+
+      case 'expiry-desc':
+        list.sort((a, b) {
+          if (a.nearestExpiry.isEmpty) return 1;
+          if (b.nearestExpiry.isEmpty) return -1;
+          return b.nearestExpiry.compareTo(a.nearestExpiry);
+        });
+        break;
+
       default:
         list.sort((a, b) => b.addedOn.compareTo(a.addedOn));
     }
+
     return list;
   }
+
+  List<ProductDisplayItem> get _displayItems =>
+      ProductDisplayItem.fromProducts(_filtered, groupVariants: _groupVariants);
 
   // ── BUILD ─────────────────────────────────────────────────
   @override
@@ -170,7 +219,6 @@ class _ProductsPageState extends State<ProductsPage> {
         title: 'Products',
         context: context,
         actions: [
-          // View mode toggle
           PopupMenuButton<String>(
             icon: const Icon(Icons.view_list_outlined),
             onSelected: (v) => setState(() => _viewMode = v),
@@ -178,9 +226,9 @@ class _ProductsPageState extends State<ProductsPage> {
               PopupMenuItem(value: 'list', child: Text('List')),
               PopupMenuItem(value: 'compact', child: Text('Compact')),
               PopupMenuItem(value: 'grid', child: Text('Grid')),
+              PopupMenuItem(value: 'details', child: Text('Details')),
             ],
           ),
-          // Sort
           IconButton(icon: const Icon(Icons.sort), onPressed: _showSortSheet),
         ],
       ),
@@ -205,14 +253,13 @@ class _ProductsPageState extends State<ProductsPage> {
     );
   }
 
-  // ── FILTERS SECTION ───────────────────────────────────────
+  // ── FILTERS ───────────────────────────────────────────────
   Widget _buildFilters() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Search bar
           TextField(
             controller: _searchCtrl,
             onChanged: (v) => setState(() => _search = v),
@@ -221,6 +268,7 @@ class _ProductsPageState extends State<ProductsPage> {
               icon: Icons.search,
             ),
           ),
+
           const SizedBox(height: 10),
 
           // Category chips
@@ -232,6 +280,7 @@ class _ProductsPageState extends State<ProductsPage> {
               itemBuilder: (_, i) {
                 final cat = _categories[i];
                 final active = _catFilter == cat;
+
                 return Padding(
                   padding: const EdgeInsets.only(right: 6),
                   child: GestureDetector(
@@ -291,11 +340,21 @@ class _ProductsPageState extends State<ProductsPage> {
             ),
           ),
 
-          const SizedBox(height: 4),
-          Text(
-            '${_filtered.length} item'
-            '${_filtered.length != 1 ? 's' : ''}',
-            style: const TextStyle(color: kGrey, fontSize: 12),
+          const SizedBox(height: 6),
+
+          Row(
+            children: [
+              VariantToggleButton(
+                grouped: _groupVariants,
+                onChanged: (value) => setState(() => _groupVariants = value),
+              ),
+              const Spacer(),
+              Text(
+                '${_displayItems.length} item'
+                '${_displayItems.length != 1 ? 's' : ''}',
+                style: const TextStyle(color: kGrey, fontSize: 12),
+              ),
+            ],
           ),
         ],
       ),
@@ -304,13 +363,15 @@ class _ProductsPageState extends State<ProductsPage> {
 
   // ── PRODUCT LIST ──────────────────────────────────────────
   Widget _buildList() {
-    final items = _filtered;
+    final items = _displayItems;
+
     if (items.isEmpty) {
       return const Center(
         child: Text('No products found.', style: TextStyle(color: kGrey)),
       );
     }
 
+    // GRID VIEW
     if (_viewMode == 'grid') {
       return RefreshIndicator(
         color: kRed,
@@ -325,14 +386,110 @@ class _ProductsPageState extends State<ProductsPage> {
             childAspectRatio: 0.8,
           ),
           itemCount: items.length,
-          itemBuilder: (_, i) => ProductGridCard(
-            product: items[i],
-            onTap: () => _goDetail(items[i].id),
-          ),
+          itemBuilder: (_, i) {
+            final item = items[i];
+
+            return ProductGridCard(
+              product: item.product,
+              variant: item.variant,
+              onTap: () => _goDetail(item.productId),
+            );
+          },
         ),
       );
     }
 
+    // DETAILS VIEW
+    if (_viewMode == 'details') {
+      return RefreshIndicator(
+        color: kRed,
+        onRefresh: _load,
+        child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          itemCount: items.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (_, i) {
+            final item = items[i];
+            final p = item.product;
+
+            return InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () => _goDetail(item.productId),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: kCard,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            item.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: kDark,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppHelpers.stockColor(
+                              item.totalStock,
+                            ).withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${item.totalStock} pcs',
+                            style: TextStyle(
+                              color: AppHelpers.stockColor(item.totalStock),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _detailChip(Icons.category_outlined, p.categoryName),
+                        _detailChip(
+                          Icons.payments_outlined,
+                          AppHelpers.peso(item.variant?.price ?? p.lowestPrice),
+                        ),
+                        _detailChip(
+                          Icons.event_outlined,
+                          p.nearestExpiry.isEmpty
+                              ? 'No Expiry'
+                              : p.nearestExpiry,
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    // LIST + COMPACT
     return RefreshIndicator(
       color: kRed,
       onRefresh: _load,
@@ -340,11 +497,35 @@ class _ProductsPageState extends State<ProductsPage> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: items.length,
-        itemBuilder: (_, i) => ProductCard(
-          product: items[i],
-          onTap: () => _goDetail(items[i].id),
-          compact: _viewMode == 'compact',
-        ),
+        itemBuilder: (_, i) {
+          final item = items[i];
+
+          return ProductCard(
+            product: item.product,
+            variant: item.variant,
+            onTap: () => _goDetail(item.productId),
+            compact: _viewMode == 'compact',
+          );
+        },
+      ),
+    );
+  }
+
+  // ── DETAIL CHIP ───────────────────────────────────────────
+  Widget _detailChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: kGrey),
+          const SizedBox(width: 4),
+          Text(label, style: const TextStyle(fontSize: 11, color: kGrey)),
+        ],
       ),
     );
   }
@@ -360,6 +541,7 @@ class _ProductsPageState extends State<ProductsPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 12),
+
           Container(
             width: 40,
             height: 4,
@@ -368,18 +550,26 @@ class _ProductsPageState extends State<ProductsPage> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
+
           const SizedBox(height: 12),
+
           const Text(
             'Sort By',
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
           ),
+
           const Divider(),
+
           for (final entry in {
             'recent': 'Recently Added',
             'a-z': 'Name A → Z',
             'z-a': 'Name Z → A',
+            'cat-a-z': 'Category A → Z',
+            'cat-z-a': 'Category Z → A',
             'stock-low': 'Stock: Low → High',
-            'expiry': 'Expiry Date',
+            'stock-high': 'Stock: High → Low',
+            'expiry-asc': 'Expiry: Earliest',
+            'expiry-desc': 'Expiry: Latest',
           }.entries)
             ListTile(
               title: Text(entry.value),
@@ -391,19 +581,25 @@ class _ProductsPageState extends State<ProductsPage> {
                 Navigator.pop(context);
               },
             ),
+
           const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  void _goDetail(String id) => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => ProductDetailPage(productId: id)),
-  ).then((_) => _load());
+  // ── NAVIGATION ────────────────────────────────────────────
+  void _goDetail(String id) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProductDetailPage(productId: id)),
+    ).then((_) => _load());
+  }
 
-  void _goAdd() => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => const AddProductPage()),
-  ).then((_) => _load());
+  void _goAdd() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddProductPage()),
+    ).then((_) => _load());
+  }
 }

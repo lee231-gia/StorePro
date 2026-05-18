@@ -144,8 +144,8 @@ class ProductRepository {
     final log = ActivityLogModel(
       id: AppHelpers.newId(),
       storeId: Session.storeId,
-      employeeId: Session.activeEmployeeId,
-      employeeName: Session.activeEmployeeName,
+      employeeId: Session.safeEmployeeId,
+      employeeName: Session.safeEmployeeName,
       action: action,
       targetType: 'product',
       targetId: targetId,

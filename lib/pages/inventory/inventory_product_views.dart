@@ -111,6 +111,20 @@ extension _InventoryProductViews on _InventoryPageState {
               },
             ),
           ),
+          Row(
+            children: [
+              VariantToggleButton(
+                grouped: _groupVariants,
+                onChanged: (value) => _update(() => _groupVariants = value),
+              ),
+              const Spacer(),
+              Text(
+                '${ProductDisplayItem.fromProducts(_filtered, groupVariants: _groupVariants).length} item'
+                '${ProductDisplayItem.fromProducts(_filtered, groupVariants: _groupVariants).length != 1 ? 's' : ''}',
+                style: const TextStyle(color: kGrey, fontSize: 12),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -118,7 +132,11 @@ extension _InventoryProductViews on _InventoryPageState {
 
   // ── PRODUCT VIEW (4 modes) ────────────────────────────────
   Widget _buildProductView(List<ProductModel> items, {bool showStock = false}) {
-    if (items.isEmpty) {
+    final displayItems = ProductDisplayItem.fromProducts(
+      items,
+      groupVariants: _groupVariants,
+    );
+    if (displayItems.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(32),
@@ -139,76 +157,35 @@ extension _InventoryProductViews on _InventoryPageState {
             mainAxisSpacing: 10,
             childAspectRatio: 0.9,
           ),
-          itemCount: items.length,
-          itemBuilder: (_, i) => _gridCard(items[i]),
+          itemCount: displayItems.length,
+          itemBuilder: (_, i) => _gridCard(displayItems[i]),
         );
       case 'compact':
-        return Column(children: items.map((p) => _compactRow(p)).toList());
+        return Column(children: displayItems.map(_compactRow).toList());
       case 'details':
         return Column(children: items.map((p) => _detailCard(p)).toList());
       default: // list
-        return Column(children: items.map((p) => _listCard(p)).toList());
+        return Column(children: displayItems.map(_listCard).toList());
     }
   }
 
-  Widget _listCard(ProductModel p) {
-    final color =
-        kCategoryColors[p.colorIndex.clamp(0, kCategoryColors.length - 1)];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(AppIcons.get(p.iconIndex), color: color, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  p.name,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    color: kDark,
-                  ),
-                ),
-                Text(
-                  p.categoryName,
-                  style: const TextStyle(color: kGrey, fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '${p.totalStock} pcs',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: AppHelpers.stockColor(p.totalStock),
-            ),
-          ),
-        ],
+  Widget _listCard(ProductDisplayItem item) {
+    return ProductCard(
+      product: item.product,
+      variant: item.variant,
+      onTap: () {},
+      trailing: Text(
+        '${item.totalStock} pcs',
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+          color: AppHelpers.stockColor(item.totalStock),
+        ),
       ),
     );
   }
 
-  Widget _compactRow(ProductModel p) {
+  Widget _compactRow(ProductDisplayItem item) {
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -220,23 +197,23 @@ extension _InventoryProductViews on _InventoryPageState {
         children: [
           Expanded(
             child: Text(
-              p.name,
+              item.name,
               style: const TextStyle(fontSize: 12, color: kDark),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ),
           Text(
-            p.categoryName,
+            item.categoryName,
             style: const TextStyle(color: kGrey, fontSize: 11),
           ),
           const SizedBox(width: 12),
           Text(
-            '${p.totalStock} pcs',
+            '${item.totalStock} pcs',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 12,
-              color: AppHelpers.stockColor(p.totalStock),
+              color: AppHelpers.stockColor(item.totalStock),
             ),
           ),
         ],
@@ -244,56 +221,11 @@ extension _InventoryProductViews on _InventoryPageState {
     );
   }
 
-  Widget _gridCard(ProductModel p) {
-    final color =
-        kCategoryColors[p.colorIndex.clamp(0, kCategoryColors.length - 1)];
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: double.infinity,
-            height: 56,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(AppIcons.get(p.iconIndex), color: color, size: 28),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            p.name,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: kDark,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            p.categoryName,
-            style: const TextStyle(color: kGrey, fontSize: 10),
-          ),
-          const Spacer(),
-          Text(
-            '${p.totalStock} pcs',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-              color: AppHelpers.stockColor(p.totalStock),
-            ),
-          ),
-        ],
-      ),
+  Widget _gridCard(ProductDisplayItem item) {
+    return ProductGridCard(
+      product: item.product,
+      variant: item.variant,
+      onTap: () {},
     );
   }
 

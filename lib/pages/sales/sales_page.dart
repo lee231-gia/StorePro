@@ -20,6 +20,7 @@ import '../../repositories/inventory_repository.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/employee_picker.dart';
+import '../../widgets/product_card.dart';
 import 'sales_sheets.dart';
 import 'receipt_page.dart';
 
@@ -39,8 +40,10 @@ class SalesPage extends StatefulWidget {
 
 class _SalesPageState extends State<SalesPage> {
   // ── STATE ─────────────────────────────────────────────────
-  int _tab = 0; // 0=summary, 1=new sale, 2=history
+  int _tab = 0; // 0=new sale, 1=history
   String _search = '';
+  String _sortBy = 'a-z';
+  bool _groupVariants = false;
   bool _loading = true;
 
   List<ProductModel> _products = [];
@@ -109,11 +112,37 @@ class _SalesPageState extends State<SalesPage> {
   int get _cartCount => _cart.fold(0, (s, i) => s + i.qty);
 
   List<ProductModel> get _searchResults {
-    if (_search.trim().isEmpty) return _products;
-    return _products
-        .where((p) => p.name.toLowerCase().contains(_search.toLowerCase()))
-        .toList();
+    var list = List<ProductModel>.from(_products);
+    final q = _search.trim().toLowerCase();
+    if (q.isNotEmpty) {
+      list = list
+          .where(
+            (p) =>
+                p.name.toLowerCase().contains(q) ||
+                p.variants.any((v) => v.name.toLowerCase().contains(q)),
+          )
+          .toList();
+    }
+    switch (_sortBy) {
+      case 'stock-high':
+        list.sort((a, b) => b.totalStock.compareTo(a.totalStock));
+        break;
+      case 'stock-low':
+        list.sort((a, b) => a.totalStock.compareTo(b.totalStock));
+        break;
+      case 'price-low':
+        list.sort((a, b) => a.lowestPrice.compareTo(b.lowestPrice));
+        break;
+      default:
+        list.sort((a, b) => a.name.compareTo(b.name));
+    }
+    return list;
   }
+
+  List<ProductDisplayItem> get _saleItems => ProductDisplayItem.fromProducts(
+    _searchResults,
+    groupVariants: _groupVariants,
+  );
 
   // ── ADD TO CART ───────────────────────────────────────────
   void _addToCart(CartItem item) {
@@ -171,6 +200,25 @@ class _SalesPageState extends State<SalesPage> {
       product: product,
       onAdd: _addToCart,
     );
+  }
+
+  void _selectProductItem(ProductDisplayItem item) {
+    final variant = item.variant;
+    if (variant != null && variant.conditions.isEmpty) {
+      if (variant.totalStock <= 0) return;
+      _addToCart(
+        CartItem(
+          productId: item.product.id,
+          variantId: variant.id,
+          productName: item.product.name,
+          variantName: variant.name,
+          price: variant.price,
+          costPrice: variant.costPrice,
+        ),
+      );
+      return;
+    }
+    if (item.totalStock > 0) _showVariantPicker(item.product);
   }
 
   // ── OPEN CART ─────────────────────────────────────────────
@@ -254,8 +302,8 @@ class _SalesPageState extends State<SalesPage> {
       storeId: Session.storeId,
       customerId: customerId,
       customerName: customerName,
-      employeeId: Session.activeEmployeeId,
-      employeeName: Session.activeEmployeeName,
+      employeeId: Session.safeEmployeeId,
+      employeeName: Session.safeEmployeeName,
       items: items,
       subtotal: _cartTotal + _discTotal,
       totalDiscount: _discTotal,
@@ -384,19 +432,14 @@ class _SalesPageState extends State<SalesPage> {
           child: Row(
             children: [
               SalesTabButton(
-                label: 'Summary',
+                label: 'New Sale',
                 isActive: _tab == 0,
                 onTap: () => setState(() => _tab = 0),
               ),
               SalesTabButton(
-                label: 'New Sale',
+                label: 'History',
                 isActive: _tab == 1,
                 onTap: () => setState(() => _tab = 1),
-              ),
-              SalesTabButton(
-                label: 'History',
-                isActive: _tab == 2,
-                onTap: () => setState(() => _tab = 2),
               ),
             ],
           ),
@@ -406,25 +449,19 @@ class _SalesPageState extends State<SalesPage> {
         changeTab: widget.changeTab,
         currentIndex: widget.currentIndex,
       ),
-      floatingActionButton: _tab == 0
+      floatingActionButton: _tab == 1
           ? FloatingActionButton.small(
               heroTag: 'sales_add_fab',
               backgroundColor: kRed,
               foregroundColor: Colors.white,
-              onPressed: () => setState(() => _tab = 1),
+              onPressed: () => setState(() => _tab = 0),
               child: const Icon(Icons.add),
             )
           : null,
       body: Column(
         children: [
           if (_loading) const LinearProgressIndicator(color: kRed),
-          Expanded(
-            child: [
-              const SalesSummaryView(),
-              _buildNewSale(),
-              _buildHistory(),
-            ][_tab],
-          ),
+          Expanded(child: [_buildNewSale(), _buildHistory()][_tab]),
         ],
       ),
     );
@@ -437,10 +474,57 @@ class _SalesPageState extends State<SalesPage> {
         // Search
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: TextField(
-            controller: _searchCtrl,
-            onChanged: (v) => setState(() => _search = v),
-            decoration: AppInput.field('Search product...', icon: Icons.search),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _searchCtrl,
+                      onChanged: (v) => setState(() => _search = v),
+                      decoration: AppInput.field(
+                        'Search product...',
+                        icon: Icons.search,
+                      ),
+                    ),
+                  ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.sort, color: kGrey),
+                    onSelected: (v) => setState(() => _sortBy = v),
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(value: 'a-z', child: Text('Name A-Z')),
+                      PopupMenuItem(
+                        value: 'stock-high',
+                        child: Text('Stock: High-Low'),
+                      ),
+                      PopupMenuItem(
+                        value: 'stock-low',
+                        child: Text('Stock: Low-High'),
+                      ),
+                      PopupMenuItem(
+                        value: 'price-low',
+                        child: Text('Price: Low-High'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  VariantToggleButton(
+                    grouped: _groupVariants,
+                    onChanged: (value) =>
+                        setState(() => _groupVariants = value),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${_saleItems.length} item'
+                    '${_saleItems.length != 1 ? 's' : ''}',
+                    style: const TextStyle(color: kGrey, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
 
@@ -490,7 +574,7 @@ class _SalesPageState extends State<SalesPage> {
 
         // Product list
         Expanded(
-          child: _searchResults.isEmpty
+          child: _saleItems.isEmpty
               ? const Center(
                   child: Text(
                     'No products found.',
@@ -499,10 +583,11 @@ class _SalesPageState extends State<SalesPage> {
                 )
               : ListView.builder(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _searchResults.length,
+                  itemCount: _saleItems.length,
                   itemBuilder: (_, i) {
-                    final p = _searchResults[i];
-                    final stock = p.totalStock;
+                    final item = _saleItems[i];
+                    final p = item.product;
+                    final stock = item.totalStock;
                     final color =
                         kCategoryColors[p.colorIndex.clamp(
                           0,
@@ -510,7 +595,7 @@ class _SalesPageState extends State<SalesPage> {
                         )];
 
                     return GestureDetector(
-                      onTap: stock > 0 ? () => _showVariantPicker(p) : null,
+                      onTap: stock > 0 ? () => _selectProductItem(item) : null,
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.all(12),
@@ -545,7 +630,7 @@ class _SalesPageState extends State<SalesPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    p.name,
+                                    item.name,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13,
@@ -553,8 +638,7 @@ class _SalesPageState extends State<SalesPage> {
                                     ),
                                   ),
                                   Text(
-                                    '${p.variants.length} variant'
-                                    '${p.variants.length != 1 ? 's' : ''}'
+                                    '${item.isVariant ? 'Variant' : '${p.variants.length} variant${p.variants.length != 1 ? 's' : ''}'}'
                                     '  ·  $stock pcs',
                                     style: TextStyle(
                                       fontSize: 11,

@@ -71,8 +71,8 @@ class CategoryRepository {
     final log = ActivityLogModel(
       id: AppHelpers.newId(),
       storeId: Session.storeId,
-      employeeId: Session.activeEmployeeId,
-      employeeName: Session.activeEmployeeName,
+      employeeId: Session.safeEmployeeId,
+      employeeName: Session.safeEmployeeName,
       action: action,
       targetType: 'category',
       targetId: targetId,

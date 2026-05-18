@@ -14,6 +14,7 @@ import '../../repositories/inventory_repository.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/employee_picker.dart';
+import '../../widgets/product_card.dart';
 
 part 'inventory_overview.dart';
 part 'inventory_replenish.dart';
@@ -47,6 +48,7 @@ class _InventoryPageState extends State<InventoryPage>
   String _sortBy = 'recent';
   String _catFilter = 'All';
   String _viewMode = 'list'; // list | compact | grid | details
+  bool _groupVariants = true;
   List<String> _categories = ['All'];
 
   final _searchCtrl = TextEditingController();

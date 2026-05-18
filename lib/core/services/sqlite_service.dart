@@ -96,7 +96,7 @@ class SQLiteService {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS employees (
         id TEXT PRIMARY KEY, storeId TEXT, name TEXT,
-        pin TEXT, isActive INTEGER, createdAt TEXT, updatedAt TEXT
+        pin TEXT, createdAt TEXT, updatedAt TEXT
       )
     ''');
 
@@ -240,7 +240,6 @@ class SQLiteService {
       'storeId': 'TEXT',
       'name': 'TEXT',
       'pin': 'TEXT',
-      'isActive': 'INTEGER',
       'createdAt': 'TEXT',
       'updatedAt': 'TEXT',
     });
@@ -346,10 +345,12 @@ class SQLiteService {
       'storeId',
     ]);
     await _createIndex(db, 'idx_notes_store', 'notes', const ['storeId']);
-    await _createIndex(db, 'idx_store_options_store_type', 'store_options', const [
-      'storeId',
-      'type',
-    ]);
+    await _createIndex(
+      db,
+      'idx_store_options_store_type',
+      'store_options',
+      const ['storeId', 'type'],
+    );
     await _createIndex(db, 'idx_utang_store', 'utang', const ['storeId']);
     await _createIndex(
       db,
@@ -445,17 +446,25 @@ class SQLiteService {
     }
 
     final now = DateTime.now().toIso8601String();
-    final storeId = expanded['storeId'] ?? expanded['store_id'] ?? Session.storeId;
+    final storeId =
+        expanded['storeId'] ?? expanded['store_id'] ?? Session.storeId;
     if (columns.contains('storeId')) expanded['storeId'] = storeId;
     if (columns.contains('store_id')) expanded['store_id'] = storeId;
 
     if (columns.contains('createdAt') && !expanded.containsKey('createdAt')) {
       expanded['createdAt'] =
-          expanded['created_at'] ?? expanded['addedOn'] ?? expanded['updatedAt'] ?? now;
+          expanded['created_at'] ??
+          expanded['addedOn'] ??
+          expanded['updatedAt'] ??
+          now;
     }
     if (columns.contains('created_at') && !expanded.containsKey('created_at')) {
       expanded['created_at'] =
-          expanded['createdAt'] ?? expanded['added_on'] ?? expanded['updated_at'] ?? expanded['updatedAt'] ?? now;
+          expanded['createdAt'] ??
+          expanded['added_on'] ??
+          expanded['updated_at'] ??
+          expanded['updatedAt'] ??
+          now;
     }
     if (columns.contains('updated_at') && !expanded.containsKey('updated_at')) {
       expanded['updated_at'] = expanded['updatedAt'] ?? now;

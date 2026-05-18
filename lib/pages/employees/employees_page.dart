@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_helpers.dart';
@@ -30,6 +32,7 @@ class _EmployeesPageState extends State<EmployeesPage>
   List<Map<String, dynamic>> _allLogs = [];
   bool _loading = true;
   bool _logsLoading = false;
+  StreamSubscription<List<EmployeeModel>>? _employeeSub;
 
   @override
   void initState() {
@@ -40,37 +43,31 @@ class _EmployeesPageState extends State<EmployeesPage>
         _loadLogs();
       }
     });
+    _employeeSub = EmployeeRepository.stream.listen((employees) {
+      if (mounted) setState(() => _employees = employees);
+    });
     _load();
   }
 
   @override
   void dispose() {
+    _employeeSub?.cancel();
     _tabCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
-    var list = _employees;
+    if (mounted) setState(() => _loading = true);
     try {
-      list = await EmployeeRepository.getAll().timeout(
-        const Duration(seconds: 3),
-        onTimeout: () => <EmployeeModel>[],
-      );
+      await EmployeeRepository.refresh();
     } catch (_) {}
     if (mounted) {
-      setState(() {
-        _employees = list;
-        _loading = false;
-      });
+      setState(() => _loading = false);
     }
-    EmployeeRepository.syncInBackground((fresh) {
-      if (mounted) setState(() => _employees = fresh);
-    });
   }
 
   Future<void> _loadLogs({String? employeeId}) async {
-    setState(() => _logsLoading = true);
+    if (mounted) setState(() => _logsLoading = true);
     var logs = _allLogs;
     try {
       logs =
@@ -242,11 +239,11 @@ class _EmployeesPageState extends State<EmployeesPage>
                 // Avatar
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: e.isActive ? kRedLight : kInputFill,
+                  backgroundColor: kRedLight,
                   child: Text(
                     e.name.isNotEmpty ? e.name[0].toUpperCase() : '?',
-                    style: TextStyle(
-                      color: e.isActive ? kRed : kGrey,
+                    style: const TextStyle(
+                      color: kRed,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -268,13 +265,13 @@ class _EmployeesPageState extends State<EmployeesPage>
                       ),
                       Row(
                         children: [
-                          statusBadge(
-                            e.isActive ? 'ACTIVE' : 'INACTIVE',
-                            e.isActive ? kGreen : kGrey,
-                          ),
                           if (e.pin.isNotEmpty) ...[
-                            const SizedBox(width: 6),
                             statusBadge('PIN SET', kOrange),
+                          ] else ...[
+                            const Text(
+                              'No PIN',
+                              style: TextStyle(color: kGrey, fontSize: 11),
+                            ),
                           ],
                         ],
                       ),
@@ -291,13 +288,6 @@ class _EmployeesPageState extends State<EmployeesPage>
                   Icons.edit_outlined,
                   kGrey,
                   () => _showForm(existing: e),
-                ),
-                _iconBtn(
-                  e.isActive
-                      ? Icons.toggle_on_outlined
-                      : Icons.toggle_off_outlined,
-                  e.isActive ? kGreen : kGrey,
-                  () => _toggleActive(e),
                 ),
                 _iconBtn(Icons.delete_outline, kRed, () => _confirmDelete(e)),
               ],
@@ -523,24 +513,17 @@ class _EmployeesPageState extends State<EmployeesPage>
                   storeId: Session.storeId,
                   name: namCtrl.text.trim(),
                   pin: pinCtrl.text.trim(),
-                  isActive: existing?.isActive ?? true,
                   createdAt: existing?.createdAt ?? now,
                   updatedAt: now,
                 ),
               );
               if (ctx.mounted) Navigator.pop(ctx);
-              _load();
             },
             child: Text(isEdit ? 'Save' : 'Add'),
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _toggleActive(EmployeeModel e) async {
-    await EmployeeRepository.save(e.copyWith(isActive: !e.isActive));
-    _load();
   }
 
   Future<void> _confirmDelete(EmployeeModel e) async {

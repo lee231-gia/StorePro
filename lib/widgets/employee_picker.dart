@@ -35,6 +35,7 @@ class _SessionPickerSheetState extends State<_SessionPickerSheet> {
   List<EmployeeModel> _employees = [];
   final _typeCtrl = TextEditingController();
   bool _loading = true;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -49,10 +50,7 @@ class _SessionPickerSheetState extends State<_SessionPickerSheet> {
   }
 
   Future<void> _load() async {
-    final list = await EmployeeRepository.getAll().timeout(
-      const Duration(seconds: 2),
-      onTimeout: () => <EmployeeModel>[],
-    );
+    final list = await EmployeeRepository.getAll();
     if (mounted) {
       setState(() {
         _employees = list;
@@ -61,9 +59,9 @@ class _SessionPickerSheetState extends State<_SessionPickerSheet> {
     }
   }
 
-  void _select(String id, String name) {
-    Session.activeEmployeeId = id;
-    Session.activeEmployeeName = name;
+  void _select(EmployeeModel employee) {
+    Session.activeEmployeeId = employee.id;
+    Session.activeEmployeeName = employee.name;
     Session.employeeSelected = true;
     Navigator.pop(context);
   }
@@ -76,6 +74,15 @@ class _SessionPickerSheetState extends State<_SessionPickerSheet> {
         : 'Admin';
     Session.employeeSelected = true;
     Navigator.pop(context);
+  }
+
+  Future<void> _createAndSelectTypedName() async {
+    final name = _typeCtrl.text.trim();
+    if (name.isEmpty || _saving) return;
+    setState(() => _saving = true);
+    final employee = await EmployeeRepository.findOrCreateByName(name);
+    if (!mounted) return;
+    _select(employee);
   }
 
   @override
@@ -161,7 +168,7 @@ class _SessionPickerSheetState extends State<_SessionPickerSheet> {
                       leading: CircleAvatar(
                         backgroundColor: kRedLight,
                         child: Text(
-                          e.name[0].toUpperCase(),
+                          e.name.isNotEmpty ? e.name[0].toUpperCase() : '?',
                           style: const TextStyle(
                             color: kRed,
                             fontWeight: FontWeight.bold,
@@ -172,7 +179,7 @@ class _SessionPickerSheetState extends State<_SessionPickerSheet> {
                         e.name,
                         style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
-                      onTap: () => _select(e.id, e.name),
+                      onTap: () => _select(e),
                     );
                   },
                 ),
@@ -223,12 +230,17 @@ class _SessionPickerSheetState extends State<_SessionPickerSheet> {
                         vertical: 14,
                       ),
                     ),
-                    onPressed: () {
-                      final name = _typeCtrl.text.trim();
-                      if (name.isEmpty) return;
-                      _select('', name);
-                    },
-                    child: const Text('Go'),
+                    onPressed: _saving ? null : _createAndSelectTypedName,
+                    child: _saving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Go'),
                   ),
                 ],
               ),

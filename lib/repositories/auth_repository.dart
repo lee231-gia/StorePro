@@ -131,57 +131,80 @@ class AuthRepository {
 
   // ── FORGOT PASSWORD: STEP 2 — verify answer + send OTP ────
   // Returns OTP and reset email if answer correct, else null.
+  // static Future<Map<String, String>?> verifySecurityAnswer({
+  //   required String storeId,
+  //   required String answer,
+  //   String username = '',
+  // }) async {
+  //   final answerHash = AppHelpers.hashPassword(answer.trim().toLowerCase());
+  //   if (username.trim().isNotEmpty) {
+  //     final indexed = await _findByUsername(username.trim().toLowerCase());
+  //     if (indexed != null &&
+  //         indexed['storeId'] == storeId &&
+  //         indexed['securityAnswerHash'] == answerHash) {
+  //       final otp = await _saveOtp(storeId);
+  //       return {'otp': otp, 'email': indexed['email'] ?? ''};
+  //     }
+  //   }
+  //   final data = await FirebaseService.getGlobal(
+  //     'stores',
+  //     storeId,
+  //   ).timeout(FirebaseService.timeout, onTimeout: () => null);
+  //   if (data == null) return null;
+
+  //   final user = UserModel.fromMap(data);
+
+  //   if (answerHash != user.securityAnswerHash) return null;
+
+  //   final otp = await _saveOtp(storeId);
+  //   return {'otp': otp, 'email': user.email};
+  // }
+
+  // ── FORGOT PASSWORD: STEP 2 — verify answer + send OTP ────
   static Future<Map<String, String>?> verifySecurityAnswer({
     required String storeId,
     required String answer,
     String username = '',
   }) async {
     final answerHash = AppHelpers.hashPassword(answer.trim().toLowerCase());
+
     if (username.trim().isNotEmpty) {
       final indexed = await _findByUsername(username.trim().toLowerCase());
+
       if (indexed != null &&
           indexed['storeId'] == storeId &&
           indexed['securityAnswerHash'] == answerHash) {
-        final otp = await _saveOtp(storeId);
+        final otp = await _saveOtp(/*storeId*/);
+
         return {'otp': otp, 'email': indexed['email'] ?? ''};
       }
     }
-    final data = await FirebaseService.getGlobal(
-      'stores',
-      storeId,
-    ).timeout(FirebaseService.timeout, onTimeout: () => null);
-    if (data == null) return null;
 
-    final user = UserModel.fromMap(data);
-
-    if (answerHash != user.securityAnswerHash) return null;
-
-    final otp = await _saveOtp(storeId);
-    return {'otp': otp, 'email': user.email};
+    return null;
   }
 
   // ── FORGOT PASSWORD: STEP 3 — verify OTP ──────────────────
-  static Future<String?> verifyOtp(String storeId, String otp) async {
-    final data = await FirebaseService.getGlobal(
-      'stores',
-      storeId,
-    ).timeout(FirebaseService.timeout, onTimeout: () => null);
-    if (data == null) return 'Account not found.';
+  // static Future<String?> verifyOtp(String storeId, String otp) async {
+  //   final data = await FirebaseService.getGlobal(
+  //     'stores',
+  //     storeId,
+  //   ).timeout(FirebaseService.timeout, onTimeout: () => null);
+  //   if (data == null) return 'Account not found.';
 
-    final user = UserModel.fromMap(data);
+  //   final user = UserModel.fromMap(data);
 
-    if (user.otpCode != otp) return 'Incorrect OTP.';
+  //   if (user.otpCode != otp) return 'Incorrect OTP.';
 
-    // Check expiry
-    try {
-      final expires = DateTime.parse(user.otpExpiresAt);
-      if (DateTime.now().isAfter(expires)) return 'OTP expired.';
-    } catch (_) {
-      return 'OTP expired.';
-    }
+  //   // Check expiry
+  //   try {
+  //     final expires = DateTime.parse(user.otpExpiresAt);
+  //     if (DateTime.now().isAfter(expires)) return 'OTP expired.';
+  //   } catch (_) {
+  //     return 'OTP expired.';
+  //   }
 
-    return null; // null = valid
-  }
+  //   return null; // null = valid
+  // }
 
   // ── FORGOT PASSWORD: STEP 4 — reset password ──────────────
   static Future<String?> resetPassword(
@@ -364,21 +387,21 @@ class AuthRepository {
     };
   }
 
-  static Future<String> _saveOtp(String storeId) async {
+  static Future<String> _saveOtp(/*String storeId*/) async {
     final otp = AppHelpers.generateOtp();
-    final expires = DateTime.now()
-        .add(const Duration(minutes: 10))
-        .toIso8601String();
+    // final expires = DateTime.now()
+    //     .add(const Duration(minutes: 10))
+    //     .toIso8601String();
 
-    try {
-      await FirebaseService.setGlobal('stores', storeId, {
-        'otpCode': otp,
-        'otpExpiresAt': expires,
-      }).timeout(FirebaseService.timeout);
-    } catch (_) {
-      // The local flow can still verify the OTP shown on screen. Firestore
-      // persistence is best effort because unauthenticated rules may block it.
-    }
+    // try {
+    //   await FirebaseService.setGlobal('stores', storeId, {
+    //     'otpCode': otp,
+    //     'otpExpiresAt': expires,
+    //   }).timeout(FirebaseService.timeout);
+    // } catch (_) {
+    //   // The local flow can still verify the OTP shown on screen. Firestore
+    //   // persistence is best effort because unauthenticated rules may block it.
+    // }
 
     return otp;
   }

@@ -18,6 +18,7 @@ extension _ReportsExport on _ReportsPageState {
         '${dir.path}/report_${DateTime.now().millisecondsSinceEpoch}.png',
       );
       await file.writeAsBytes(bytes.buffer.asUint8List());
+
       await SharePlus.instance.share(
         ShareParams(files: [XFile(file.path)], text: 'StorePro Report'),
       );
@@ -112,8 +113,7 @@ extension _ReportsExport on _ReportsPageState {
               pw.Spacer(),
               pw.Center(
                 child: pw.Text(
-                  'Generated: '
-                  '${AppHelpers.formatDateTime(DateTime.now())}',
+                  'Generated: ${AppHelpers.formatDateTime(DateTime.now())}',
                   style: const pw.TextStyle(fontSize: 10),
                 ),
               ),
@@ -127,6 +127,7 @@ extension _ReportsExport on _ReportsPageState {
         '${dir.path}/report_${DateTime.now().millisecondsSinceEpoch}.pdf',
       );
       await file.writeAsBytes(await pdf.save());
+
       await SharePlus.instance.share(
         ShareParams(files: [XFile(file.path)], text: 'StorePro Report PDF'),
       );

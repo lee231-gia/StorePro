@@ -639,7 +639,7 @@ class _UtangPageState extends State<UtangPage> {
                   paidItemName: paidItemName,
                   paidQty: paidQty,
                   date: AppHelpers.todayStr(),
-                  employeeName: Session.activeEmployeeName,
+                  employeeName: Session.safeEmployeeName,
                 );
 
                 await UtangRepository.addPayment(u, payment);

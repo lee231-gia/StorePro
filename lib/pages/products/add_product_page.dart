@@ -45,8 +45,9 @@ class _AddProductPageState extends State<AddProductPage> {
   File? _imageFile;
   bool _hasVariants = false;
   List<CategoryModel> _categories = [];
-  List<ProductOptionModel> _uomOptions =
-      ProductOptionRepository.defaultOptions(ProductOptionRepository.uom);
+  List<ProductOptionModel> _uomOptions = ProductOptionRepository.defaultOptions(
+    ProductOptionRepository.uom,
+  );
   List<ProductOptionModel> _packagingOptions =
       ProductOptionRepository.defaultOptions(ProductOptionRepository.packaging);
   bool _loading = true;
@@ -77,24 +78,28 @@ class _AddProductPageState extends State<AddProductPage> {
   }
 
   Future<void> _loadCategories() async {
-    final results = await Future.wait([
-      CategoryRepository.getAll(),
-      ProductOptionRepository.getByType(ProductOptionRepository.uom),
-      ProductOptionRepository.getByType(ProductOptionRepository.packaging),
-    ]).timeout(
-      const Duration(seconds: 3),
-      onTimeout: () => [
-        <CategoryModel>[],
-        ProductOptionRepository.defaultOptions(ProductOptionRepository.uom),
-        ProductOptionRepository.defaultOptions(ProductOptionRepository.packaging),
-      ],
-    );
+    final results =
+        await Future.wait([
+          CategoryRepository.getAll(),
+          ProductOptionRepository.getByType(ProductOptionRepository.uom),
+          ProductOptionRepository.getByType(ProductOptionRepository.packaging),
+        ]).timeout(
+          const Duration(seconds: 3),
+          onTimeout: () => [
+            <CategoryModel>[],
+            ProductOptionRepository.defaultOptions(ProductOptionRepository.uom),
+            ProductOptionRepository.defaultOptions(
+              ProductOptionRepository.packaging,
+            ),
+          ],
+        );
     var cats = results[0] as List<CategoryModel>;
     final uom = results[1] as List<ProductOptionModel>;
     final packaging = results[2] as List<ProductOptionModel>;
-    if (isEditing) {
+    final editingProductId = widget.productId;
+    if (editingProductId != null) {
       final p = await ProductRepository.getOne(
-        widget.productId!,
+        editingProductId,
       ).timeout(const Duration(seconds: 3), onTimeout: () => null);
       if (p != null && mounted) {
         _nameCtrl.text = p.name;
@@ -178,8 +183,10 @@ class _AddProductPageState extends State<AddProductPage> {
         final imageFile = _variantImageFiles[variant.id];
         var imageUrl = variant.imageUrl;
         if (imageFile != null) {
-          final url = await CloudinaryService.upload(imageFile, 'variants')
-              .timeout(const Duration(seconds: 15), onTimeout: () => null);
+          final url = await CloudinaryService.upload(
+            imageFile,
+            'variants',
+          ).timeout(const Duration(seconds: 15), onTimeout: () => null);
           if (url != null) imageUrl = url;
         }
         uploadedVariants.add(variant.copyWith(imageUrl: imageUrl));

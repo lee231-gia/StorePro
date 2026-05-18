@@ -31,8 +31,8 @@ class InventoryRepository {
       qty: entry.qty,
       costPrice: entry.costPrice,
       reason: entry.reason,
-      employeeId: Session.activeEmployeeId,
-      employeeName: Session.activeEmployeeName,
+      employeeId: Session.safeEmployeeId,
+      employeeName: Session.safeEmployeeName,
       date: AppHelpers.todayStr(),
       updatedAt: AppHelpers.nowStr(),
     );

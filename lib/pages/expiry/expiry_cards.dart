@@ -29,18 +29,9 @@ extension _ExpiryCards on _ExpiryPageState {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                AppIcons.get(product.iconIndex),
-                color: color,
-                size: 22,
-              ),
+            ProductImage(
+              item: ProductDisplayItem(product: product, variant: variant),
+              size: 44,
             ),
             const SizedBox(width: 10),
 

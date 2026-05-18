@@ -2,17 +2,20 @@ part of 'reports_page.dart';
 
 extension _ReportsSales on _ReportsPageState {
   Widget _buildSalesTab() {
-    if (_summary == null) {
+    final s = _summary;
+    if (s == null) {
       return const Center(
         child: Text('No data.', style: TextStyle(color: kGrey)),
       );
     }
-    final s = _summary!;
-    final revenue = (s['totalRevenue'] as num).toDouble();
-    final profit = (s['totalProfit'] as num).toDouble();
-    final discount = (s['totalDiscount'] as num).toDouble();
-    final txCount = s['totalTx'] as int;
-    final topProds = s['topProducts'] as List<Map<String, dynamic>>;
+    final revenue = (s['totalRevenue'] as num?)?.toDouble() ?? 0.0;
+    final profit = (s['totalProfit'] as num?)?.toDouble() ?? 0.0;
+    final discount = (s['totalDiscount'] as num?)?.toDouble() ?? 0.0;
+    final txCount = (s['totalTx'] as num?)?.toInt() ?? 0;
+    final topProds = (s['topProducts'] as List? ?? const [])
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
     final cogs = revenue - profit;
     final margin = revenue > 0 ? (profit / revenue) * 100 : 0.0;
     final avgSale = txCount > 0 ? revenue / txCount : 0.0;
@@ -171,8 +174,8 @@ extension _ReportsSales on _ReportsPageState {
               else
                 ...topProds.asMap().entries.map((e) {
                   final rank = e.key + 1;
-                  final name = e.value['name'] as String;
-                  final qty = e.value['qty'] as int;
+                  final name = e.value['name'] as String? ?? 'Unknown';
+                  final qty = (e.value['qty'] as num?)?.toInt() ?? 0;
 
                   // Find product for profit data
                   final match = _products.where((p) => p.name == name).toList();

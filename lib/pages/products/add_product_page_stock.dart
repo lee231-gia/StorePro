@@ -196,10 +196,6 @@ extension _AddProductPageStock on _AddProductPageState {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setD) => AlertDialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 18,
-            vertical: 24,
-          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -275,33 +271,18 @@ extension _AddProductPageStock on _AddProductPageState {
                         Expanded(
                           child: DropdownButtonFormField<String>(
                             initialValue: ind.type,
-                            isExpanded: true,
                             decoration: AppInput.dialog('Type').copyWith(
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 8,
                                 vertical: 8,
                               ),
                             ),
-                            selectedItemBuilder: (_) => LifeIndicator.types
-                                .map(
-                                  (t) => Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: Text(
-                                      t,
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                      style: const TextStyle(fontSize: 12),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
                             items: LifeIndicator.types
                                 .map(
                                   (t) => DropdownMenuItem(
                                     value: t,
                                     child: Text(
                                       t,
-                                      overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(fontSize: 12),
                                     ),
                                   ),
@@ -342,22 +323,20 @@ extension _AddProductPageStock on _AddProductPageState {
                                 });
                               }
                             },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 12,
-                                ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 12,
+                              ),
                               decoration: BoxDecoration(
                                 color: kInputFill,
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                                child: Text(
-                                  ind.date.isEmpty
-                                      ? 'Pick date'
-                                      : AppHelpers.formatDate(ind.date),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                  style: TextStyle(
+                              child: Text(
+                                ind.date.isEmpty
+                                    ? 'Pick date'
+                                    : AppHelpers.formatDate(ind.date),
+                                style: TextStyle(
                                   color: ind.date.isEmpty ? kGrey : kDark,
                                   fontSize: 12,
                                 ),

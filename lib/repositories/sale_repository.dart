@@ -67,7 +67,7 @@ class SaleRepository {
     final history = List<Map<String, dynamic>>.from(original.editHistory)
       ..add({
         'at': AppHelpers.nowStr(),
-        'employee': Session.activeEmployeeName,
+        'employee': Session.safeEmployeeName,
         'snapshot': original.toMap(),
       });
     final updated = SaleModel(
@@ -75,8 +75,8 @@ class SaleRepository {
       storeId: original.storeId,
       customerId: edited.customerId,
       customerName: edited.customerName,
-      employeeId: Session.activeEmployeeId,
-      employeeName: Session.activeEmployeeName,
+      employeeId: Session.safeEmployeeId,
+      employeeName: Session.safeEmployeeName,
       items: edited.items,
       subtotal: edited.subtotal,
       totalDiscount: edited.totalDiscount,
@@ -111,8 +111,8 @@ class SaleRepository {
     final log = ActivityLogModel(
       id: AppHelpers.newId(),
       storeId: Session.storeId,
-      employeeId: Session.activeEmployeeId,
-      employeeName: Session.activeEmployeeName,
+      employeeId: Session.safeEmployeeId,
+      employeeName: Session.safeEmployeeName,
       action: action,
       targetType: 'sale',
       targetId: targetId,
