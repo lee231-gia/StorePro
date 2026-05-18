@@ -54,7 +54,7 @@ class AlertService {
         if (stock > 0 && stock <= 10) {
           await NotificationService.show(
             id: _lowStockBase + idx,
-            title: '⚠️ Low Stock Alert',
+            title: 'Low Stock Alert',
             body:
                 '${product.name} — ${variant.name}: '
                 'only $stock pcs left.',
@@ -63,7 +63,7 @@ class AlertService {
         } else if (stock == 0) {
           await NotificationService.show(
             id: _lowStockBase + idx,
-            title: '🚫 Out of Stock',
+            title: 'Out of Stock',
             body:
                 '${product.name} — ${variant.name} '
                 'is out of stock.',
@@ -90,7 +90,7 @@ class AlertService {
         if (status == 'expiring') {
           await NotificationService.show(
             id: _expiringBase + expIdx,
-            title: '📅 Expiring Soon',
+            title: 'Expiring Soon',
             body:
                 '${product.name} — ${variant.name} '
                 'expires in $days day'
@@ -100,7 +100,7 @@ class AlertService {
         } else if (status == 'expired') {
           await NotificationService.show(
             id: _expiredBase + xprdIdx,
-            title: '❌ Expired Product',
+            title: 'Expired Product',
             body:
                 '${product.name} — ${variant.name} '
                 'has expired.',
