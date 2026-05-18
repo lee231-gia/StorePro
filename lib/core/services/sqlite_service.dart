@@ -146,6 +146,12 @@ class SQLiteService {
         id TEXT PRIMARY KEY, dataJson TEXT, updatedAt TEXT
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auth_credentials (
+        id TEXT PRIMARY KEY, email TEXT, passwordHash TEXT, updatedAt TEXT
+      )
+    ''');
   }
 
   static Future<void> _ensureTables(Database db) async {
@@ -159,6 +165,11 @@ class SQLiteService {
         id TEXT PRIMARY KEY, collection TEXT,
         docId TEXT, action TEXT, dataJson TEXT,
         createdAt TEXT
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auth_credentials (
+        id TEXT PRIMARY KEY, email TEXT, passwordHash TEXT, updatedAt TEXT
       )
     ''');
     await db.execute('''
@@ -294,6 +305,11 @@ class SQLiteService {
     });
     await _ensureTableColumns(db, 'store_profiles', const {
       'dataJson': 'TEXT',
+      'updatedAt': 'TEXT',
+    });
+    await _ensureTableColumns(db, 'auth_credentials', const {
+      'email': 'TEXT',
+      'passwordHash': 'TEXT',
       'updatedAt': 'TEXT',
     });
   }

@@ -175,7 +175,9 @@ class _MainNavPageState extends State<MainNavPage> {
     super.initState();
     // Show employee picker once after login
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      showSessionEmployeePicker(context);
+      // Employee/user tracking is temporarily disabled. Keep the picker
+      // preserved for future compatibility, but do not show it for now.
+      if (Session.employeeFeature) showSessionEmployeePicker(context);
     });
   }
 

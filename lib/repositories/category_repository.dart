@@ -4,6 +4,7 @@ import '../core/utils/app_helpers.dart';
 import '../core/utils/session.dart';
 import '../models/category_model.dart';
 import '../models/activity_log_model.dart';
+import 'product_repository.dart';
 
 class CategoryRepository {
   CategoryRepository._();
@@ -31,11 +32,15 @@ class CategoryRepository {
 
   // ── SAVE ──────────────────────────────────────────────────
   static Future<CategoryModel> save(CategoryModel cat) async {
+    final cleanName = cat.name.trim();
+    if (cleanName.isEmpty) {
+      throw 'Category name is required.';
+    }
     final now = AppHelpers.nowStr();
     final updated = CategoryModel(
       id: cat.id.isEmpty ? AppHelpers.newId() : cat.id,
       storeId: Session.storeId,
-      name: cat.name,
+      name: cleanName,
       details: cat.details,
       iconIndex: cat.iconIndex,
       colorIndex: cat.colorIndex,
@@ -55,6 +60,7 @@ class CategoryRepository {
       updated.id,
       updated.name,
     );
+    await _cascadeCategoryToProducts(updated);
     return updated;
   }
 
@@ -62,7 +68,29 @@ class CategoryRepository {
   static Future<void> delete(String id, String name) async {
     await SQLiteService.delete(_table, id);
     SyncService.deleteInBackground(_col, id);
+    await _clearCategoryFromProducts(id);
     _log('delete_category', id, name);
+  }
+
+  static Future<void> _cascadeCategoryToProducts(CategoryModel category) async {
+    final products = await ProductRepository.getAll();
+    for (final product in products.where((p) => p.categoryId == category.id)) {
+      if (product.categoryName == category.name) continue;
+      await ProductRepository.save(
+        product.copyWith(categoryName: category.name),
+      );
+    }
+    SyncService.notifyChanged('products');
+  }
+
+  static Future<void> _clearCategoryFromProducts(String categoryId) async {
+    final products = await ProductRepository.getAll();
+    for (final product in products.where((p) => p.categoryId == categoryId)) {
+      await ProductRepository.save(
+        product.copyWith(categoryId: '', categoryName: 'Uncategorized'),
+      );
+    }
+    SyncService.notifyChanged('products');
   }
 
   // ── ACTIVITY LOG ──────────────────────────────────────────

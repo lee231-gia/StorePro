@@ -6,6 +6,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/note_model.dart';
 import '../../repositories/note_repository.dart';
+import '../../shared/controllers/list_query_controller.dart';
+import '../../shared/widgets/list_controls.dart';
+import '../../shared/widgets/state_views.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 
@@ -26,15 +29,37 @@ class NotesPage extends StatefulWidget {
 class _NotesPageState extends State<NotesPage> {
   List<NoteModel> _notes = [];
   bool _loading = true;
-  String _search = '';
-  String _filter = 'all'; // all|note|task|pending
 
   final _searchCtrl = TextEditingController();
+  late final ListQueryController<NoteModel> _query;
   StreamSubscription<String>? _changeSub;
 
   @override
   void initState() {
     super.initState();
+    _query =
+        ListQueryController<NoteModel>(
+          searchMatcher: (note, query) {
+            return note.title.toLowerCase().contains(query) ||
+                note.content.toLowerCase().contains(query);
+          },
+          filterMatcher: (note, filter) {
+            switch (filter) {
+              case 'note':
+                return note.type == 'note';
+              case 'task':
+                return note.type == 'task';
+              case 'pending':
+                return note.type == 'task' && !note.done;
+              case 'done':
+                return note.type == 'task' && note.done;
+              default:
+                return true;
+            }
+          },
+        )..addListener(() {
+          if (mounted) setState(() {});
+        });
     _changeSub = SyncService.changes.listen((collection) {
       if (collection == 'notes') _load();
     });
@@ -44,6 +69,7 @@ class _NotesPageState extends State<NotesPage> {
   @override
   void dispose() {
     _changeSub?.cancel();
+    _query.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -73,38 +99,7 @@ class _NotesPageState extends State<NotesPage> {
     });
   }
 
-  List<NoteModel> get _filtered {
-    var list = _notes;
-
-    // Search (title + content)
-    if (_search.isNotEmpty) {
-      list = list
-          .where(
-            (n) =>
-                n.title.toLowerCase().contains(_search.toLowerCase()) ||
-                n.content.toLowerCase().contains(_search.toLowerCase()),
-          )
-          .toList();
-    }
-
-    // Type/status filter
-    switch (_filter) {
-      case 'note':
-        list = list.where((n) => n.type == 'note').toList();
-        break;
-      case 'task':
-        list = list.where((n) => n.type == 'task').toList();
-        break;
-      case 'pending':
-        list = list.where((n) => n.type == 'task' && !n.done).toList();
-        break;
-      case 'done':
-        list = list.where((n) => n.type == 'task' && n.done).toList();
-        break;
-    }
-
-    return list;
-  }
+  List<NoteModel> get _filtered => _query.apply(_notes);
 
   @override
   Widget build(BuildContext context) {
@@ -125,14 +120,12 @@ class _NotesPageState extends State<NotesPage> {
       body: Column(
         children: [
           _buildFilters(),
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          AppLoadingLine(visible: _loading),
           Expanded(
             child: _filtered.isEmpty
-                ? const Center(
-                    child: Text(
-                      'Nothing here yet.',
-                      style: TextStyle(color: kGrey),
-                    ),
+                ? const AppEmptyState(
+                    icon: Icons.sticky_note_2_outlined,
+                    title: 'Nothing here yet.',
                   )
                 : RefreshIndicator(
                     color: kRed,
@@ -155,59 +148,22 @@ class _NotesPageState extends State<NotesPage> {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
         children: [
-          TextField(
+          AppSearchField(
             controller: _searchCtrl,
-            onChanged: (v) => setState(() => _search = v),
-            decoration: AppInput.field(
-              'Search notes and tasks...',
-              icon: Icons.search,
-            ),
+            hint: 'Search notes and tasks...',
+            onChanged: (value) => _query.query = value,
           ),
           const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final f in {
-                  'all': 'All',
-                  'note': 'Notes',
-                  'task': 'Tasks',
-                  'pending': 'Pending',
-                  'done': 'Done',
-                }.entries)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: GestureDetector(
-                      onTap: () => setState(() => _filter = f.key),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _filter == f.key ? kRed : Colors.transparent,
-                          border: Border.all(
-                            color: _filter == f.key
-                                ? kRed
-                                : Colors.grey.shade300,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          f.value,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: _filter == f.key ? Colors.white : kGrey,
-                            fontWeight: _filter == f.key
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+          AppFilterChips(
+            selected: _query.filter,
+            onSelected: (value) => _query.filter = value,
+            options: const [
+              AppFilterOption('all', 'All'),
+              AppFilterOption('note', 'Notes'),
+              AppFilterOption('task', 'Tasks'),
+              AppFilterOption('pending', 'Pending'),
+              AppFilterOption('done', 'Done'),
+            ],
           ),
         ],
       ),

@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../core/services/auth_service.dart';
 import '../core/services/firebase_service.dart';
 import '../core/services/sqlite_service.dart';
+import '../core/services/sync_service.dart';
 import '../core/utils/app_helpers.dart';
 import '../core/utils/session.dart';
 import '../models/user_model.dart';
@@ -65,6 +66,7 @@ class AuthRepository {
       }).ignore();
 
       // 5. Load session
+      await _cacheLocalCredential(uid, email, password);
       _loadSession(user);
       return null; // null = success
     } catch (e) {
@@ -75,6 +77,11 @@ class AuthRepository {
   // ── LOGIN ─────────────────────────────────────────────────
   static Future<String?> login(String email, String password) async {
     try {
+      if (!await SyncService.isOnline()) {
+        final local = await _loginWithCachedCredentials(email, password);
+        if (local == null) return null;
+      }
+
       final cred = await AuthService.login(email, password);
       if (cred == null) return 'Login failed.';
 
@@ -84,6 +91,7 @@ class AuthRepository {
       final localData = await _getLocalProfile(uid);
       if (localData != null) {
         final user = UserModel.fromMap(localData);
+        await _cacheLocalCredential(uid, email, password);
         _loadSession(user);
         _refreshLocalProfileFromFirebase(uid);
         return null;
@@ -100,10 +108,12 @@ class AuthRepository {
 
       final user = UserModel.fromMap(data);
       await _cacheLocalProfile(user);
+      await _cacheLocalCredential(uid, email, password);
       _loadSession(user);
       return null;
     } catch (e) {
-      return e.toString();
+      final local = await _loginWithCachedCredentials(email, password);
+      return local ?? e.toString();
     }
   }
 
@@ -299,6 +309,39 @@ class AuthRepository {
       'dataJson': jsonEncode(user.toMap()),
       'updatedAt': AppHelpers.nowStr(),
     });
+  }
+
+  static Future<void> _cacheLocalCredential(
+    String storeId,
+    String email,
+    String password,
+  ) async {
+    await SQLiteService.upsert('auth_credentials', {
+      'id': storeId,
+      'email': email.trim().toLowerCase(),
+      'passwordHash': AppHelpers.hashPassword(password),
+      'updatedAt': AppHelpers.nowStr(),
+    });
+  }
+
+  static Future<String?> _loginWithCachedCredentials(
+    String email,
+    String password,
+  ) async {
+    final normalizedEmail = email.trim().toLowerCase();
+    final rows = await SQLiteService.query(
+      'auth_credentials',
+      where: 'email = ? AND passwordHash = ?',
+      whereArgs: [normalizedEmail, AppHelpers.hashPassword(password)],
+      limit: 1,
+    );
+    if (rows.isEmpty) return 'Connect once before using offline login.';
+    final profile = await _getLocalProfile(rows.first['id'] as String);
+    if (profile == null) {
+      return 'Local profile missing. Connect once to repair.';
+    }
+    _loadSession(UserModel.fromMap(profile));
+    return null;
   }
 
   static Future<void> updateCachedSessionProfile(

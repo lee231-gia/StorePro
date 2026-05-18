@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
-import '../../models/product_model.dart';
+import '../../core/enums/product_browser_enums.dart';
 import '../../models/category_model.dart';
-import '../../repositories/product_repository.dart';
+import '../../models/product_model.dart';
 import '../../repositories/category_repository.dart';
+import '../../repositories/product_repository.dart';
+import '../../shared/controllers/product_browser_controller.dart';
+import '../../shared/widgets/product_browser_view.dart';
 import '../../widgets/shared_widgets.dart';
-import '../../widgets/product_card.dart';
-import '../products/product_detail_page.dart';
 import '../products/add_product_page.dart';
+import '../products/product_detail_page.dart';
 
 class CategoryDetailPage extends StatefulWidget {
   final String categoryId;
@@ -28,17 +30,26 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   List<ProductModel> _products = [];
   CategoryModel? _category;
   bool _loading = true;
-  String _sort = 'recent';
-  String _view = 'list';
+  late final ProductBrowserController _browser;
 
   @override
   void initState() {
     super.initState();
+    _browser = ProductBrowserController()
+      ..addListener(() {
+        if (mounted) setState(() {});
+      });
     _load();
   }
 
+  @override
+  void dispose() {
+    _browser.dispose();
+    super.dispose();
+  }
+
   Future<void> _load() async {
-    setState(() => _loading = true);
+    if (mounted) setState(() => _loading = true);
 
     // Instant SQLite
     var all = <ProductModel>[];
@@ -52,9 +63,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       cats = results[1] as List<CategoryModel>;
     } catch (_) {}
 
-    final products = all
-        .where((p) => p.categoryId == widget.categoryId)
-        .toList();
+    final products = _productsForCategory(all);
     final cat = cats.where((c) => c.id == widget.categoryId).isNotEmpty
         ? cats.firstWhere((c) => c.id == widget.categoryId)
         : null;
@@ -69,35 +78,12 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
     // Background sync
     ProductRepository.syncInBackground((fresh) {
-      if (!mounted) return;
-      setState(() {
-        _products = fresh
-            .where((p) => p.categoryId == widget.categoryId)
-            .toList();
-      });
+      if (mounted) setState(() => _products = _productsForCategory(fresh));
     });
   }
 
-  List<ProductModel> get _sorted {
-    final list = List<ProductModel>.from(_products);
-    switch (_sort) {
-      case 'a-z':
-        list.sort((a, b) => a.name.compareTo(b.name));
-        break;
-      case 'stock-low':
-        list.sort((a, b) => a.totalStock.compareTo(b.totalStock));
-        break;
-      case 'expiry':
-        list.sort((a, b) {
-          if (a.nearestExpiry.isEmpty) return 1;
-          if (b.nearestExpiry.isEmpty) return -1;
-          return a.nearestExpiry.compareTo(b.nearestExpiry);
-        });
-        break;
-      default:
-        list.sort((a, b) => b.addedOn.compareTo(a.addedOn));
-    }
-    return list;
+  List<ProductModel> _productsForCategory(List<ProductModel> products) {
+    return products.where((p) => p.categoryId == widget.categoryId).toList();
   }
 
   @override
@@ -120,31 +106,26 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         showMenu: false,
         showBack: true,
         actions: [
-          // View toggle
-          IconButton(
-            icon: Icon(
-              _view == 'grid'
-                  ? Icons.view_list_outlined
-                  : Icons.grid_view_outlined,
-            ),
-            onPressed: () =>
-                setState(() => _view = _view == 'grid' ? 'list' : 'grid'),
+          PopupMenuButton<ProductViewMode>(
+            icon: const Icon(Icons.view_module),
+            onSelected: (value) => _browser.viewMode = value,
+            itemBuilder: (_) => ProductViewMode.values
+                .map(
+                  (mode) => PopupMenuItem(value: mode, child: Text(mode.label)),
+                )
+                .toList(),
           ),
-          // Sort
-          PopupMenuButton<String>(
+          PopupMenuButton<ProductSortOption>(
             icon: const Icon(Icons.sort),
-            onSelected: (v) => setState(() => _sort = v),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'recent', child: Text('Recently Added')),
-              PopupMenuItem(value: 'a-z', child: Text('Name A → Z')),
-              PopupMenuItem(
-                value: 'stock-low',
-                child: Text('Stock Low → High'),
-              ),
-              PopupMenuItem(value: 'expiry', child: Text('Expiry Date')),
-            ],
+            onSelected: (value) => _browser.sortOption = value,
+            itemBuilder: (_) => ProductSortOption.values
+                .where((option) => option != ProductSortOption.priceAsc)
+                .map(
+                  (option) =>
+                      PopupMenuItem(value: option, child: Text(option.label)),
+                )
+                .toList(),
           ),
-          // Add product
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => Navigator.push(
@@ -157,126 +138,106 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       body: Column(
         children: [
           if (_loading) const LinearProgressIndicator(color: kRed),
-          // ── HEADER CARD ──────────────────────────
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: appCard(
-              child: Row(
+          _headerCard(color, icon),
+          Expanded(child: _productBrowser(icon)),
+        ],
+      ),
+    );
+  }
+
+  Widget _headerCard(Color color, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: appCard(
+        child: Row(
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(14),
+                  Text(
+                    widget.categoryName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: kDark,
                     ),
-                    child: Icon(icon, color: color, size: 28),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.categoryName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: kDark,
-                          ),
-                        ),
-                        if (_category?.details.isNotEmpty == true)
-                          Text(
-                            _category!.details,
-                            style: const TextStyle(color: kGrey, fontSize: 12),
-                          ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${_products.length} product'
-                          '${_products.length != 1 ? 's' : ''}',
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
+                  if (_category?.details.isNotEmpty == true)
+                    Text(
+                      _category!.details,
+                      style: const TextStyle(color: kGrey, fontSize: 12),
+                    ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_products.length} product'
+                    '${_products.length != 1 ? 's' : ''}',
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
 
-          // ── PRODUCTS ─────────────────────────────
-          Expanded(
-            child: _products.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(icon, color: Colors.grey.shade300, size: 60),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'No products here yet.',
-                          style: TextStyle(color: kGrey),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kRed,
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AddProductPage(),
-                            ),
-                          ).then((_) => _load()),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Product'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _view == 'grid'
-                ? GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.8,
-                        ),
-                    itemCount: _sorted.length,
-                    itemBuilder: (_, i) => ProductGridCard(
-                      product: _sorted[i],
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ProductDetailPage(productId: _sorted[i].id),
-                        ),
-                      ).then((_) => _load()),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _sorted.length,
-                    itemBuilder: (_, i) => ProductCard(
-                      product: _sorted[i],
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ProductDetailPage(productId: _sorted[i].id),
-                        ),
-                      ).then((_) => _load()),
-                    ),
-                  ),
+  Widget _productBrowser(IconData icon) {
+    if (_products.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.grey.shade300, size: 60),
+            const SizedBox(height: 12),
+            const Text('No products here yet.', style: TextStyle(color: kGrey)),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kRed,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AddProductPage()),
+              ).then((_) => _load()),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Product'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      color: kRed,
+      onRefresh: _load,
+      child: ProductBrowserView(
+        items: _browser.displayItems(_products),
+        viewMode: _browser.viewMode,
+        onTap: (item) => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProductDetailPage(productId: item.productId),
           ),
-        ],
+        ).then((_) => _load()),
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
     );
   }

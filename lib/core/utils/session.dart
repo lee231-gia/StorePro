@@ -9,7 +9,7 @@ class Session {
   static String activeEmployeeId = '';
   static String activeEmployeeName = '';
   static bool trackActivity = true;
-  static bool employeeFeature = true;
+  static bool employeeFeature = false;
   static bool isOnline = true;
   static bool employeeSelected = false;
 
@@ -31,7 +31,7 @@ class Session {
     activeEmployeeId = '';
     activeEmployeeName = '';
     trackActivity = true;
-    employeeFeature = true;
+    employeeFeature = false;
     employeeSelected = false;
     isOnline = true;
   }

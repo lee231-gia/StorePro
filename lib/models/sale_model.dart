@@ -146,6 +146,50 @@ class SaleModel {
     'editHistory': editHistory,
   };
 
+  SaleModel copyWith({
+    String? id,
+    String? storeId,
+    String? customerId,
+    String? customerName,
+    String? employeeId,
+    String? employeeName,
+    List<SaleItemModel>? items,
+    double? subtotal,
+    double? totalDiscount,
+    double? total,
+    double? amountPaid,
+    double? change,
+    String? paymentType,
+    String? status,
+    String? notes,
+    String? date,
+    String? timestamp,
+    String? updatedAt,
+    List<Map<String, dynamic>>? editHistory,
+  }) {
+    return SaleModel(
+      id: id ?? this.id,
+      storeId: storeId ?? this.storeId,
+      customerId: customerId ?? this.customerId,
+      customerName: customerName ?? this.customerName,
+      employeeId: employeeId ?? this.employeeId,
+      employeeName: employeeName ?? this.employeeName,
+      items: items ?? this.items,
+      subtotal: subtotal ?? this.subtotal,
+      totalDiscount: totalDiscount ?? this.totalDiscount,
+      total: total ?? this.total,
+      amountPaid: amountPaid ?? this.amountPaid,
+      change: change ?? this.change,
+      paymentType: paymentType ?? this.paymentType,
+      status: status ?? this.status,
+      notes: notes ?? this.notes,
+      date: date ?? this.date,
+      timestamp: timestamp ?? this.timestamp,
+      updatedAt: updatedAt ?? this.updatedAt,
+      editHistory: editHistory ?? this.editHistory,
+    );
+  }
+
   Map<String, dynamic> toSql() => {
     'id': id,
     'storeId': storeId,
