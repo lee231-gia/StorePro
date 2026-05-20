@@ -104,6 +104,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final catColor =
         kCategoryColors[p.colorIndex.clamp(0, kCategoryColors.length - 1)];
     final icon = AppIcons.get(p.iconIndex);
+    final variantNames = p.variants.map((v) => v.name).join(', ');
+    final imageCacheSize = (96 * MediaQuery.devicePixelRatioOf(context))
+        .clamp(160, 480)
+        .round();
 
     return Scaffold(
       backgroundColor: kBg,
@@ -141,15 +145,24 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: CachedNetworkImage(
-                            imageUrl: p.imageUrl,
-                            width: 58,
-                            height: 58,
+                            imageUrl: _optimizedImageUrl(
+                              p.imageUrl,
+                              imageCacheSize,
+                            ),
+                            width: 72,
+                            height: 72,
                             fit: BoxFit.cover,
+                            fadeInDuration: Duration.zero,
+                            fadeOutDuration: Duration.zero,
+                            memCacheWidth: imageCacheSize,
+                            memCacheHeight: imageCacheSize,
+                            maxWidthDiskCache: imageCacheSize,
+                            maxHeightDiskCache: imageCacheSize,
                             errorWidget: (context, url, error) =>
-                                _iconBox(catColor, icon, 58),
+                                _iconBox(catColor, icon, 72),
                           ),
                         )
-                      : _iconBox(catColor, icon, 58),
+                      : _iconBox(catColor, icon, 72),
 
                   const SizedBox(width: 14),
 
@@ -206,6 +219,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     '${p.variants.length}',
                     icon: Icons.list_alt_outlined,
                   ),
+                  if (variantNames.isNotEmpty) ...[
+                    const Divider(height: 1),
+                    infoRow(
+                      'Variant Names',
+                      variantNames,
+                      icon: Icons.account_tree_outlined,
+                    ),
+                  ],
                   const Divider(height: 1),
                   infoRow(
                     'Total Stock',
@@ -452,6 +473,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     ),
     child: Icon(icon, color: color, size: size * 0.46),
   );
+
+  String _optimizedImageUrl(String url, int width) {
+    if (!url.contains('/upload/') || url.contains('/upload/c_')) return url;
+    final targetWidth = width.clamp(160, 900);
+    return url.replaceFirst(
+      '/upload/',
+      '/upload/c_fill,g_auto,w_$targetWidth,q_auto,f_auto/',
+    );
+  }
 
   Color _lifeIndicatorColor(LifeIndicator indicator) {
     if (!indicator.affectsExpiry) return kGrey;

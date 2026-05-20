@@ -58,7 +58,7 @@ class ProductBrowserView extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.72,
+            childAspectRatio: 0.78,
           ),
           itemCount: items.length,
           itemBuilder: (_, i) => ProductGridCard(
@@ -141,7 +141,7 @@ class _ProductDetailTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: kCard,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.grey.shade200),
         ),
         child: Column(
@@ -159,22 +159,25 @@ class _ProductDetailTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                trailing ?? _stockText(item.totalStock),
+                trailing ??
+                    Text(
+                      AppHelpers.peso(item.price),
+                      style: const TextStyle(
+                        color: kRed,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13,
+                      ),
+                    ),
               ],
             ),
             const SizedBox(height: 10),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: 12,
+              runSpacing: 6,
               children: [
-                if (item.isVariant)
-                  ProductDetailInfoChip(
-                    icon: Icons.account_tree_outlined,
-                    label: item.variant?.name ?? 'Variant',
-                  ),
                 ProductDetailInfoChip(
-                  icon: Icons.payments_outlined,
-                  label: AppHelpers.peso(item.price),
+                  icon: Icons.inventory_2_outlined,
+                  label: '${item.totalStock} pcs',
                 ),
                 ProductDetailInfoChip(
                   icon: Icons.event_outlined,
@@ -243,17 +246,6 @@ class _ProductDetailTile extends StatelessWidget {
       ),
     );
   }
-
-  Widget _stockText(int stock) {
-    return Text(
-      '$stock pcs',
-      style: TextStyle(
-        color: AppHelpers.stockColor(stock),
-        fontWeight: FontWeight.w700,
-        fontSize: 12,
-      ),
-    );
-  }
 }
 
 class _ProductCompactTile extends StatelessWidget {
@@ -279,9 +271,9 @@ class _ProductCompactTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         onTap: enabled ? onTap : null,
         child: Container(
-          height: 48,
+          constraints: const BoxConstraints(minHeight: 56),
           margin: const EdgeInsets.only(bottom: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
             color: kCard,
             borderRadius: BorderRadius.circular(10),
@@ -291,8 +283,9 @@ class _ProductCompactTile extends StatelessWidget {
             children: [
               ProductImage(
                 item: item,
-                size: 30,
-                padding: const EdgeInsets.all(3),
+                size: 44,
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(8),
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -310,16 +303,21 @@ class _ProductCompactTile extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    Text(
-                      item.isVariant
-                          ? '${item.variant?.name ?? 'Variant'} | ${item.totalStock} pcs'
-                          : '${item.variantCount} variants | ${item.totalStock} pcs',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppHelpers.stockColor(item.totalStock),
-                        fontSize: 10,
-                      ),
+                    ProductInlineInfo(
+                      fontSize: 10,
+                      entries: [
+                        ProductInlineEntry(
+                          Icons.inventory_2_outlined,
+                          '${item.totalStock} pcs',
+                          AppHelpers.stockColor(item.totalStock),
+                        ),
+                        if (!item.isVariant && item.variantCount > 1)
+                          ProductInlineEntry(
+                            Icons.account_tree_outlined,
+                            '${item.variantCount} variants',
+                            kGrey,
+                          ),
+                      ],
                     ),
                   ],
                 ),
@@ -335,7 +333,21 @@ class _ProductCompactTile extends StatelessWidget {
                   ),
                 ),
               ],
-              if (trailing != null) ...[const SizedBox(width: 8), trailing!],
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 72,
+                  height: 42,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: trailing!,
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

@@ -17,7 +17,9 @@ extension _AddProductPageDialogs on _AddProductPageState {
     String packaging = existing?.packaging ?? 'Solo';
     List<ConditionModel> conditions = List.from(existing?.conditions ?? []);
     String varImgUrl = existing?.imageUrl ?? '';
-    File? varImgFile = existing == null ? null : _variantImageFiles[existing.id];
+    File? varImgFile = existing == null
+        ? null
+        : _variantImageFiles[existing.id];
     bool showCond = conditions.isNotEmpty;
 
     showDialog(
@@ -39,44 +41,52 @@ extension _AddProductPageDialogs on _AddProductPageState {
                 appCard(
                   color: kBg,
                   margin: EdgeInsets.zero,
-                  child: GestureDetector(
-                    onTap: () => _showImagePicker(
-                      onPicked: (f) => setD(() => varImgFile = f),
-                    ),
-                    child: Container(
-                      height: 88,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: kInputFill,
-                        borderRadius: BorderRadius.circular(10),
-                        image: varImgFile != null
-                            ? DecorationImage(
-                                image: FileImage(varImgFile!),
-                                fit: BoxFit.cover,
-                              )
-                            : varImgUrl.isNotEmpty
-                            ? DecorationImage(
-                                image: NetworkImage(varImgUrl),
-                                fit: BoxFit.cover,
+                  child: Center(
+                    child: GestureDetector(
+                      onTap: () => _showImagePicker(
+                        onPicked: (f) => setD(() => varImgFile = f),
+                      ),
+                      child: Container(
+                        width: 116,
+                        height: 116,
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          color: kInputFill,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.grey.shade200),
+                          image: varImgFile != null
+                              ? DecorationImage(
+                                  image: FileImage(varImgFile!),
+                                  fit: BoxFit.cover,
+                                )
+                              : varImgUrl.isNotEmpty
+                              ? DecorationImage(
+                                  image: NetworkImage(varImgUrl),
+                                  fit: BoxFit.cover,
+                                )
+                              : null,
+                        ),
+                        child: varImgFile == null && varImgUrl.isEmpty
+                            ? const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.add_photo_alternate_outlined,
+                                    color: kGrey,
+                                    size: 28,
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Variant image',
+                                    style: TextStyle(
+                                      color: kGrey,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
                               )
                             : null,
                       ),
-                      child: varImgFile == null && varImgUrl.isEmpty
-                          ? const Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.add_photo_alternate_outlined,
-                                  color: kGrey,
-                                  size: 28,
-                                ),
-                                Text(
-                                  'Variant image (optional)',
-                                  style: TextStyle(color: kGrey, fontSize: 11),
-                                ),
-                              ],
-                            )
-                          : null,
                     ),
                   ),
                 ),
@@ -261,12 +271,11 @@ extension _AddProductPageDialogs on _AddProductPageState {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
-                      onPressed: () => _AddProductPageOptions(
-                        this,
-                      )._showOptionManager(
-                        type: ProductOptionRepository.uom,
-                        title: 'UOM',
-                      ),
+                      onPressed: () =>
+                          _AddProductPageOptions(this)._showOptionManager(
+                            type: ProductOptionRepository.uom,
+                            title: 'UOM',
+                          ),
                       icon: const Icon(Icons.tune, size: 14),
                       label: const Text('Edit UOM'),
                       style: TextButton.styleFrom(
@@ -289,10 +298,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                   DropdownButtonFormField<String>(
                     initialValue: _AddProductPageOptions(
                       this,
-                    )._optionValueOrNull(
-                      _packagingOptions,
-                      packaging,
-                    ),
+                    )._optionValueOrNull(_packagingOptions, packaging),
                     decoration: AppInput.field('Packaging'),
                     items: _packagingOptions
                         .map(
@@ -312,12 +318,11 @@ extension _AddProductPageDialogs on _AddProductPageState {
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton.icon(
-                      onPressed: () => _AddProductPageOptions(
-                        this,
-                      )._showOptionManager(
-                        type: ProductOptionRepository.packaging,
-                        title: 'Packaging',
-                      ),
+                      onPressed: () =>
+                          _AddProductPageOptions(this)._showOptionManager(
+                            type: ProductOptionRepository.packaging,
+                            title: 'Packaging',
+                          ),
                       icon: const Icon(Icons.tune, size: 14),
                       label: const Text('Edit Packaging'),
                       style: TextButton.styleFrom(

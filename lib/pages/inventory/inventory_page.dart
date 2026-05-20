@@ -19,6 +19,7 @@ import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/employee_picker.dart';
 import '../../widgets/product_card.dart';
+import '../products/product_detail_page.dart';
 
 part 'inventory_overview.dart';
 part 'inventory_replenish.dart';
@@ -46,6 +47,12 @@ class _InventoryPageState extends State<InventoryPage>
 
   List<ProductModel> _products = [];
   List<InventoryLogModel> _logs = [];
+  final List<String> _removeReasons = [
+    'adjustment',
+    'personal_use',
+    'waste_damage',
+    'stock_loss',
+  ];
   bool _loading = true;
 
   // ── FILTER / SORT / VIEW ──────────────────────────────────

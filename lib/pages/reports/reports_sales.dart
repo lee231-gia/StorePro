@@ -31,6 +31,27 @@ extension _ReportsSales on _ReportsPageState {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (_rangeSummaries.isNotEmpty) ...[
+                const Text(
+                  'Sales and Revenue Overview',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: kDark,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ...[
+                  'hour',
+                  'today',
+                  'yesterday',
+                  'week',
+                  'month',
+                  'year',
+                  'total',
+                ].map((key) => _rangeSummaryRow(key, _rangeSummaries[key])),
+                const SizedBox(height: 16),
+              ],
               // ── REVENUE CARD ──────────────────────
               Container(
                 width: double.infinity,
@@ -175,6 +196,7 @@ extension _ReportsSales on _ReportsPageState {
                 ...topProds.asMap().entries.map((e) {
                   final rank = e.key + 1;
                   final name = e.value['name'] as String? ?? 'Unknown';
+                  final variantName = e.value['variantName'] as String? ?? '';
                   final qty = (e.value['qty'] as num?)?.toInt() ?? 0;
 
                   // Find product for profit data
@@ -235,6 +257,16 @@ extension _ReportsSales on _ReportsPageState {
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
+                              if (variantName.isNotEmpty)
+                                Text(
+                                  variantName,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: kGrey,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               if (profitPerUnit > 0)
                                 Text(
                                   'Est. profit: '
@@ -269,11 +301,125 @@ extension _ReportsSales on _ReportsPageState {
                     ),
                   );
                 }),
+              const SizedBox(height: 16),
+              appCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Custom Range',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: kDark,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${AppHelpers.formatDate(_fmt(_from))} to '
+                      '${AppHelpers.formatDate(_fmt(_to))}',
+                      style: const TextStyle(color: kGrey, fontSize: 11),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickCustom,
+                            icon: const Icon(Icons.date_range, size: 16),
+                            label: const Text('Customize'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _showExportOptions,
+                            icon: const Icon(Icons.ios_share, size: 16),
+                            label: const Text('Get Copy'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _rangeSummaryRow(String key, Map<String, dynamic>? summary) {
+    final revenue = (summary?['totalRevenue'] as num?)?.toDouble() ?? 0.0;
+    final profit = (summary?['totalProfit'] as num?)?.toDouble() ?? 0.0;
+    final tx = (summary?['totalTx'] as num?)?.toInt() ?? 0;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 78,
+            child: Text(
+              _rangeTitle(key),
+              style: const TextStyle(
+                color: kDark,
+                fontWeight: FontWeight.w700,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          Expanded(
+            child: ProductInlineInfo(
+              entries: [
+                ProductInlineEntry(
+                  Icons.payments_outlined,
+                  AppHelpers.peso(revenue),
+                  kRed,
+                ),
+                ProductInlineEntry(
+                  Icons.trending_up,
+                  AppHelpers.peso(profit),
+                  kGreen,
+                ),
+                ProductInlineEntry(
+                  Icons.receipt_long_outlined,
+                  '$tx tx',
+                  kGrey,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _rangeTitle(String key) {
+    switch (key) {
+      case 'hour':
+        return 'Last Hour';
+      case 'today':
+        return 'Today';
+      case 'yesterday':
+        return 'Yesterday';
+      case 'week':
+        return 'Week';
+      case 'month':
+        return 'Month';
+      case 'year':
+        return 'Year';
+      case 'total':
+        return 'Total';
+      default:
+        return key;
+    }
   }
 
   // ══════════════════════════════════════════════════════════

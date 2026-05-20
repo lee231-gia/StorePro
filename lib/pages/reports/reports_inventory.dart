@@ -55,6 +55,8 @@ extension _ReportsInventory on _ReportsPageState {
               expiryRisk += risk;
               if (tier == 'expired' || tier == 'urgent') {
                 expAlerts.add({
+                  'productId': p.id,
+                  'variantId': v.id,
                   'name': p.name,
                   'variant': v.name,
                   'tier': tier,
@@ -175,56 +177,66 @@ extension _ReportsInventory on _ReportsPageState {
                 ),
                 const SizedBox(height: 8),
                 ...expAlerts.map(
-                  (a) => Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: kCard,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: a['tier'] == 'expired' ? kRed : kOrange,
+                  (a) => InkWell(
+                    borderRadius: BorderRadius.circular(10),
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ProductDetailPage(productId: a['productId']),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          a['tier'] == 'expired'
-                              ? Icons.dangerous_outlined
-                              : Icons.warning_amber_outlined,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: kCard,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
                           color: a['tier'] == 'expired' ? kRed : kOrange,
-                          size: 18,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${a['name']} — ${a['variant']}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              Text(
-                                '${a['stock']} pcs at risk',
-                                style: const TextStyle(
-                                  color: kGrey,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            a['tier'] == 'expired'
+                                ? Icons.dangerous_outlined
+                                : Icons.warning_amber_outlined,
+                            color: a['tier'] == 'expired' ? kRed : kOrange,
+                            size: 18,
                           ),
-                        ),
-                        Text(
-                          AppHelpers.peso((a['risk'] as double)),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: kRed,
-                            fontSize: 12,
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${a['name']} — ${a['variant']}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                Text(
+                                  '${a['stock']} pcs at risk',
+                                  style: const TextStyle(
+                                    color: kGrey,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          Text(
+                            AppHelpers.peso((a['risk'] as double)),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: kRed,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -21,28 +21,46 @@ class ReportRepository {
   // ── SUMMARY ───────────────────────────────────────────────
   static Future<Map<String, dynamic>> getSummary(String from, String to) async {
     final sales = await getSalesInRange(from, to);
+    return _summarizeSales(sales, from, to);
+  }
 
+  static Map<String, dynamic> _summarizeSales(
+    List<SaleModel> sales,
+    String from,
+    String to,
+  ) {
     double totalRevenue = 0;
     double totalProfit = 0;
     double totalDiscount = 0;
     int totalTx = sales.length;
-    final Map<String, int> productQty = {};
+    final Map<String, Map<String, dynamic>> productQty = {};
 
     for (final sale in sales) {
       totalRevenue += sale.total;
       totalProfit += sale.profit;
       totalDiscount += sale.totalDiscount;
       for (final item in sale.items) {
-        productQty[item.productName] =
-            (productQty[item.productName] ?? 0) + item.qty;
+        final key = '${item.productName}||${item.variantName}';
+        final current = productQty[key];
+        productQty[key] = {
+          'name': item.productName,
+          'variantName': item.variantName,
+          'qty': ((current?['qty'] as int?) ?? 0) + item.qty,
+        };
       }
     }
 
     final topProducts =
-        (productQty.entries.toList()
-              ..sort((a, b) => b.value.compareTo(a.value)))
+        (productQty.values.toList()
+              ..sort((a, b) => (b['qty'] as int).compareTo(a['qty'] as int)))
             .take(10)
-            .map((e) => {'name': e.key, 'qty': e.value})
+            .map(
+              (e) => {
+                'name': e['name'],
+                'variantName': e['variantName'],
+                'qty': e['qty'],
+              },
+            )
             .toList();
 
     return {
@@ -54,6 +72,40 @@ class ReportRepository {
       'from': from,
       'to': to,
     };
+  }
+
+  static Future<Map<String, Map<String, dynamic>>> getPresetSummaries() async {
+    final now = DateTime.now();
+    String fmt(DateTime d) =>
+        '${d.year}-'
+        '${d.month.toString().padLeft(2, '0')}-'
+        '${d.day.toString().padLeft(2, '0')}';
+
+    final yesterday = now.subtract(const Duration(days: 1));
+    final ranges = <String, List<String>>{
+      'today': [fmt(DateTime(now.year, now.month, now.day)), fmt(now)],
+      'yesterday': [
+        fmt(DateTime(yesterday.year, yesterday.month, yesterday.day)),
+        fmt(DateTime(yesterday.year, yesterday.month, yesterday.day)),
+      ],
+      'week': [fmt(now.subtract(const Duration(days: 7))), fmt(now)],
+      'month': [fmt(DateTime(now.year, now.month, 1)), fmt(now)],
+      'year': [fmt(DateTime(now.year, 1, 1)), fmt(now)],
+      'total': [fmt(DateTime(2020, 1, 1)), fmt(now)],
+    };
+
+    final result = <String, Map<String, dynamic>>{};
+    final todaySales = await getSalesInRange(fmt(now), fmt(now));
+    final hourStart = now.subtract(const Duration(hours: 1));
+    final hourSales = todaySales.where((sale) {
+      final timestamp = DateTime.tryParse(sale.timestamp);
+      return timestamp != null && timestamp.isAfter(hourStart);
+    }).toList();
+    result['hour'] = _summarizeSales(hourSales, fmt(now), fmt(now));
+    for (final entry in ranges.entries) {
+      result[entry.key] = await getSummary(entry.value[0], entry.value[1]);
+    }
+    return result;
   }
 
   // ── INVENTORY LOGS ────────────────────────────────────────

@@ -12,16 +12,21 @@ import '../../core/utils/session.dart';
 import '../../repositories/report_repository.dart';
 import '../../repositories/product_repository.dart';
 import '../../models/product_model.dart';
+import '../../widgets/product_card.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
+import '../products/product_detail_page.dart';
 
 part 'reports_filters.dart';
 part 'reports_sales.dart';
 part 'reports_inventory.dart';
 part 'reports_profit.dart';
 part 'reports_export.dart';
+part 'reports_activity.dart';
 
 class ReportsPage extends StatefulWidget {
+  static int? pendingTab;
+
   final Function(int) changeTab;
   final int currentIndex;
 
@@ -46,9 +51,12 @@ class _ReportsPageState extends State<ReportsPage>
 
   // ── DATA ──────────────────────────────────────────────────
   Map<String, dynamic>? _summary;
+  Map<String, Map<String, dynamic>> _rangeSummaries = {};
   List<ProductModel> _products = [];
+  List<Map<String, dynamic>> _activityLogs = [];
   bool _loading = false;
   bool _exporting = false;
+  bool _activityDetailed = false;
 
   final _reportKey = GlobalKey();
 
@@ -57,7 +65,7 @@ class _ReportsPageState extends State<ReportsPage>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl = TabController(length: 4, vsync: this);
     _setRange('today');
   }
 
@@ -114,21 +122,31 @@ class _ReportsPageState extends State<ReportsPage>
   Future<void> _generate() async {
     setState(() => _loading = true);
     Map<String, dynamic>? summary;
+    Map<String, Map<String, dynamic>> rangeSummaries = {};
     var products = <ProductModel>[];
+    var activityLogs = <Map<String, dynamic>>[];
     try {
       final results = await Future.wait([
         ReportRepository.getSummary(_fmt(_from), _fmt(_to)),
         ProductRepository.getAll(),
+        ReportRepository.getPresetSummaries(),
+        ReportRepository.getActivityLogs(limit: 500),
       ]).timeout(const Duration(seconds: 3));
       summary = results[0] as Map<String, dynamic>;
       products = results[1] as List<ProductModel>;
+      rangeSummaries = results[2] as Map<String, Map<String, dynamic>>;
+      activityLogs = results[3] as List<Map<String, dynamic>>;
     } catch (_) {
       summary = _summary;
+      rangeSummaries = _rangeSummaries;
+      activityLogs = _activityLogs;
     }
     if (mounted) {
       setState(() {
         _summary = summary;
+        _rangeSummaries = rangeSummaries;
         _products = products;
+        _activityLogs = activityLogs;
         _loading = false;
       });
     }
@@ -136,6 +154,13 @@ class _ReportsPageState extends State<ReportsPage>
 
   @override
   Widget build(BuildContext context) {
+    final pendingTab = ReportsPage.pendingTab;
+    if (pendingTab != null && pendingTab >= 0 && pendingTab < _tabCtrl.length) {
+      ReportsPage.pendingTab = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _tabCtrl.animateTo(pendingTab);
+      });
+    }
     return Scaffold(
       backgroundColor: kBg,
       appBar: buildAppBar(
@@ -176,7 +201,6 @@ class _ReportsPageState extends State<ReportsPage>
       ),
       body: Column(
         children: [
-          _buildRangeSelector(),
           _buildTabBar(),
           if (_loading) const LinearProgressIndicator(color: kRed),
           Expanded(
@@ -186,6 +210,7 @@ class _ReportsPageState extends State<ReportsPage>
                 _buildSalesTab(),
                 _buildInventoryTab(),
                 _buildProfitTab(),
+                _buildActivityTab(),
               ],
             ),
           ),

@@ -3,6 +3,8 @@ part of 'sales_sheets.dart';
 void showPaymentSheet({
   required BuildContext context,
   required double total,
+  required TextEditingController customerCtrl,
+  List<CustomerModel> customers = const [],
   required void Function({
     required String paymentType,
     required double amountPaid,
@@ -15,9 +17,16 @@ void showPaymentSheet({
 }) {
   String payType = 'cash';
   final cashCtrl = TextEditingController();
-  final cNameCtrl = TextEditingController();
   final cPhoneCtrl = TextEditingController();
   final cAddrCtrl = TextEditingController();
+  final selectedCustomer = customers.where(
+    (customer) =>
+        customer.name.toLowerCase() == customerCtrl.text.trim().toLowerCase(),
+  );
+  if (selectedCustomer.isNotEmpty) {
+    cPhoneCtrl.text = selectedCustomer.first.phone;
+    cAddrCtrl.text = selectedCustomer.first.address;
+  }
   double change = 0.0;
 
   showModalBottomSheet(
@@ -140,12 +149,12 @@ void showPaymentSheet({
                   ),
                 ),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: cNameCtrl,
-                  decoration: AppInput.field(
-                    'Customer name *',
-                    icon: Icons.person_outline,
-                  ),
+                _customerSelector(
+                  controller: customerCtrl,
+                  customers: customers,
+                  hint: 'Customer name *',
+                  phoneController: cPhoneCtrl,
+                  addressController: cAddrCtrl,
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -171,11 +180,13 @@ void showPaymentSheet({
                 label: 'Confirm Payment',
                 onTap: () {
                   if ((payType == 'utang' || payType == 'multi') &&
-                      cNameCtrl.text.trim().isEmpty) {
+                      customerCtrl.text.trim().isEmpty) {
                     return;
                   }
                   Navigator.pop(ctx);
-                  final paid = double.tryParse(cashCtrl.text) ?? total;
+                  final paid = payType == 'utang'
+                      ? 0.0
+                      : (double.tryParse(cashCtrl.text) ?? total);
                   onPay(
                     paymentType: payType,
                     amountPaid: paid,

@@ -16,6 +16,8 @@ import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/dashboard_cards.dart';
 import '../products/add_product_page.dart';
+import '../products/product_detail_page.dart';
+import '../reports/reports_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final Function(int) changeTab;
@@ -110,6 +112,8 @@ class _DashboardPageState extends State<DashboardPage> {
         final status = AppHelpers.expiryStatus(exp);
         if (status == 'expired' || status == 'expiring') {
           expiry.add({
+            'productId': p.id,
+            'variantId': v.id,
             'productName': p.name,
             'variantName': v.name,
             'expiry': exp,
@@ -130,6 +134,8 @@ class _DashboardPageState extends State<DashboardPage> {
       for (final v in p.variants) {
         if (v.totalStock <= 10) {
           lowStock.add({
+            'productId': p.id,
+            'variantId': v.id,
             'productName': p.name,
             'variantName': v.name,
             'stock': v.totalStock,
@@ -468,7 +474,7 @@ class _DashboardPageState extends State<DashboardPage> {
             .map(
               (item) => DashboardExpiryRow(
                 item: item,
-                onTap: () => widget.changeTab(3),
+                onTap: () => _openProductDetail(item['productId'] as String),
               ),
             ),
         const SizedBox(height: 20),
@@ -507,7 +513,7 @@ class _DashboardPageState extends State<DashboardPage> {
             .map(
               (item) => DashboardLowStockRow(
                 item: item,
-                onTap: () => widget.changeTab(2),
+                onTap: () => _openProductDetail(item['productId'] as String),
               ),
             ),
         const SizedBox(height: 20),
@@ -532,7 +538,10 @@ class _DashboardPageState extends State<DashboardPage> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: () => widget.changeTab(9),
+              onTap: () {
+                ReportsPage.pendingTab = 3;
+                widget.changeTab(9);
+              },
               child: const Text(
                 'See all',
                 style: TextStyle(color: kRed, fontSize: 12),
@@ -565,5 +574,14 @@ class _DashboardPageState extends State<DashboardPage> {
         const SizedBox(height: 20),
       ],
     );
+  }
+
+  void _openProductDetail(String productId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailPage(productId: productId),
+      ),
+    ).then((_) => _load());
   }
 }

@@ -151,15 +151,34 @@ extension _AddProductPageStock on _AddProductPageState {
                 ],
               ),
             ),
-            GestureDetector(
-              onTap: () {
-                final batches = List<BatchModel>.from(_variants[varIdx].batches)
-                  ..remove(b);
-                _update(() {
-                  _variants[varIdx] = v.copyWith(batches: batches);
-                });
-              },
-              child: const Icon(Icons.close, size: 16, color: kGrey),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () => _showBatchDialog(
+                    varIdx,
+                    existing: b,
+                    batchIndex: _variants[varIdx].batches.indexOf(b),
+                  ),
+                  child: const Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: kGrey,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () {
+                    final batches = List<BatchModel>.from(
+                      _variants[varIdx].batches,
+                    )..remove(b);
+                    _update(() {
+                      _variants[varIdx] = v.copyWith(batches: batches);
+                    });
+                  },
+                  child: const Icon(Icons.close, size: 16, color: kGrey),
+                ),
+              ],
             ),
           ],
         ),
@@ -168,11 +187,21 @@ extension _AddProductPageStock on _AddProductPageState {
   }
 
   // ── BATCH DIALOG ──────────────────────────────────────────
-  void _showBatchDialog(int variantIndex) {
-    final qtyCtrl = TextEditingController();
-    final costCtrl = TextEditingController();
-    final batchCtrl = TextEditingController();
-    List<LifeIndicator> indicators = [];
+  void _showBatchDialog(
+    int variantIndex, {
+    BatchModel? existing,
+    int? batchIndex,
+  }) {
+    final qtyCtrl = TextEditingController(
+      text: existing == null ? '' : existing.qty.toString(),
+    );
+    final costCtrl = TextEditingController(
+      text: existing == null ? '' : existing.costPrice.toStringAsFixed(2),
+    );
+    final batchCtrl = TextEditingController(text: existing?.batchNumber ?? '');
+    List<LifeIndicator> indicators = List<LifeIndicator>.from(
+      existing?.indicators ?? const [],
+    );
 
     showDialog(
       context: context,
@@ -185,9 +214,9 @@ extension _AddProductPageStock on _AddProductPageState {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
-            'Add Stock Batch',
-            style: TextStyle(fontWeight: FontWeight.bold, color: kGreen),
+          title: Text(
+            existing == null ? 'Add Stock Batch' : 'Edit Stock Batch',
+            style: const TextStyle(fontWeight: FontWeight.bold, color: kGreen),
           ),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
@@ -425,7 +454,9 @@ extension _AddProductPageStock on _AddProductPageState {
                 }
                 final cost = double.tryParse(costCtrl.text) ?? 0;
                 final batch = BatchModel(
-                  id: 'b${DateTime.now().millisecondsSinceEpoch}',
+                  id:
+                      existing?.id ??
+                      'b${DateTime.now().millisecondsSinceEpoch}',
                   batchNumber: batchCtrl.text.trim(),
                   qty: qty,
                   costPrice: cost,
@@ -436,14 +467,19 @@ extension _AddProductPageStock on _AddProductPageState {
                 );
 
                 final v = _variants[variantIndex];
-                final batches = List<BatchModel>.from(v.batches)..add(batch);
+                final batches = List<BatchModel>.from(v.batches);
+                if (existing != null && batchIndex != null && batchIndex >= 0) {
+                  batches[batchIndex] = batch;
+                } else {
+                  batches.add(batch);
+                }
 
                 _update(() {
                   _variants[variantIndex] = v.copyWith(batches: batches);
                 });
                 Navigator.pop(ctx);
               },
-              child: const Text('Add Batch'),
+              child: Text(existing == null ? 'Add Batch' : 'Save Batch'),
             ),
           ],
         ),

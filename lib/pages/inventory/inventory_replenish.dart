@@ -161,13 +161,6 @@ extension _InventoryReplenish on _InventoryPageState {
     String reason = isAdding ? 'replenishment' : 'adjustment';
     List<LifeIndicator> indicators = [];
 
-    final removeReasons = [
-      'adjustment',
-      'personal_use',
-      'waste_damage',
-      'stock_loss',
-    ];
-
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -207,11 +200,32 @@ extension _InventoryReplenish on _InventoryPageState {
 
                 // Reason (remove only)
                 if (!isAdding) ...[
-                  fieldLabel('Reason'),
+                  Row(
+                    children: [
+                      const Expanded(child: Text('Reason')),
+                      TextButton.icon(
+                        onPressed: () => _showReasonManager(
+                          onChanged: () => setD(() {
+                            if (!_removeReasons.contains(reason)) {
+                              reason = _removeReasons.first;
+                            }
+                          }),
+                        ),
+                        icon: const Icon(Icons.tune, size: 14),
+                        label: const Text('Edit Reasons'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: kRed,
+                          textStyle: const TextStyle(fontSize: 11),
+                        ),
+                      ),
+                    ],
+                  ),
                   DropdownButtonFormField<String>(
-                    initialValue: reason,
+                    initialValue: _removeReasons.contains(reason)
+                        ? reason
+                        : _removeReasons.first,
                     decoration: AppInput.dialog('Select reason'),
-                    items: removeReasons
+                    items: _removeReasons
                         .map(
                           (r) => DropdownMenuItem(
                             value: r,
@@ -223,9 +237,7 @@ extension _InventoryReplenish on _InventoryPageState {
                         )
                         .toList(),
                     onChanged: (v) {
-                      if (v != null) {
-                        setD(() => reason = v);
-                      }
+                      if (v != null) setD(() => reason = v);
                     },
                   ),
                   const SizedBox(height: 10),
@@ -502,8 +514,97 @@ extension _InventoryReplenish on _InventoryPageState {
       case 'stock_loss':
         return 'Stock Loss / Missing';
       default:
-        return r;
+        return r.replaceAll('_', ' ');
     }
+  }
+
+  void _showReasonManager({required VoidCallback onChanged}) {
+    final ctrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: const Text('Remove Stock Reasons'),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: ctrl,
+                        decoration: AppInput.dialog('New reason'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () {
+                        final value = ctrl.text.trim();
+                        if (value.isEmpty) return;
+                        setD(() {
+                          _removeReasons.add(
+                            value.toLowerCase().replaceAll(' ', '_'),
+                          );
+                          ctrl.clear();
+                        });
+                        onChanged();
+                      },
+                      icon: const Icon(Icons.add, color: kRed),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ..._removeReasons.asMap().entries.map(
+                  (entry) => ListTile(
+                    dense: true,
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(_reasonLabel(entry.value)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          onPressed: () {
+                            ctrl.text = _reasonLabel(entry.value);
+                            setD(() => _removeReasons.removeAt(entry.key));
+                            onChanged();
+                          },
+                        ),
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            size: 18,
+                            color: kRed,
+                          ),
+                          onPressed: _removeReasons.length <= 1
+                              ? null
+                              : () {
+                                  setD(
+                                    () => _removeReasons.removeAt(entry.key),
+                                  );
+                                  onChanged();
+                                },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Done'),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(ctrl.dispose);
   }
 
   // ══════════════════════════════════════════════════════════

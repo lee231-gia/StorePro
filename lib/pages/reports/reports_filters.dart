@@ -1,6 +1,7 @@
 part of 'reports_page.dart';
 
 extension _ReportsFilters on _ReportsPageState {
+  // ignore: unused_element
   Widget _buildRangeSelector() {
     final ranges = {
       'hour': 'Hour',
@@ -85,6 +86,7 @@ extension _ReportsFilters on _ReportsPageState {
           Tab(text: 'Sales & Revenue'),
           Tab(text: 'Inventory'),
           Tab(text: 'Profit Margins'),
+          Tab(text: 'Activity'),
         ],
       ),
     );

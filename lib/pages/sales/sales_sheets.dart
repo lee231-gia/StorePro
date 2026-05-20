@@ -3,6 +3,7 @@ import 'package:storepro/widgets/sale_widgets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
 import '../../core/utils/app_helpers.dart';
+import '../../models/customer_model.dart';
 import '../../models/product_model.dart';
 import '../../widgets/shared_widgets.dart';
 

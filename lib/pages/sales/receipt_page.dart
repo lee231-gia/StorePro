@@ -38,13 +38,13 @@ class _ReceiptPageState extends State<ReceiptPage> {
       if (byteData == null) return;
 
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/receipt_${widget.sale.id}.png');
+      final file = File('${dir.path}/transaction_${widget.sale.id}.png');
       await file.writeAsBytes(byteData.buffer.asUint8List());
 
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: 'Receipt - ${widget.sale.customerName}',
+          text: 'Successful transaction - ${widget.sale.customerName}',
         ),
       );
     } catch (e) {
@@ -81,7 +81,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                 ),
                 pw.Center(
                   child: pw.Text(
-                    'OFFICIAL RECEIPT',
+                    'SUCCESSFUL TRANSACTION',
                     style: const pw.TextStyle(fontSize: 12),
                   ),
                 ),
@@ -175,14 +175,14 @@ class _ReceiptPageState extends State<ReceiptPage> {
       );
 
       final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/receipt_${sale.id}.pdf');
+      final file = File('${dir.path}/transaction_${sale.id}.pdf');
       final bytes = await pdf.save();
       await file.writeAsBytes(bytes);
 
       await SharePlus.instance.share(
         ShareParams(
           files: [XFile(file.path)],
-          text: 'Receipt PDF - ${sale.customerName}',
+          text: 'Transaction summary - ${sale.customerName}',
         ),
       );
     } catch (e) {
@@ -201,7 +201,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
     return Scaffold(
       backgroundColor: kBg,
       appBar: buildAppBar(
-        title: 'Receipt',
+        title: 'Successful Transaction',
         context: context,
         showMenu: false,
         showBack: true,
@@ -264,7 +264,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                     textAlign: TextAlign.center,
                   ),
                   const Text(
-                    'OFFICIAL RECEIPT',
+                    'SUCCESSFUL TRANSACTION',
                     style: TextStyle(color: kGrey, fontSize: 12),
                   ),
                   const SizedBox(height: 12),
@@ -281,7 +281,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                     ),
                     child: Column(
                       children: [
-                        _receiptRow('Receipt #', sale.id),
+                        _receiptRow('Transaction #', sale.id),
                         _receiptRow('Date', AppHelpers.formatDate(sale.date)),
                         _receiptRow('Customer', sale.customerName),
                         _receiptRow('Payment', sale.paymentType.toUpperCase()),

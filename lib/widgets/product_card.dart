@@ -95,6 +95,9 @@ class ProductImage extends StatelessWidget {
     final h = height ?? size;
     final w = width ?? size;
     if (item.imageUrl.isEmpty) return _iconBox(w, h, color);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheWidth = (w * dpr).clamp(96, 720).round();
+    final cacheHeight = (h * dpr).clamp(96, 720).round();
 
     return Container(
       width: w,
@@ -107,13 +110,28 @@ class ProductImage extends StatelessWidget {
       child: Padding(
         padding: padding,
         child: CachedNetworkImage(
-          imageUrl: item.imageUrl,
-          fit: BoxFit.contain,
+          imageUrl: _optimizedImageUrl(item.imageUrl, cacheWidth),
+          fit: BoxFit.cover,
           alignment: Alignment.center,
+          fadeInDuration: Duration.zero,
+          fadeOutDuration: Duration.zero,
+          memCacheWidth: cacheWidth,
+          memCacheHeight: cacheHeight,
+          maxWidthDiskCache: cacheWidth,
+          maxHeightDiskCache: cacheHeight,
           placeholder: (_, _) => _iconBox(w, h, color),
           errorWidget: (_, _, _) => _iconBox(w, h, color),
         ),
       ),
+    );
+  }
+
+  String _optimizedImageUrl(String url, int width) {
+    if (!url.contains('/upload/') || url.contains('/upload/c_')) return url;
+    final targetWidth = width.clamp(160, 900);
+    return url.replaceFirst(
+      '/upload/',
+      '/upload/c_fill,g_auto,w_$targetWidth,q_auto,f_auto/',
     );
   }
 
@@ -220,7 +238,12 @@ class ProductCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              ProductImage(item: item, size: compact ? 40 : 48),
+              ProductImage(
+                item: item,
+                size: compact ? 48 : 58,
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(10),
+              ),
               SizedBox(width: compact ? 10 : 12),
               Expanded(
                 child: Column(
@@ -237,60 +260,77 @@ class ProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 3),
-                    Wrap(
-                      spacing: 5,
-                      runSpacing: 3,
-                      children: [
-                        if (item.isVariant)
-                          ProductBadge(
-                            label: item.variant?.name ?? 'Variant',
-                            color: kGrey,
-                          ),
-                        if (!item.isVariant && item.variantCount > 1)
-                          ProductBadge(
-                            label: '${item.variantCount} variants',
-                            color: kGrey,
-                          ),
-                        if (status == 'expiring')
-                          ProductBadge(
-                            label: '${AppHelpers.daysLeft(expiry)}d',
-                            color: kOrange,
-                          ),
-                        if (status == 'expired')
-                          const ProductBadge(label: 'EXPIRED', color: kRed),
-                        ...extraBadges,
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '$stock pcs',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppHelpers.stockColor(stock),
+                    if (!compact)
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 3,
+                        children: [
+                          if (!item.isVariant && item.variantCount > 1)
+                            ProductBadge(
+                              label: '${item.variantCount} variants',
+                              color: kGrey,
+                            ),
+                          if (status == 'expiring')
+                            ProductBadge(
+                              label: '${AppHelpers.daysLeft(expiry)}d',
+                              color: kOrange,
+                            ),
+                          if (status == 'expired')
+                            const ProductBadge(label: 'EXPIRED', color: kRed),
+                          ...extraBadges,
+                        ],
                       ),
+                    const SizedBox(height: 2),
+                    ProductInlineInfo(
+                      entries: [
+                        ProductInlineEntry(
+                          Icons.inventory_2_outlined,
+                          '$stock pcs',
+                          AppHelpers.stockColor(stock),
+                        ),
+                        if (!item.isVariant && item.variantCount > 1)
+                          ProductInlineEntry(
+                            Icons.account_tree_outlined,
+                            '${item.variantCount} variants',
+                            kGrey,
+                          ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              trailing ??
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        AppHelpers.peso(item.price),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: kDark,
-                        ),
-                      ),
-                      if (!item.isVariant && item.variantCount > 1)
-                        Text(
-                          '${item.variantCount} variants',
-                          style: const TextStyle(fontSize: 10, color: kGrey),
-                        ),
-                    ],
+              if (trailing != null)
+                SizedBox(
+                  width: 82,
+                  height: compact ? 42 : 48,
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: trailing!,
+                    ),
                   ),
+                )
+              else
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      AppHelpers.peso(item.price),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: kDark,
+                      ),
+                    ),
+                    if (!item.isVariant && item.variantCount > 1)
+                      Text(
+                        '${item.variantCount} variants',
+                        style: const TextStyle(fontSize: 10, color: kGrey),
+                      ),
+                  ],
+                ),
               if (trailing == null) ...[
                 const SizedBox(width: 4),
                 const Icon(Icons.chevron_right, color: kGrey, size: 18),
@@ -348,7 +388,7 @@ class ProductGridCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 6,
+                flex: 7,
                 child: Stack(
                   children: [
                     Positioned.fill(
@@ -357,7 +397,7 @@ class ProductGridCard extends StatelessWidget {
                         size: 112,
                         height: double.infinity,
                         width: double.infinity,
-                        padding: const EdgeInsets.all(10),
+                        padding: EdgeInsets.zero,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(14),
                         ),
@@ -369,9 +409,9 @@ class ProductGridCard extends StatelessWidget {
                 ),
               ),
               Expanded(
-                flex: 5,
+                flex: 4,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 9, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -385,19 +425,10 @@ class ProductGridCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: [
-                          if (item.isVariant)
-                            ProductBadge(
-                              label: item.variant?.name ?? 'Variant',
-                              color: kGrey,
-                            ),
-                          ...badges,
-                        ],
-                      ),
+                      if (badges.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Wrap(spacing: 4, runSpacing: 4, children: badges),
+                      ],
                       const Spacer(),
                       footer ??
                           Row(
@@ -529,20 +560,64 @@ class ProductDetailInfoChip extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: Colors.grey.shade100,
-      borderRadius: BorderRadius.circular(8),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: kGrey),
-        const SizedBox(width: 4),
-        Text(label, style: const TextStyle(fontSize: 11, color: kGrey)),
-      ],
-    ),
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 14, color: kGrey),
+      const SizedBox(width: 4),
+      Flexible(
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 11, color: kGrey),
+        ),
+      ),
+    ],
+  );
+}
+
+class ProductInlineEntry {
+  final IconData icon;
+  final String text;
+  final Color color;
+
+  const ProductInlineEntry(this.icon, this.text, this.color);
+}
+
+class ProductInlineInfo extends StatelessWidget {
+  final List<ProductInlineEntry> entries;
+  final double fontSize;
+
+  const ProductInlineInfo({
+    super.key,
+    required this.entries,
+    this.fontSize = 11,
+  });
+
+  @override
+  Widget build(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 2,
+    children: entries
+        .map(
+          (entry) => Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(entry.icon, size: fontSize + 2, color: entry.color),
+              const SizedBox(width: 3),
+              Text(
+                entry.text,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: entry.color,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        )
+        .toList(),
   );
 }
 

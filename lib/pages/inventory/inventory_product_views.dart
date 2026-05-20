@@ -40,7 +40,12 @@ extension _InventoryProductViews on _InventoryPageState {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
-      onTap: (_) {},
+      onTap: (item) => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ProductDetailPage(productId: item.productId),
+        ),
+      ).then((_) => _load()),
       trailingBuilder: showStock ? _stockTrailing : null,
       gridFooterBuilder: showStock
           ? (item) => _stockTrailing(item, alignRight: false)

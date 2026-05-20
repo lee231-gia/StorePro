@@ -5,6 +5,7 @@ void showCartSheet({
   required List<CartItem> cart,
   required TextEditingController customerCtrl,
   required TextEditingController notesCtrl,
+  List<CustomerModel> customers = const [],
   required void Function(int, int) onChangeQty,
   required void Function(int) onRemove,
   required void Function(int, double) onItemDiscount,
@@ -24,42 +25,47 @@ void showCartSheet({
 
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.7,
+          initialChildSize: 0.78,
+          minChildSize: 0.48,
           maxChildSize: 0.95,
-          builder: (_, ctrl) => Column(
-            children: [
-              _handle(),
+          builder: (_, ctrl) => SingleChildScrollView(
+            controller: ctrl,
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).padding.bottom),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _handle(),
 
-              // Cart header
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    const Icon(Icons.shopping_cart_outlined, color: kRed),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Cart',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                // Cart header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.shopping_cart_outlined, color: kRed),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Cart',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${cart.length} item'
-                      '${cart.length != 1 ? 's' : ''}',
-                      style: const TextStyle(color: kGrey, fontSize: 13),
-                    ),
-                  ],
+                      const Spacer(),
+                      Text(
+                        '${cart.length} item'
+                        '${cart.length != 1 ? 's' : ''}',
+                        style: const TextStyle(color: kGrey, fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
 
-              const Divider(),
+                const Divider(),
 
-              // Cart items
-              Expanded(
-                child: ListView.builder(
-                  controller: ctrl,
+                // Cart items
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: cart.length,
                   itemBuilder: (_, i) {
@@ -262,124 +268,123 @@ void showCartSheet({
                     );
                   },
                 ),
-              ),
 
-              // ── TOTAL + CUSTOMER + CONFIRM ────────────────
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  8,
-                  16,
-                  MediaQuery.of(ctx).viewInsets.bottom + 16,
-                ),
-                child: Column(
-                  children: [
-                    // Summary
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: kRedLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
-                        children: [
-                          if (discTotal > 0) ...[
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text('Subtotal'),
-                                Text(AppHelpers.peso(subtotal + discTotal)),
-                              ],
-                            ),
+                // ── TOTAL + CUSTOMER + CONFIRM ────────────────
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    8,
+                    16,
+                    MediaQuery.of(ctx).viewInsets.bottom + 16,
+                  ),
+                  child: Column(
+                    children: [
+                      // Summary
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: kRedLight,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Column(
+                          children: [
+                            if (discTotal > 0) ...[
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text('Subtotal'),
+                                  Text(AppHelpers.peso(subtotal + discTotal)),
+                                ],
+                              ),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Discount',
+                                    style: TextStyle(color: kOrange),
+                                  ),
+                                  Text(
+                                    '- ${AppHelpers.peso(discTotal)}',
+                                    style: const TextStyle(color: kOrange),
+                                  ),
+                                ],
+                              ),
+                              const Divider(height: 8),
+                            ],
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Text(
-                                  'Discount',
-                                  style: TextStyle(color: kOrange),
+                                  'TOTAL',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  '- ${AppHelpers.peso(discTotal)}',
-                                  style: const TextStyle(color: kOrange),
+                                  AppHelpers.peso(subtotal),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: kRed,
+                                    fontSize: 18,
+                                  ),
                                 ),
                               ],
                             ),
-                            const Divider(height: 8),
                           ],
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'TOTAL',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              Text(
-                                AppHelpers.peso(subtotal),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: kRed,
-                                  fontSize: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // Customer name
-                    TextField(
-                      controller: customerCtrl,
-                      decoration: AppInput.field(
-                        'Customer name (optional)',
-                        icon: Icons.person_outline,
-                      ),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    // Notes
-                    TextField(
-                      controller: notesCtrl,
-                      decoration: AppInput.field(
-                        'Notes (optional)',
-                        icon: Icons.note_outlined,
-                      ),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    // Confirm
-                    SizedBox(
-                      width: double.infinity,
-                      height: 48,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kRed,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          onConfirm();
-                        },
-                        child: Text(
-                          'Proceed  ${AppHelpers.peso(subtotal)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 10),
+
+                      _customerSelector(
+                        controller: customerCtrl,
+                        customers: customers,
+                        hint: 'Customer name (optional)',
+                      ),
+
+                      const SizedBox(height: 8),
+
+                      // Notes
+                      TextField(
+                        controller: notesCtrl,
+                        decoration: AppInput.field(
+                          'Notes (optional)',
+                          icon: Icons.note_outlined,
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Confirm
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kRed,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            onConfirm();
+                          },
+                          child: Text(
+                            'Proceed  ${AppHelpers.peso(subtotal)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -388,5 +393,88 @@ void showCartSheet({
 }
 
 // ══════════════════════════════════════════════════════════════
+Widget _customerSelector({
+  required TextEditingController controller,
+  required List<CustomerModel> customers,
+  required String hint,
+  TextEditingController? phoneController,
+  TextEditingController? addressController,
+}) {
+  void fill(CustomerModel customer) {
+    controller.text = customer.name;
+    phoneController?.text = customer.phone;
+    addressController?.text = customer.address;
+  }
+
+  return LayoutBuilder(
+    builder: (context, constraints) => RawAutocomplete<CustomerModel>(
+      textEditingController: controller,
+      focusNode: FocusNode(),
+      displayStringForOption: (customer) => customer.name,
+      optionsBuilder: (value) {
+        final query = value.text.trim().toLowerCase();
+        if (query.isEmpty) return customers.take(8);
+        return customers.where(
+          (customer) =>
+              customer.name.toLowerCase().contains(query) ||
+              customer.phone.toLowerCase().contains(query),
+        );
+      },
+      onSelected: fill,
+      fieldViewBuilder:
+          (context, textController, focusNode, onFieldSubmitted) => TextField(
+            controller: textController,
+            focusNode: focusNode,
+            decoration: AppInput.field(hint, icon: Icons.person_outline)
+                .copyWith(
+                  suffixIcon: customers.isEmpty
+                      ? null
+                      : const Icon(Icons.expand_more, size: 18),
+                ),
+            onChanged: (value) {
+              final match = customers.where(
+                (customer) =>
+                    customer.name.toLowerCase() == value.trim().toLowerCase(),
+              );
+              if (match.isNotEmpty) fill(match.first);
+            },
+          ),
+      optionsViewBuilder: (context, onSelected, options) {
+        final list = options.toList();
+        if (list.isEmpty) return const SizedBox.shrink();
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 6,
+            borderRadius: BorderRadius.circular(10),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: constraints.maxWidth,
+                maxHeight: 220,
+              ),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: list.length,
+                itemBuilder: (_, i) {
+                  final customer = list[i];
+                  return ListTile(
+                    dense: true,
+                    title: Text(customer.name, overflow: TextOverflow.ellipsis),
+                    subtitle: customer.phone.isEmpty
+                        ? null
+                        : Text(customer.phone, overflow: TextOverflow.ellipsis),
+                    onTap: () => onSelected(customer),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
 // 3. PAYMENT SHEET
 // ══════════════════════════════════════════════════════════════

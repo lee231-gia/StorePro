@@ -48,6 +48,7 @@ class _SalesPageState extends State<SalesPage> {
 
   List<ProductModel> _products = [];
   List<SaleModel> _sales = [];
+  List<CustomerModel> _customers = [];
   List<String> _categories = ['All'];
   final List<CartItem> _cart = [];
 
@@ -91,21 +92,25 @@ class _SalesPageState extends State<SalesPage> {
 
     List<ProductModel> products = [];
     List<SaleModel> sales = [];
+    List<CustomerModel> customers = [];
 
     try {
       final results = await Future.wait([
         ProductRepository.getAll(),
         SaleRepository.getAll(),
+        CustomerRepository.getAll(),
       ]).timeout(const Duration(seconds: 3));
 
       products = results[0] as List<ProductModel>;
       sales = results[1] as List<SaleModel>;
+      customers = results[2] as List<CustomerModel>;
     } catch (_) {}
 
     if (mounted) {
       setState(() {
         _products = products;
         _sales = sales;
+        _customers = customers;
         _categories = _categoryNames(products);
         _loading = false;
       });
@@ -220,6 +225,7 @@ class _SalesPageState extends State<SalesPage> {
       cart: _cart,
       customerCtrl: _customerCtrl,
       notesCtrl: _notesCtrl,
+      customers: _customers,
       onChangeQty: _changeQty,
       onRemove: _removeItem,
       onItemDiscount: _setItemDiscount,
@@ -232,6 +238,8 @@ class _SalesPageState extends State<SalesPage> {
     showPaymentSheet(
       context: context,
       total: _cartTotal,
+      customerCtrl: _customerCtrl,
+      customers: _customers,
       onPay:
           ({
             required String paymentType,
