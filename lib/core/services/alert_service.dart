@@ -1,6 +1,5 @@
-// Checks stock levels and expiry dates across all products
-// and fires local notifications when thresholds are crossed.
-// Call this on app start and after every sale / stock change.
+// Checks stock levels and shelf-life dates across all products and fires local
+// notifications when thresholds are crossed.
 
 import '../utils/app_helpers.dart';
 import '../utils/session.dart';
@@ -11,24 +10,12 @@ import '../../models/product_model.dart';
 class AlertService {
   AlertService._();
 
-  // Notification ID ranges so they never collide:
-  // Low stock  : 10000 + index
-  // Expiring   : 20000 + index
-  // Expired    : 30000 + index
   static const _lowStockBase = 10000;
   static const _expiringBase = 20000;
   static const _expiredBase = 30000;
 
-  // ── RUN ALL ALERTS ────────────────────────────────────────
-  // Loads products from SQLite (fast, works offline),
-  // cancels stale alerts, fires new ones.
-  // REMOVE this line at the bottom of alert_service.dart:
-  // final session = Session;
-
-  // And fix the guard at the top of runAll():
   static Future<void> runAll() async {
     if (Session.storeId.isEmpty) return;
-    // ... rest of method unchanged
 
     try {
       final rows = await SQLiteService.query(
@@ -41,11 +28,10 @@ class AlertService {
       await _checkLowStock(products);
       await _checkExpiry(products);
     } catch (_) {
-      // Silent fail — alerts are non-critical
+      // Alerts must never block the app from opening.
     }
   }
 
-  // ── LOW STOCK ─────────────────────────────────────────────
   static Future<void> _checkLowStock(List<ProductModel> products) async {
     int idx = 0;
     for (final product in products) {
@@ -56,7 +42,7 @@ class AlertService {
             id: _lowStockBase + idx,
             title: 'Low Stock Alert',
             body:
-                '${product.name} — ${variant.name}: '
+                '${product.name} - ${variant.name}: '
                 'only $stock pcs left.',
           );
           idx++;
@@ -64,9 +50,7 @@ class AlertService {
           await NotificationService.show(
             id: _lowStockBase + idx,
             title: 'Out of Stock',
-            body:
-                '${product.name} — ${variant.name} '
-                'is out of stock.',
+            body: '${product.name} - ${variant.name} is out of stock.',
           );
           idx++;
         }
@@ -74,43 +58,39 @@ class AlertService {
     }
   }
 
-  // ── EXPIRY ────────────────────────────────────────────────
   static Future<void> _checkExpiry(List<ProductModel> products) async {
-    int expIdx = 0;
-    int xprdIdx = 0;
+    int dueSoonIdx = 0;
+    int pastDueIdx = 0;
 
     for (final product in products) {
       for (final variant in product.variants) {
-        final expiry = variant.nearestExpiry;
-        if (expiry.isEmpty) continue;
+        final due = variant.nearestExpiryIndicator;
+        if (due == null) continue;
 
-        final status = AppHelpers.expiryStatus(expiry);
-        final days = AppHelpers.daysLeft(expiry);
+        final status = AppHelpers.expiryStatus(due.date);
+        final days = AppHelpers.daysLeft(due.date);
+        final isHardExpiry = due.type == 'Expiry Date' || due.type == 'Use-By';
 
         if (status == 'expiring') {
           await NotificationService.show(
-            id: _expiringBase + expIdx,
-            title: 'Expiring Soon',
+            id: _expiringBase + dueSoonIdx,
+            title: isHardExpiry ? 'Expiring Soon' : 'Product Date Due Soon',
             body:
-                '${product.name} — ${variant.name} '
-                'expires in $days day'
-                '${days != 1 ? 's' : ''}.',
+                '${product.name} - ${variant.name}: '
+                '${due.shortLabel} in $days day${days != 1 ? 's' : ''}.',
           );
-          expIdx++;
+          dueSoonIdx++;
         } else if (status == 'expired') {
           await NotificationService.show(
-            id: _expiredBase + xprdIdx,
-            title: 'Expired Product',
+            id: _expiredBase + pastDueIdx,
+            title: isHardExpiry ? 'Expired Product' : 'Product Date Passed',
             body:
-                '${product.name} — ${variant.name} '
-                'has expired.',
+                '${product.name} - ${variant.name}: '
+                '${due.shortLabel} has passed.',
           );
-          xprdIdx++;
+          pastDueIdx++;
         }
       }
     }
   }
 }
-
-// Alias to avoid Session import conflict
-final session = Session;

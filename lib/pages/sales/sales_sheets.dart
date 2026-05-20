@@ -79,7 +79,8 @@ void showVariantPickerSheet({
                         ),
                       ),
                       Text(
-                        product.categoryName,
+                        '${variants.length} variant'
+                        '${variants.length == 1 ? '' : 's'} available',
                         style: TextStyle(color: catColor, fontSize: 12),
                       ),
                     ],
@@ -102,8 +103,6 @@ void showVariantPickerSheet({
               padding: const EdgeInsets.all(14),
               children: variants.map<Widget>((v) {
                 final stock = v.totalStock;
-                final expiry = v.nearestExpiry;
-                final status = AppHelpers.expiryStatus(expiry);
                 final conditions = v.conditions;
 
                 return Container(
@@ -139,15 +138,14 @@ void showVariantPickerSheet({
                                       fontSize: 11,
                                     ),
                                   ),
-                                  if (expiry.isNotEmpty)
-                                    Text(
-                                      'Exp: '
-                                      '${AppHelpers.formatDate(expiry)}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: AppHelpers.statusColor(status),
-                                      ),
+                                  Text(
+                                    AppHelpers.peso(v.price),
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      color: kRed,
+                                      fontWeight: FontWeight.w700,
                                     ),
+                                  ),
                                 ],
                               ),
                             ),

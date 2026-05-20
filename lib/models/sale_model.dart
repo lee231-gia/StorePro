@@ -50,6 +50,28 @@ class SaleItemModel {
     'costPrice': costPrice,
     'discount': discount,
   };
+
+  SaleItemModel copyWith({
+    String? productId,
+    String? productName,
+    String? variantId,
+    String? variantName,
+    String? conditionName,
+    int? qty,
+    double? price,
+    double? costPrice,
+    double? discount,
+  }) => SaleItemModel(
+    productId: productId ?? this.productId,
+    productName: productName ?? this.productName,
+    variantId: variantId ?? this.variantId,
+    variantName: variantName ?? this.variantName,
+    conditionName: conditionName ?? this.conditionName,
+    qty: qty ?? this.qty,
+    price: price ?? this.price,
+    costPrice: costPrice ?? this.costPrice,
+    discount: discount ?? this.discount,
+  );
 }
 
 // ── SALE MODEL ────────────────────────────────────────────────
@@ -168,4 +190,42 @@ class SaleModel {
     final full = jsonDecode(m['dataJson'] ?? '{}') as Map<String, dynamic>;
     return SaleModel.fromMap({'id': m['id'], ...full});
   }
+
+  SaleModel copyWith({
+    String? customerId,
+    String? customerName,
+    String? employeeId,
+    String? employeeName,
+    List<SaleItemModel>? items,
+    double? subtotal,
+    double? totalDiscount,
+    double? total,
+    double? amountPaid,
+    double? change,
+    String? paymentType,
+    String? status,
+    String? notes,
+    String? updatedAt,
+    List<Map<String, dynamic>>? editHistory,
+  }) => SaleModel(
+    id: id,
+    storeId: storeId,
+    customerId: customerId ?? this.customerId,
+    customerName: customerName ?? this.customerName,
+    employeeId: employeeId ?? this.employeeId,
+    employeeName: employeeName ?? this.employeeName,
+    items: items ?? this.items,
+    subtotal: subtotal ?? this.subtotal,
+    totalDiscount: totalDiscount ?? this.totalDiscount,
+    total: total ?? this.total,
+    amountPaid: amountPaid ?? this.amountPaid,
+    change: change ?? this.change,
+    paymentType: paymentType ?? this.paymentType,
+    status: status ?? this.status,
+    notes: notes ?? this.notes,
+    date: date,
+    timestamp: timestamp,
+    updatedAt: updatedAt ?? this.updatedAt,
+    editHistory: editHistory ?? this.editHistory,
+  );
 }

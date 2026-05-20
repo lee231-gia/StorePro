@@ -92,8 +92,6 @@ class _ReceiptPageState extends State<ReceiptPage> {
                 pw.Text('Customer: ${sale.customerName}'),
                 pw.Text('Date: ${AppHelpers.formatDate(sale.date)}'),
                 pw.Text('Payment: ${sale.paymentType.toUpperCase()}'),
-                if (sale.employeeName.isNotEmpty)
-                  pw.Text('Served by: ${sale.employeeName}'),
 
                 pw.Divider(),
 
@@ -107,7 +105,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                           '${item.productName} '
                           '(${item.variantName}'
                           '${item.conditionName.isNotEmpty ? '/${item.conditionName}' : ''}'
-                          ') ×${item.qty}',
+                          ') x${item.qty} @ ${AppHelpers.peso(item.price)}',
                         ),
                       ),
                       pw.Text(AppHelpers.peso(item.subtotal)),
@@ -287,8 +285,6 @@ class _ReceiptPageState extends State<ReceiptPage> {
                         _receiptRow('Date', AppHelpers.formatDate(sale.date)),
                         _receiptRow('Customer', sale.customerName),
                         _receiptRow('Payment', sale.paymentType.toUpperCase()),
-                        if (sale.employeeName.isNotEmpty)
-                          _receiptRow('Served by', sale.employeeName),
                       ],
                     ),
                   ),
@@ -328,7 +324,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                               Text(
                                 '${item.variantName}'
                                 '${item.conditionName.isNotEmpty ? ' / ${item.conditionName}' : ''}'
-                                ' × ${item.qty}',
+                                ' x ${item.qty} @ ${AppHelpers.peso(item.price)}',
                                 style: const TextStyle(
                                   color: kGrey,
                                   fontSize: 12,

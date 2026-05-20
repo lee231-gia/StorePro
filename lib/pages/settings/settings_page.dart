@@ -218,7 +218,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   );
                   if (ctx.mounted) {
                     Navigator.pop(ctx);
-                    if (mounted) showSnack(context, 'Password changed successfully!');
+                    if (mounted) {
+                      showSnack(context, 'Password changed successfully!');
+                    }
                   }
                 } catch (e) {
                   if (ctx.mounted) {
@@ -430,17 +432,9 @@ class _SettingsPageState extends State<SettingsPage> {
                     _preferenceSwitch(
                       icon: Icons.track_changes_outlined,
                       title: 'Activity Tracking',
-                      subtitle: 'Track who performs each action',
+                      subtitle: 'Keep an audit trail of app activity',
                       value: _trackActivity,
                       onChanged: _saveTrackActivity,
-                    ),
-                    const Divider(height: 1),
-                    _preferenceSwitch(
-                      icon: Icons.badge_outlined,
-                      title: 'Employee Feature',
-                      subtitle: 'Track employees & show picker on login',
-                      value: Session.employeeFeature,
-                      onChanged: _saveEmployeeFeature,
                     ),
                   ],
                 ),
@@ -562,22 +556,5 @@ class _SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
-  }
-
-  Future<void> _saveEmployeeFeature(bool val) async {
-    setState(() => Session.employeeFeature = val);
-    if (!val) {
-      Session.activeEmployeeId = 'owner';
-      Session.activeEmployeeName = Session.ownerName;
-      Session.employeeSelected = true;
-    } else {
-      Session.employeeSelected = false;
-    }
-    AuthRepository.updateCachedSessionProfile({
-      'employeeFeature': val,
-    }).ignore();
-    FirebaseService.setGlobal('stores', Session.storeId, {
-      'employeeFeature': val,
-    }).timeout(FirebaseService.timeout, onTimeout: () {}).ignore();
   }
 }

@@ -21,6 +21,49 @@ class LifeIndicator {
     'Period After Opening',
   ];
 
+  static const List<String> expiryRelevantTypes = [
+    'Expiry Date',
+    'Use-By',
+    'Best Before',
+    'Best if Used By',
+    'Sell By',
+    'Period After Opening',
+  ];
+
+  bool get hasDate => type != 'N/A' && date.isNotEmpty;
+
+  bool get affectsExpiry => hasDate && expiryRelevantTypes.contains(type);
+
+  bool get isOriginDate =>
+      type == 'Manufacturing Date (MFG)' ||
+      type == 'Production Date' ||
+      type == 'Packed On';
+
+  String get shortLabel {
+    switch (type) {
+      case 'Expiry Date':
+        return 'Exp';
+      case 'Best Before':
+        return 'Best before';
+      case 'Best if Used By':
+        return 'Best if used by';
+      case 'Use-By':
+        return 'Use by';
+      case 'Manufacturing Date (MFG)':
+        return 'MFG';
+      case 'Production Date':
+        return 'Production';
+      case 'Packed On':
+        return 'Packed';
+      case 'Sell By':
+        return 'Sell by';
+      case 'Period After Opening':
+        return 'PAO';
+      default:
+        return type;
+    }
+  }
+
   factory LifeIndicator.fromMap(Map<String, dynamic> m) =>
       LifeIndicator(type: m['type'] ?? 'N/A', date: m['date'] ?? '');
 
@@ -45,22 +88,24 @@ class BatchModel {
     required this.addedOn,
   });
 
-  // Returns the most critical expiry date
-  // Priority: Expiry Date > Use-By > Best Before > others
+  LifeIndicator? get primaryExpiryIndicator {
+    final candidates = indicators.where((i) => i.affectsExpiry).toList();
+    if (candidates.isEmpty) return null;
+    candidates.sort((a, b) {
+      final byDate = a.date.compareTo(b.date);
+      if (byDate != 0) return byDate;
+      return LifeIndicator.expiryRelevantTypes
+          .indexOf(a.type)
+          .compareTo(LifeIndicator.expiryRelevantTypes.indexOf(b.type));
+    });
+    return candidates.first;
+  }
+
+  // Returns the nearest date that can truly affect shelf life.
+  // Origin dates such as production, manufacturing, and packed-on are preserved
+  // for display but never make a batch expired.
   String get primaryExpiry {
-    const priority = [
-      'Expiry Date',
-      'Use-By',
-      'Best Before',
-      'Best if Used By',
-      'Sell By',
-    ];
-    for (final p in priority) {
-      final found = indicators.where((i) => i.type == p && i.date.isNotEmpty);
-      if (found.isNotEmpty) return found.first.date;
-    }
-    final any = indicators.where((i) => i.date.isNotEmpty);
-    return any.isNotEmpty ? any.first.date : '';
+    return primaryExpiryIndicator?.date ?? '';
   }
 
   factory BatchModel.fromMap(Map<String, dynamic> m) => BatchModel(
@@ -166,11 +211,24 @@ class VariantModel {
   // ── COMPUTED ───────────────────────────────────────────────
   int get totalStock => batches.fold(0, (s, b) => s + b.qty);
 
+  LifeIndicator? get nearestExpiryIndicator {
+    final candidates = batches
+        .map((b) => b.primaryExpiryIndicator)
+        .whereType<LifeIndicator>()
+        .toList();
+    if (candidates.isEmpty) return null;
+    candidates.sort((a, b) {
+      final byDate = a.date.compareTo(b.date);
+      if (byDate != 0) return byDate;
+      return LifeIndicator.expiryRelevantTypes
+          .indexOf(a.type)
+          .compareTo(LifeIndicator.expiryRelevantTypes.indexOf(b.type));
+    });
+    return candidates.first;
+  }
+
   String get nearestExpiry {
-    final dates =
-        batches.map((b) => b.primaryExpiry).where((e) => e.isNotEmpty).toList()
-          ..sort();
-    return dates.isEmpty ? '' : dates.first;
+    return nearestExpiryIndicator?.date ?? '';
   }
 
   double get avgCostPrice {

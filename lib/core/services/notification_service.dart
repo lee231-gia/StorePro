@@ -48,7 +48,8 @@ class NotificationService {
       priority: Priority.high,
     );
 
-    const details = NotificationDetails(android: android);
+    const ios = DarwinNotificationDetails();
+    const details = NotificationDetails(android: android, iOS: ios);
 
     await _plugin.show(
       id: id,
@@ -74,7 +75,8 @@ class NotificationService {
       priority: Priority.high,
     );
 
-    const details = NotificationDetails(android: android);
+    const ios = DarwinNotificationDetails();
+    const details = NotificationDetails(android: android, iOS: ios);
 
     try {
       await _plugin.zonedSchedule(

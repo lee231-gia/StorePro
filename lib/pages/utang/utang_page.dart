@@ -6,7 +6,6 @@ import '../../models/utang_model.dart';
 import '../../repositories/utang_repository.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
-import '../../widgets/employee_picker.dart';
 
 class UtangPage extends StatefulWidget {
   final Function(int) changeTab;
@@ -73,6 +72,13 @@ class _UtangPageState extends State<UtangPage> {
       drawer: AppDrawer(
         changeTab: widget.changeTab,
         currentIndex: widget.currentIndex,
+      ),
+      floatingActionButton: FloatingActionButton.small(
+        heroTag: 'utang_add_fab',
+        backgroundColor: kRed,
+        foregroundColor: Colors.white,
+        onPressed: () => _showUtangForm(),
+        child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
@@ -442,8 +448,36 @@ class _UtangPageState extends State<UtangPage> {
 
                   const SizedBox(height: 16),
 
-                  // Pay button
-                  if (u.status != 'paid')
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.edit_outlined, size: 18),
+                          label: const Text('Edit'),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showUtangForm(existing: u);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.delete_outline, size: 18),
+                          label: const Text('Delete'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: kRed,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _confirmDelete(u);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (u.status != 'paid') ...[
+                    const SizedBox(height: 8),
                     PrimaryButton(
                       label: 'Record Payment',
                       icon: Icons.payments_outlined,
@@ -452,6 +486,7 @@ class _UtangPageState extends State<UtangPage> {
                         _showPaymentDialog(u);
                       },
                     ),
+                  ],
                 ],
               ),
             ),
@@ -459,6 +494,165 @@ class _UtangPageState extends State<UtangPage> {
         ),
       ),
     );
+  }
+
+  void _showUtangForm({UtangModel? existing}) {
+    final nameCtrl = TextEditingController(text: existing?.customerName ?? '');
+    final phoneCtrl = TextEditingController(
+      text: existing?.customerPhone ?? '',
+    );
+    final totalCtrl = TextEditingController(
+      text: existing?.totalAmount.toStringAsFixed(2) ?? '',
+    );
+    final paidCtrl = TextEditingController(
+      text: existing?.amountPaid.toStringAsFixed(2) ?? '0.00',
+    );
+    final dueCtrl = TextEditingController(text: existing?.dueDate ?? '');
+    final notesCtrl = TextEditingController(text: existing?.notes ?? '');
+    var status = existing?.status ?? 'pending';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setD) => AlertDialog(
+          title: Text(existing == null ? 'Add Utang' : 'Edit Utang'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameCtrl,
+                  decoration: AppInput.dialog('Customer name *'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: AppInput.dialog('Phone'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: totalCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: AppInput.dialog('Total amount *'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: paidCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: AppInput.dialog('Amount paid'),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: dueCtrl,
+                  decoration: AppInput.dialog('Due date (YYYY-MM-DD)'),
+                ),
+                const SizedBox(height: 10),
+                DropdownButtonFormField<String>(
+                  initialValue: status,
+                  decoration: AppInput.dialog('Status'),
+                  items: const [
+                    DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                    DropdownMenuItem(value: 'partial', child: Text('Partial')),
+                    DropdownMenuItem(value: 'paid', child: Text('Paid')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) setD(() => status = value);
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: notesCtrl,
+                  maxLines: 2,
+                  decoration: AppInput.dialog('Notes'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kRed,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                final total = double.tryParse(totalCtrl.text.trim()) ?? 0;
+                final paid = double.tryParse(paidCtrl.text.trim()) ?? 0;
+                if (name.isEmpty || total <= 0) return;
+
+                final inferredStatus = paid >= total
+                    ? 'paid'
+                    : paid > 0
+                    ? 'partial'
+                    : status;
+                await UtangRepository.save(
+                  UtangModel(
+                    id: existing?.id ?? '',
+                    storeId: Session.storeId,
+                    customerId: existing?.customerId ?? '',
+                    customerName: name,
+                    customerPhone: phoneCtrl.text.trim(),
+                    saleId: existing?.saleId ?? '',
+                    items: existing?.items ?? const [],
+                    totalAmount: total,
+                    amountPaid: paid.clamp(0, total).toDouble(),
+                    startDate: existing?.startDate ?? AppHelpers.todayStr(),
+                    dueDate: dueCtrl.text.trim(),
+                    status: inferredStatus,
+                    payments: existing?.payments ?? const [],
+                    notes: notesCtrl.text.trim(),
+                    updatedAt: AppHelpers.nowStr(),
+                  ),
+                );
+                if (ctx.mounted) Navigator.pop(ctx);
+                _load();
+              },
+              child: Text(existing == null ? 'Add' : 'Save'),
+            ),
+          ],
+        ),
+      ),
+    ).whenComplete(() {
+      nameCtrl.dispose();
+      phoneCtrl.dispose();
+      totalCtrl.dispose();
+      paidCtrl.dispose();
+      dueCtrl.dispose();
+      notesCtrl.dispose();
+    });
+  }
+
+  Future<void> _confirmDelete(UtangModel u) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Utang?'),
+        content: Text('Remove ${u.customerName} debt record?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: kRed,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await UtangRepository.delete(u.id);
+      _load();
+    }
   }
 
   // ── PAYMENT DIALOG ────────────────────────────────────────
@@ -601,9 +795,6 @@ class _UtangPageState extends State<UtangPage> {
                 foregroundColor: Colors.white,
               ),
               onPressed: () async {
-                final ok = await pickEmployee(context);
-                if (!ok) return;
-
                 double payAmount = 0;
                 String paidItemId = '';
                 String paidItemName = '';
@@ -639,7 +830,6 @@ class _UtangPageState extends State<UtangPage> {
                   paidItemName: paidItemName,
                   paidQty: paidQty,
                   date: AppHelpers.todayStr(),
-                  employeeName: Session.safeEmployeeName,
                 );
 
                 await UtangRepository.addPayment(u, payment);

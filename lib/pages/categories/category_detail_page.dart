@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
+import '../../core/enums/product_browser_enums.dart';
 import '../../models/product_model.dart';
 import '../../models/category_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../repositories/category_repository.dart';
+import '../../shared/controllers/product_browser_controller.dart';
+import '../../shared/widgets/product_browser_toolbar.dart';
+import '../../shared/widgets/product_browser_view.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/product_card.dart';
 import '../products/product_detail_page.dart';
@@ -30,11 +34,33 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
   bool _loading = true;
   String _sort = 'recent';
   String _view = 'list';
+  late final ProductBrowserController _browser;
+  final _searchCtrl = TextEditingController();
+
+  List<ProductDisplayItem> get _items => _browser.displayItems(_products);
+  bool get _showLegacyCategoryList => false;
 
   @override
   void initState() {
     super.initState();
+    _browser = ProductBrowserController(
+      sortOption: ProductSortOption.recent,
+      categoryFilter: widget.categoryName,
+    )..addListener(_onBrowserChanged);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _browser
+      ..removeListener(_onBrowserChanged)
+      ..dispose();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onBrowserChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _load() async {
@@ -120,30 +146,32 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
         showMenu: false,
         showBack: true,
         actions: [
-          // View toggle
-          IconButton(
-            icon: Icon(
-              _view == 'grid'
-                  ? Icons.view_list_outlined
-                  : Icons.grid_view_outlined,
-            ),
-            onPressed: () =>
-                setState(() => _view = _view == 'grid' ? 'list' : 'grid'),
-          ),
-          // Sort
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
-            onSelected: (v) => setState(() => _sort = v),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'recent', child: Text('Recently Added')),
-              PopupMenuItem(value: 'a-z', child: Text('Name A → Z')),
-              PopupMenuItem(
-                value: 'stock-low',
-                child: Text('Stock Low → High'),
+          if (_showLegacyCategoryList) ...[
+            // View toggle
+            IconButton(
+              icon: Icon(
+                _view == 'grid'
+                    ? Icons.view_list_outlined
+                    : Icons.grid_view_outlined,
               ),
-              PopupMenuItem(value: 'expiry', child: Text('Expiry Date')),
-            ],
-          ),
+              onPressed: () =>
+                  setState(() => _view = _view == 'grid' ? 'list' : 'grid'),
+            ),
+            // Sort
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.sort),
+              onSelected: (v) => setState(() => _sort = v),
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'recent', child: Text('Recently Added')),
+                PopupMenuItem(value: 'a-z', child: Text('Name A → Z')),
+                PopupMenuItem(
+                  value: 'stock-low',
+                  child: Text('Stock Low → High'),
+                ),
+                PopupMenuItem(value: 'expiry', child: Text('Expiry Date')),
+              ],
+            ),
+          ],
           // Add product
           IconButton(
             icon: const Icon(Icons.add),
@@ -209,73 +237,107 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           ),
 
           // ── PRODUCTS ─────────────────────────────
-          Expanded(
-            child: _products.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(icon, color: Colors.grey.shade300, size: 60),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'No products here yet.',
-                          style: TextStyle(color: kGrey),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kRed,
-                            foregroundColor: Colors.white,
-                          ),
-                          onPressed: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const AddProductPage(),
-                            ),
-                          ).then((_) => _load()),
-                          icon: const Icon(Icons.add),
-                          label: const Text('Add Product'),
-                        ),
-                      ],
-                    ),
-                  )
-                : _view == 'grid'
-                ? GridView.builder(
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.8,
-                        ),
-                    itemCount: _sorted.length,
-                    itemBuilder: (_, i) => ProductGridCard(
-                      product: _sorted[i],
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ProductDetailPage(productId: _sorted[i].id),
-                        ),
-                      ).then((_) => _load()),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _sorted.length,
-                    itemBuilder: (_, i) => ProductCard(
-                      product: _sorted[i],
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ProductDetailPage(productId: _sorted[i].id),
-                        ),
-                      ).then((_) => _load()),
-                    ),
-                  ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: ProductBrowserToolbar(
+              controller: _browser,
+              searchController: _searchCtrl,
+              categories: [widget.categoryName],
+              searchHint: 'Search products...',
+              itemCount: _items.length,
+              sortOptions: const [
+                ProductSortOption.recent,
+                ProductSortOption.nameAsc,
+                ProductSortOption.nameDesc,
+                ProductSortOption.stockAsc,
+                ProductSortOption.stockDesc,
+                ProductSortOption.expiryAsc,
+                ProductSortOption.expiryDesc,
+                ProductSortOption.priceAsc,
+                ProductSortOption.priceDesc,
+              ],
+            ),
           ),
+          Expanded(
+            child: ProductBrowserView(
+              items: _items,
+              viewMode: _browser.viewMode,
+              onTap: (item) => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ProductDetailPage(productId: item.productId),
+                ),
+              ).then((_) => _load()),
+            ),
+          ),
+          if (_showLegacyCategoryList)
+            Expanded(
+              child: _products.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(icon, color: Colors.grey.shade300, size: 60),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'No products here yet.',
+                            style: TextStyle(color: kGrey),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kRed,
+                              foregroundColor: Colors.white,
+                            ),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const AddProductPage(),
+                              ),
+                            ).then((_) => _load()),
+                            icon: const Icon(Icons.add),
+                            label: const Text('Add Product'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _view == 'grid'
+                  ? GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.8,
+                          ),
+                      itemCount: _sorted.length,
+                      itemBuilder: (_, i) => ProductGridCard(
+                        product: _sorted[i],
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProductDetailPage(productId: _sorted[i].id),
+                          ),
+                        ).then((_) => _load()),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _sorted.length,
+                      itemBuilder: (_, i) => ProductCard(
+                        product: _sorted[i],
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                ProductDetailPage(productId: _sorted[i].id),
+                          ),
+                        ).then((_) => _load()),
+                      ),
+                    ),
+            ),
         ],
       ),
     );

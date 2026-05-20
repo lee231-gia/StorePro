@@ -15,6 +15,7 @@ class ProductBrowserToolbar extends StatelessWidget {
   final bool showViewMode;
   final bool showGroupToggle;
   final List<ProductSortOption> sortOptions;
+  final int? itemCount;
 
   const ProductBrowserToolbar({
     super.key,
@@ -26,6 +27,7 @@ class ProductBrowserToolbar extends StatelessWidget {
     this.showViewMode = true,
     this.showGroupToggle = true,
     this.sortOptions = ProductSortOption.values,
+    this.itemCount,
   });
 
   @override
@@ -62,14 +64,20 @@ class ProductBrowserToolbar extends StatelessWidget {
               onSelected: (value) => controller.statusFilter = value,
             ),
           ],
-          if (showGroupToggle)
+          if (showGroupToggle || itemCount != null)
             Row(
               children: [
-                VariantToggleButton(
-                  grouped: controller.groupVariants,
-                  onChanged: (value) => controller.groupVariants = value,
-                ),
+                if (showGroupToggle)
+                  VariantToggleButton(
+                    grouped: controller.groupVariants,
+                    onChanged: (value) => controller.groupVariants = value,
+                  ),
                 const Spacer(),
+                if (itemCount != null)
+                  Text(
+                    '$itemCount item${itemCount == 1 ? '' : 's'}',
+                    style: const TextStyle(color: kGrey, fontSize: 12),
+                  ),
               ],
             ),
         ],
@@ -115,24 +123,10 @@ class ProductBrowserToolbar extends StatelessWidget {
         itemBuilder: (_, i) {
           final value = values[i];
           final active = selected == value;
-          return GestureDetector(
+          return BrowserFilterChip(
+            label: value,
+            isSelected: active,
             onTap: () => onSelected(value),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              decoration: BoxDecoration(
-                color: active ? kRed : kCard,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: active ? kRed : Colors.grey.shade300),
-              ),
-              child: Text(
-                value,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: active ? Colors.white : kGrey,
-                  fontWeight: active ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ),
           );
         },
       ),

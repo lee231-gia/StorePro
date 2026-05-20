@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:storepro/widgets/sale_widgets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
+import '../../core/enums/product_browser_enums.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../core/services/sync_service.dart';
@@ -11,16 +12,17 @@ import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
 import '../../models/utang_model.dart';
 import '../../models/customer_model.dart';
-import '../../models/inventory_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../repositories/sale_repository.dart';
 import '../../repositories/utang_repository.dart';
 import '../../repositories/customer_repository.dart';
-import '../../repositories/inventory_repository.dart';
+import '../../shared/controllers/product_browser_controller.dart';
+import '../../shared/widgets/product_browser_toolbar.dart';
+import '../../shared/widgets/product_browser_view.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
-import '../../widgets/employee_picker.dart';
 import '../../widgets/product_card.dart';
+import '../../features/sales/services/sale_operations_service.dart';
 import 'sales_sheets.dart';
 import 'receipt_page.dart';
 
@@ -41,13 +43,12 @@ class SalesPage extends StatefulWidget {
 class _SalesPageState extends State<SalesPage> {
   // ── STATE ─────────────────────────────────────────────────
   int _tab = 0; // 0=new sale, 1=history
-  String _search = '';
-  String _sortBy = 'a-z';
-  bool _groupVariants = false;
   bool _loading = true;
+  late final ProductBrowserController _browser;
 
   List<ProductModel> _products = [];
   List<SaleModel> _sales = [];
+  List<String> _categories = ['All'];
   final List<CartItem> _cart = [];
 
   final _searchCtrl = TextEditingController();
@@ -58,6 +59,11 @@ class _SalesPageState extends State<SalesPage> {
   @override
   void initState() {
     super.initState();
+    _browser = ProductBrowserController(
+      viewMode: ProductViewMode.list,
+      sortOption: ProductSortOption.nameAsc,
+      groupVariants: false,
+    )..addListener(_onBrowserChanged);
     _changeSub = SyncService.changes.listen((collection) {
       if (collection == 'products' || collection == 'sales') _load();
     });
@@ -67,10 +73,17 @@ class _SalesPageState extends State<SalesPage> {
   @override
   void dispose() {
     _changeSub?.cancel();
+    _browser
+      ..removeListener(_onBrowserChanged)
+      ..dispose();
     _searchCtrl.dispose();
     _customerCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
+  }
+
+  void _onBrowserChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _load() async {
@@ -93,13 +106,19 @@ class _SalesPageState extends State<SalesPage> {
       setState(() {
         _products = products;
         _sales = sales;
+        _categories = _categoryNames(products);
         _loading = false;
       });
     }
 
     // Background Firebase sync
     ProductRepository.syncInBackground((fresh) {
-      if (mounted) setState(() => _products = fresh);
+      if (mounted) {
+        setState(() {
+          _products = fresh;
+          _categories = _categoryNames(fresh);
+        });
+      }
     });
     SaleRepository.syncInBackground((fresh) {
       if (mounted) setState(() => _sales = fresh);
@@ -111,38 +130,11 @@ class _SalesPageState extends State<SalesPage> {
   double get _discTotal => _cart.fold(0.0, (s, i) => s + i.itemDiscount);
   int get _cartCount => _cart.fold(0, (s, i) => s + i.qty);
 
-  List<ProductModel> get _searchResults {
-    var list = List<ProductModel>.from(_products);
-    final q = _search.trim().toLowerCase();
-    if (q.isNotEmpty) {
-      list = list
-          .where(
-            (p) =>
-                p.name.toLowerCase().contains(q) ||
-                p.variants.any((v) => v.name.toLowerCase().contains(q)),
-          )
-          .toList();
-    }
-    switch (_sortBy) {
-      case 'stock-high':
-        list.sort((a, b) => b.totalStock.compareTo(a.totalStock));
-        break;
-      case 'stock-low':
-        list.sort((a, b) => a.totalStock.compareTo(b.totalStock));
-        break;
-      case 'price-low':
-        list.sort((a, b) => a.lowestPrice.compareTo(b.lowestPrice));
-        break;
-      default:
-        list.sort((a, b) => a.name.compareTo(b.name));
-    }
-    return list;
-  }
+  List<String> _categoryNames(List<ProductModel> products) =>
+      {'All', ...products.map((product) => product.categoryName)}.toList();
 
-  List<ProductDisplayItem> get _saleItems => ProductDisplayItem.fromProducts(
-    _searchResults,
-    groupVariants: _groupVariants,
-  );
+  List<ProductDisplayItem> get _saleItems => _browser.displayItems(_products);
+  bool get _showLegacySaleList => false;
 
   // ── ADD TO CART ───────────────────────────────────────────
   void _addToCart(CartItem item) {
@@ -249,9 +241,6 @@ class _SalesPageState extends State<SalesPage> {
             required String customerPhone,
             required String customerAddress,
           }) async {
-            final ok = await pickEmployee(context);
-            if (!ok || !mounted) return;
-
             await _completeSale(
               paymentType: paymentType,
               amountPaid: amountPaid,
@@ -471,59 +460,23 @@ class _SalesPageState extends State<SalesPage> {
   Widget _buildNewSale() {
     return Column(
       children: [
-        // Search
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchCtrl,
-                      onChanged: (v) => setState(() => _search = v),
-                      decoration: AppInput.field(
-                        'Search product...',
-                        icon: Icons.search,
-                      ),
-                    ),
-                  ),
-                  PopupMenuButton<String>(
-                    icon: const Icon(Icons.sort, color: kGrey),
-                    onSelected: (v) => setState(() => _sortBy = v),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'a-z', child: Text('Name A-Z')),
-                      PopupMenuItem(
-                        value: 'stock-high',
-                        child: Text('Stock: High-Low'),
-                      ),
-                      PopupMenuItem(
-                        value: 'stock-low',
-                        child: Text('Stock: Low-High'),
-                      ),
-                      PopupMenuItem(
-                        value: 'price-low',
-                        child: Text('Price: Low-High'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              Row(
-                children: [
-                  VariantToggleButton(
-                    grouped: _groupVariants,
-                    onChanged: (value) =>
-                        setState(() => _groupVariants = value),
-                  ),
-                  const Spacer(),
-                  Text(
-                    '${_saleItems.length} item'
-                    '${_saleItems.length != 1 ? 's' : ''}',
-                    style: const TextStyle(color: kGrey, fontSize: 12),
-                  ),
-                ],
-              ),
+          child: ProductBrowserToolbar(
+            controller: _browser,
+            searchController: _searchCtrl,
+            categories: _categories,
+            searchHint: 'Search products...',
+            itemCount: _saleItems.length,
+            sortOptions: const [
+              ProductSortOption.nameAsc,
+              ProductSortOption.nameDesc,
+              ProductSortOption.categoryAsc,
+              ProductSortOption.categoryDesc,
+              ProductSortOption.stockDesc,
+              ProductSortOption.stockAsc,
+              ProductSortOption.priceAsc,
+              ProductSortOption.priceDesc,
             ],
           ),
         ),
@@ -572,118 +525,191 @@ class _SalesPageState extends State<SalesPage> {
             ),
           ),
 
-        // Product list
         Expanded(
-          child: _saleItems.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No products found.',
-                    style: TextStyle(color: kGrey),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _saleItems.length,
-                  itemBuilder: (_, i) {
-                    final item = _saleItems[i];
-                    final p = item.product;
-                    final stock = item.totalStock;
-                    final color =
-                        kCategoryColors[p.colorIndex.clamp(
-                          0,
-                          kCategoryColors.length - 1,
-                        )];
+          child: ProductBrowserView(
+            items: _saleItems,
+            viewMode: _browser.viewMode,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            onTap: _selectProductItem,
+            enabledBuilder: (item) => item.totalStock > 0,
+            trailingBuilder: _saleTrailing,
+            actionBuilder: _saleAction,
+            gridFooterBuilder: _saleGridFooter,
+          ),
+        ),
+        if (_showLegacySaleList)
+          Expanded(
+            child: _saleItems.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No products found.',
+                      style: TextStyle(color: kGrey),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _saleItems.length,
+                    itemBuilder: (_, i) {
+                      final item = _saleItems[i];
+                      final p = item.product;
+                      final stock = item.totalStock;
+                      final color =
+                          kCategoryColors[p.colorIndex.clamp(
+                            0,
+                            kCategoryColors.length - 1,
+                          )];
 
-                    return GestureDetector(
-                      onTap: stock > 0 ? () => _selectProductItem(item) : null,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: kCard,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 6,
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                color: color.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(10),
+                      return GestureDetector(
+                        onTap: stock > 0
+                            ? () => _selectProductItem(item)
+                            : null,
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: kCard,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.04),
+                                blurRadius: 6,
                               ),
-                              child: Icon(
-                                AppIcons.get(p.iconIndex),
-                                color: color,
-                                size: 20,
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Icon(
+                                  AppIcons.get(p.iconIndex),
+                                  color: color,
+                                  size: 20,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    item.name,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                      color: kDark,
-                                    ),
-                                  ),
-                                  Text(
-                                    '${item.isVariant ? 'Variant' : '${p.variants.length} variant${p.variants.length != 1 ? 's' : ''}'}'
-                                    '  ·  $stock pcs',
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: AppHelpers.stockColor(stock),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            stock == 0
-                                ? Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: kRedLight,
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: const Text(
-                                      'No Stock',
-                                      style: TextStyle(
-                                        color: kRed,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                        color: kDark,
                                       ),
                                     ),
-                                  )
-                                : const Icon(
-                                    Icons.add_circle_outline,
-                                    color: kRed,
-                                    size: 22,
-                                  ),
-                          ],
+                                    Text(
+                                      '${item.isVariant ? 'Variant' : '${p.variants.length} variant${p.variants.length != 1 ? 's' : ''}'}'
+                                      '  ·  $stock pcs',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: AppHelpers.stockColor(stock),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              stock == 0
+                                  ? Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: kRedLight,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Text(
+                                        'No Stock',
+                                        style: TextStyle(
+                                          color: kRed,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.add_circle_outline,
+                                      color: kRed,
+                                      size: 22,
+                                    ),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                ),
-        ),
+                      );
+                    },
+                  ),
+          ),
       ],
     );
   }
 
   // ── HISTORY VIEW ──────────────────────────────────────────
+  Widget _saleTrailing(ProductDisplayItem item) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          AppHelpers.peso(item.price),
+          style: const TextStyle(
+            color: kRed,
+            fontWeight: FontWeight.bold,
+            fontSize: 13,
+          ),
+        ),
+        const SizedBox(height: 2),
+        item.totalStock == 0
+            ? const ProductActionPill(
+                icon: Icons.block_outlined,
+                label: 'No Stock',
+                color: kRed,
+              )
+            : const Icon(Icons.add_circle_outline, color: kRed, size: 22),
+      ],
+    );
+  }
+
+  Widget _saleAction(ProductDisplayItem item) {
+    return ProductActionPill(
+      icon: item.totalStock == 0 ? Icons.block_outlined : Icons.add,
+      label: item.totalStock == 0 ? 'No Stock' : 'Add',
+      color: kRed,
+    );
+  }
+
+  Widget _saleGridFooter(ProductDisplayItem item) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            AppHelpers.peso(item.price),
+            style: const TextStyle(
+              color: kRed,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Text(
+          '${item.totalStock} pcs',
+          style: TextStyle(
+            color: AppHelpers.stockColor(item.totalStock),
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHistory() {
     if (_sales.isEmpty) {
       return const Center(
@@ -705,11 +731,287 @@ class _SalesPageState extends State<SalesPage> {
               context,
               MaterialPageRoute(builder: (_) => ReceiptPage(sale: sale)),
             ),
+            onEdit: sale.status == 'refunded' ? null : () => _editSale(sale),
+            onRefund: sale.status == 'refunded'
+                ? null
+                : () => _confirmRefund(i),
             onDelete: () => _confirmDelete(i),
           );
         },
       ),
     );
+  }
+
+  Future<void> _confirmRefund(int index) async {
+    final reasonCtrl = TextEditingController(text: 'Customer refund');
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Refund Sale?'),
+        content: TextField(
+          controller: reasonCtrl,
+          decoration: AppInput.dialog('Refund reason'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, reasonCtrl.text.trim()),
+            child: const Text('Refund', style: TextStyle(color: kRed)),
+          ),
+        ],
+      ),
+    );
+    reasonCtrl.dispose();
+    if (reason == null || reason.trim().isEmpty || !mounted) return;
+    await SaleOperationsService.refundSale(_sales[index], reason: reason);
+    await _load();
+  }
+
+  Future<void> _editSale(SaleModel sale) async {
+    final customerCtrl = TextEditingController(text: sale.customerName);
+    final paidCtrl = TextEditingController(
+      text: sale.amountPaid.toStringAsFixed(2),
+    );
+    final notesCtrl = TextEditingController(text: sale.notes);
+    final reasonCtrl = TextEditingController(text: 'Sale correction');
+    var paymentType = sale.paymentType;
+    final editedItems = sale.items.toList();
+    final qtyCtrls = sale.items
+        .map((item) => TextEditingController(text: item.qty.toString()))
+        .toList();
+    final priceCtrls = sale.items
+        .map(
+          (item) => TextEditingController(text: item.price.toStringAsFixed(2)),
+        )
+        .toList();
+    final discountCtrls = sale.items
+        .map(
+          (item) =>
+              TextEditingController(text: item.discount.toStringAsFixed(2)),
+        )
+        .toList();
+
+    SaleModel? result;
+    await showDialog<void>(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setD) {
+          double subtotal = 0;
+          double discount = 0;
+          final currentItems = <SaleItemModel>[];
+          for (var i = 0; i < editedItems.length; i++) {
+            final qty = int.tryParse(qtyCtrls[i].text.trim()) ?? 0;
+            final price = double.tryParse(priceCtrls[i].text.trim()) ?? 0;
+            final disc = double.tryParse(discountCtrls[i].text.trim()) ?? 0;
+            if (qty <= 0) continue;
+            final item = editedItems[i].copyWith(
+              qty: qty,
+              price: price,
+              discount: disc,
+            );
+            currentItems.add(item);
+            subtotal += price * qty;
+            discount += disc;
+          }
+          final total = (subtotal - discount)
+              .clamp(0, double.infinity)
+              .toDouble();
+
+          return AlertDialog(
+            title: const Text('Edit Sale'),
+            content: SizedBox(
+              width: 420,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: customerCtrl,
+                      decoration: AppInput.dialog('Customer name'),
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButtonFormField<String>(
+                      initialValue: paymentType,
+                      decoration: AppInput.dialog('Payment type'),
+                      items: const [
+                        DropdownMenuItem(value: 'cash', child: Text('Cash')),
+                        DropdownMenuItem(value: 'utang', child: Text('Utang')),
+                        DropdownMenuItem(value: 'multi', child: Text('Multi')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setD(() => paymentType = value);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: paidCtrl,
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => setD(() {}),
+                      decoration: AppInput.dialog('Amount paid'),
+                    ),
+                    const SizedBox(height: 12),
+                    ...editedItems.asMap().entries.map((entry) {
+                      final i = entry.key;
+                      final item = entry.value;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: kBg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${item.productName} - ${item.variantName}'
+                                    '${item.conditionName.isNotEmpty ? ' / ${item.conditionName}' : ''}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  visualDensity: VisualDensity.compact,
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: kRed,
+                                    size: 18,
+                                  ),
+                                  onPressed: () => setD(() {
+                                    editedItems.removeAt(i);
+                                    qtyCtrls.removeAt(i).dispose();
+                                    priceCtrls.removeAt(i).dispose();
+                                    discountCtrls.removeAt(i).dispose();
+                                  }),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextField(
+                                    controller: qtyCtrls[i],
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (_) => setD(() {}),
+                                    decoration: AppInput.dialog('Qty'),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    controller: priceCtrls[i],
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (_) => setD(() {}),
+                                    decoration: AppInput.dialog('Price'),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextField(
+                                    controller: discountCtrls[i],
+                                    keyboardType: TextInputType.number,
+                                    onChanged: (_) => setD(() {}),
+                                    decoration: AppInput.dialog('Discount'),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: kRedLight,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        children: [
+                          infoRow('Subtotal', AppHelpers.peso(subtotal)),
+                          infoRow('Discount', AppHelpers.peso(discount)),
+                          infoRow('Total', AppHelpers.peso(total)),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: notesCtrl,
+                      maxLines: 2,
+                      decoration: AppInput.dialog('Notes'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: reasonCtrl,
+                      decoration: AppInput.dialog('Edit reason'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: currentItems.isEmpty
+                    ? null
+                    : () {
+                        final paid =
+                            double.tryParse(paidCtrl.text.trim()) ??
+                            sale.amountPaid;
+                        result = sale.copyWith(
+                          customerName: customerCtrl.text.trim().isEmpty
+                              ? 'Walk-in'
+                              : customerCtrl.text.trim(),
+                          items: currentItems,
+                          subtotal: subtotal,
+                          totalDiscount: discount,
+                          total: total,
+                          amountPaid: paid,
+                          change: paid > total ? paid - total : 0,
+                          paymentType: paymentType,
+                          notes: notesCtrl.text.trim(),
+                        );
+                        Navigator.pop(ctx);
+                      },
+                child: const Text('Save', style: TextStyle(color: kRed)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    for (final ctrl in [...qtyCtrls, ...priceCtrls, ...discountCtrls]) {
+      ctrl.dispose();
+    }
+    final reason = reasonCtrl.text.trim().isEmpty
+        ? 'Sale correction'
+        : reasonCtrl.text.trim();
+    customerCtrl.dispose();
+    paidCtrl.dispose();
+    notesCtrl.dispose();
+    reasonCtrl.dispose();
+
+    final edited = result;
+    if (edited == null || !mounted) return;
+    await SaleOperationsService.editSale(
+      original: sale,
+      edited: edited,
+      reason: reason,
+    );
+    await _load();
   }
 
   Future<void> _confirmDelete(int index) async {
@@ -731,49 +1033,14 @@ class _SalesPageState extends State<SalesPage> {
     );
     if (confirm == true && mounted) {
       final sale = _sales[index];
-      await _restoreSaleStock(sale);
+      if (sale.status != 'refunded') {
+        await SaleOperationsService.refundSale(
+          sale,
+          reason: 'Sale record deleted',
+        );
+      }
       await SaleRepository.delete(sale.id);
       _load();
-    }
-  }
-
-  Future<void> _restoreSaleStock(SaleModel sale) async {
-    for (final item in sale.items) {
-      final product = await ProductRepository.getOne(item.productId);
-      if (product == null) continue;
-      final variantIndex = product.variants.indexWhere(
-        (variant) => variant.id == item.variantId,
-      );
-      if (variantIndex < 0) continue;
-
-      final variant = product.variants[variantIndex];
-      final restoredBatch = BatchModel(
-        id: 'refund_${DateTime.now().microsecondsSinceEpoch}',
-        qty: item.qty,
-        costPrice: item.costPrice,
-        addedOn: AppHelpers.todayStr(),
-      );
-      final variants = List<VariantModel>.from(product.variants);
-      variants[variantIndex] = variant.copyWith(
-        batches: [...variant.batches, restoredBatch],
-      );
-      await ProductRepository.save(product.copyWith(variants: variants));
-      await InventoryRepository.log(
-        InventoryLogModel(
-          id: '',
-          storeId: Session.storeId,
-          productId: product.id,
-          productName: product.name,
-          variantId: variant.id,
-          variantName: variant.name,
-          type: 'refund',
-          qty: item.qty,
-          costPrice: item.costPrice,
-          reason: 'sale_deleted_refund',
-          date: AppHelpers.todayStr(),
-          updatedAt: AppHelpers.nowStr(),
-        ),
-      );
     }
   }
 }

@@ -330,12 +330,16 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
 class SalesHistoryCard extends StatelessWidget {
   final SaleModel sale;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onRefund;
   final VoidCallback onDelete;
 
   const SalesHistoryCard({
     super.key,
     required this.sale,
     required this.onTap,
+    this.onEdit,
+    this.onRefund,
     required this.onDelete,
   });
 
@@ -389,15 +393,6 @@ class SalesHistoryCard extends StatelessWidget {
                                 fontSize: 12,
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            if (sale.employeeName.isNotEmpty)
-                              Text(
-                                'by ${sale.employeeName}',
-                                style: const TextStyle(
-                                  color: kGrey,
-                                  fontSize: 11,
-                                ),
-                              ),
                           ],
                         ),
                       ],
@@ -438,13 +433,29 @@ class SalesHistoryCard extends StatelessWidget {
                   ),
 
                   const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: onDelete,
-                    child: const Icon(
-                      Icons.delete_outline,
-                      color: kGrey,
-                      size: 20,
-                    ),
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, color: kGrey, size: 20),
+                    onSelected: (value) {
+                      if (value == 'edit') onEdit?.call();
+                      if (value == 'refund') onRefund?.call();
+                      if (value == 'delete') onDelete();
+                    },
+                    itemBuilder: (_) => [
+                      if (onEdit != null)
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Edit sale'),
+                        ),
+                      if (onRefund != null)
+                        const PopupMenuItem(
+                          value: 'refund',
+                          child: Text('Refund / return'),
+                        ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Text('Delete record'),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -454,37 +465,84 @@ class SalesHistoryCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
               child: Column(
-                children: sale.items
-                    .map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                '${item.productName} '
-                                '(${item.variantName}'
-                                '${item.conditionName.isNotEmpty ? '/${item.conditionName}' : ''}'
-                                ') ×${item.qty}',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: kGrey,
+                children: [
+                  ...sale.items.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.productName,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: kDark,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
+                                Text(
+                                  '${item.variantName}'
+                                  '${item.conditionName.isNotEmpty ? ' / ${item.conditionName}' : ''}'
+                                  ' x ${item.qty} @ ${AppHelpers.peso(item.price)}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: kGrey,
+                                  ),
+                                ),
+                                if (item.discount > 0)
+                                  Text(
+                                    'Discount -${AppHelpers.peso(item.discount)}',
+                                    style: const TextStyle(
+                                      fontSize: 10,
+                                      color: kOrange,
+                                    ),
+                                  ),
+                              ],
                             ),
-                            Text(
-                              AppHelpers.peso(item.subtotal),
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: kGrey,
-                              ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            AppHelpers.peso(item.subtotal),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: kDark,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (sale.editHistory.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: kOrange.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          '${sale.editHistory.length} change'
+                          '${sale.editHistory.length == 1 ? '' : 's'}',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: kOrange,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
-                    )
-                    .toList(),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

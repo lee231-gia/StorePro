@@ -101,6 +101,15 @@ class SaleRepository {
     return updated;
   }
 
+  static Future<SaleModel> updateEdited(
+    SaleModel sale, {
+    String action = 'edit_sale',
+  }) async {
+    await SyncService.write(_col, sale.id, sale.toMap(), _table, sale.toSql());
+    _log(action, sale.id, sale.customerName);
+    return sale;
+  }
+
   static Future<void> delete(String id) async {
     await SQLiteService.delete(_table, id);
     SyncService.deleteInBackground(_col, id);

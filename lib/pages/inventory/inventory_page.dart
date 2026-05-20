@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
+import '../../core/enums/product_browser_enums.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../core/services/alert_service.dart';
@@ -11,6 +12,9 @@ import '../../models/product_model.dart';
 import '../../models/inventory_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../repositories/inventory_repository.dart';
+import '../../shared/controllers/product_browser_controller.dart';
+import '../../shared/widgets/product_browser_toolbar.dart';
+import '../../shared/widgets/product_browser_view.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/employee_picker.dart';
@@ -38,28 +42,23 @@ class InventoryPage extends StatefulWidget {
 class _InventoryPageState extends State<InventoryPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
+  late final ProductBrowserController _browser;
 
   List<ProductModel> _products = [];
   List<InventoryLogModel> _logs = [];
   bool _loading = true;
 
   // ── FILTER / SORT / VIEW ──────────────────────────────────
-  String _search = '';
-  String _sortBy = 'recent';
-  String _catFilter = 'All';
-  String _viewMode = 'list'; // list | compact | grid | details
-  bool _groupVariants = true;
   List<String> _categories = ['All'];
 
   final _searchCtrl = TextEditingController();
   StreamSubscription<String>? _changeSub;
 
-  void _update(VoidCallback fn) => setState(fn);
-
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
+    _browser = ProductBrowserController()..addListener(_onBrowserChanged);
     _changeSub = SyncService.changes.listen((collection) {
       if (collection == 'products' || collection == 'inventory_logs') _load();
     });
@@ -69,9 +68,16 @@ class _InventoryPageState extends State<InventoryPage>
   @override
   void dispose() {
     _tabCtrl.dispose();
+    _browser
+      ..removeListener(_onBrowserChanged)
+      ..dispose();
     _changeSub?.cancel();
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _onBrowserChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _load() async {
@@ -109,54 +115,7 @@ class _InventoryPageState extends State<InventoryPage>
 
   // ── SORTED + FILTERED ─────────────────────────────────────
   List<ProductModel> get _filtered {
-    var list = List<ProductModel>.from(_products);
-
-    if (_search.isNotEmpty) {
-      list = list
-          .where((p) => p.name.toLowerCase().contains(_search.toLowerCase()))
-          .toList();
-    }
-    if (_catFilter != 'All') {
-      list = list.where((p) => p.categoryName == _catFilter).toList();
-    }
-
-    switch (_sortBy) {
-      case 'a-z':
-        list.sort((a, b) => a.name.compareTo(b.name));
-        break;
-      case 'z-a':
-        list.sort((a, b) => b.name.compareTo(a.name));
-        break;
-      case 'cat-a-z':
-        list.sort((a, b) => a.categoryName.compareTo(b.categoryName));
-        break;
-      case 'cat-z-a':
-        list.sort((a, b) => b.categoryName.compareTo(a.categoryName));
-        break;
-      case 'stock-low':
-        list.sort((a, b) => a.totalStock.compareTo(b.totalStock));
-        break;
-      case 'stock-high':
-        list.sort((a, b) => b.totalStock.compareTo(a.totalStock));
-        break;
-      case 'expiry-asc':
-        list.sort((a, b) {
-          if (a.nearestExpiry.isEmpty) return 1;
-          if (b.nearestExpiry.isEmpty) return -1;
-          return a.nearestExpiry.compareTo(b.nearestExpiry);
-        });
-        break;
-      case 'expiry-desc':
-        list.sort((a, b) {
-          if (a.nearestExpiry.isEmpty) return 1;
-          if (b.nearestExpiry.isEmpty) return -1;
-          return b.nearestExpiry.compareTo(a.nearestExpiry);
-        });
-        break;
-      default: // recent
-        list.sort((a, b) => b.addedOn.compareTo(a.addedOn));
-    }
-    return list;
+    return _browser.apply(_products);
   }
 
   // ── BUILD ─────────────────────────────────────────────────

@@ -147,6 +147,9 @@ class ProductBrowserController extends ChangeNotifier {
       case ProductSortOption.priceAsc:
         products.sort((a, b) => a.lowestPrice.compareTo(b.lowestPrice));
         break;
+      case ProductSortOption.priceDesc:
+        products.sort((a, b) => b.lowestPrice.compareTo(a.lowestPrice));
+        break;
       case ProductSortOption.recent:
         products.sort((a, b) => b.addedOn.compareTo(a.addedOn));
         break;

@@ -27,7 +27,8 @@ enum ProductSortOption {
   stockDesc('stock-high', 'Stock: High to Low'),
   expiryAsc('expiry-asc', 'Expiry: Nearest First'),
   expiryDesc('expiry-desc', 'Expiry: Furthest First'),
-  priceAsc('price-low', 'Price: Low to High');
+  priceAsc('price-low', 'Price: Low to High'),
+  priceDesc('price-high', 'Price: High to Low');
 
   const ProductSortOption(this.value, this.label);
 

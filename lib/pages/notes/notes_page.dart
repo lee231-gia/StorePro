@@ -103,7 +103,9 @@ class _NotesPageState extends State<NotesPage> {
         break;
     }
 
-    return list;
+    final sorted = List<NoteModel>.from(list);
+    sorted.sort((a, b) => _noteSortDate(b).compareTo(_noteSortDate(a)));
+    return sorted;
   }
 
   @override
@@ -218,15 +220,17 @@ class _NotesPageState extends State<NotesPage> {
   Widget _noteCard(NoteModel note) {
     final isTask = note.type == 'task';
     final isDone = note.done;
+    final preview = _notePreview(note.content);
+    final modified = _noteSortDate(note);
 
     return GestureDetector(
       onTap: () => _showForm(existing: note),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
         decoration: BoxDecoration(
           color: kCard,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: isDone
               ? Border.all(color: kGreen.withValues(alpha: 0.3))
               : null,
@@ -240,120 +244,119 @@ class _NotesPageState extends State<NotesPage> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left indicator
-            isTask
-                ? GestureDetector(
-                    onTap: () => _toggleDone(note),
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      margin: const EdgeInsets.only(top: 2, right: 12),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDone ? kGreen : kGrey,
-                          width: 1.5,
-                        ),
-                        color: isDone ? kGreen : Colors.transparent,
-                      ),
-                      child: isDone
-                          ? const Icon(
-                              Icons.check,
-                              size: 14,
-                              color: Colors.white,
-                            )
-                          : null,
-                    ),
-                  )
-                : Container(
-                    width: 24,
-                    height: 24,
-                    margin: const EdgeInsets.only(top: 2, right: 12),
-                    decoration: BoxDecoration(
-                      color: kRedLight,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.sticky_note_2_outlined,
-                      color: kRed,
-                      size: 14,
-                    ),
-                  ),
-
-            // Content
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    note.title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: isDone ? kGrey : kDark,
-                      decoration: isDone ? TextDecoration.lineThrough : null,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      if (isTask)
+                        GestureDetector(
+                          onTap: () => _toggleDone(note),
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: isDone ? kGreen : kGrey,
+                                width: 1.4,
+                              ),
+                              color: isDone ? kGreen : Colors.transparent,
+                            ),
+                            child: isDone
+                                ? const Icon(
+                                    Icons.check,
+                                    size: 13,
+                                    color: Colors.white,
+                                  )
+                                : null,
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          note.title,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: isDone ? kGrey : kDark,
+                            decoration: isDone
+                                ? TextDecoration.lineThrough
+                                : null,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
 
-                  if (note.content.isNotEmpty) ...[
-                    const SizedBox(height: 2),
+                  if (preview.isNotEmpty) ...[
+                    const SizedBox(height: 6),
                     Text(
-                      note.content,
-                      style: const TextStyle(color: kGrey, fontSize: 12),
+                      preview,
+                      style: const TextStyle(
+                        color: kGrey,
+                        fontSize: 12,
+                        height: 1.35,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
 
-                  // Date + reminder row
-                  if (isTask && note.date.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_outlined,
-                          size: 11,
-                          color: kRed,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          AppHelpers.formatDate(note.date),
-                          style: const TextStyle(color: kRed, fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ],
-
-                  if (note.reminderAt.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.notifications_outlined,
-                          size: 11,
-                          color: kOrange,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          AppHelpers.formatDateTime(
-                            DateTime.tryParse(note.reminderAt) ??
-                                DateTime.now(),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        'Modified ${AppHelpers.formatDate(modified.toIso8601String())}',
+                        style: const TextStyle(color: kGrey, fontSize: 11),
+                      ),
+                      if (note.reminderAt.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 3,
                           ),
-                          style: const TextStyle(color: kOrange, fontSize: 11),
+                          decoration: BoxDecoration(
+                            color: kOrange.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.notifications_outlined,
+                                size: 11,
+                                color: kOrange,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _shortDateTime(note.reminderAt),
+                                style: const TextStyle(
+                                  color: kOrange,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ],
               ),
             ),
 
-            // Delete button
             GestureDetector(
               onTap: () => _deleteNote(note),
-              child: const Icon(Icons.delete_outline, color: kGrey, size: 18),
+              child: const Padding(
+                padding: EdgeInsets.all(6),
+                child: Icon(Icons.delete_outline, color: kGrey, size: 18),
+              ),
             ),
           ],
         ),
@@ -361,14 +364,19 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
+  String _notePreview(String content) =>
+      content.replaceAll(RegExp(r'\s+'), ' ').trim();
+
   // ── ADD / EDIT FORM ───────────────────────────────────────
   void _showForm({NoteModel? existing}) {
     final isEdit = existing != null;
     String selType = existing?.type ?? 'note';
     final titCtrl = TextEditingController(text: existing?.title ?? '');
     final conCtrl = TextEditingController(text: existing?.content ?? '');
-    String pickedDate = existing?.date ?? '';
     String pickedReminder = existing?.reminderAt ?? '';
+    final createdAt = existing?.date.isNotEmpty == true
+        ? existing!.date
+        : AppHelpers.nowStr();
 
     showDialog(
       context: context,
@@ -378,139 +386,135 @@ class _NotesPageState extends State<NotesPage> {
             borderRadius: BorderRadius.circular(20),
           ),
           title: Text(
-            isEdit ? 'Edit' : 'New',
+            isEdit ? 'Edit Note' : 'New Note',
             style: const TextStyle(fontWeight: FontWeight.bold, color: kRed),
           ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Type selector (add only)
-                if (!isEdit) ...[
-                  Row(
-                    children: [
-                      _typeBtn(
-                        'Note',
-                        selType == 'note',
-                        () => setD(() => selType = 'note'),
-                      ),
-                      const SizedBox(width: 8),
-                      _typeBtn(
-                        'Task',
-                        selType == 'task',
-                        () => setD(() => selType = 'task'),
-                      ),
-                    ],
+          content: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 460,
+              maxHeight: MediaQuery.of(ctx).size.height * 0.72,
+            ),
+            child: SingleChildScrollView(
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Type selector (add only)
+                  if (!isEdit) ...[
+                    Row(
+                      children: [
+                        _typeBtn(
+                          'Note',
+                          selType == 'note',
+                          () => setD(() => selType = 'note'),
+                        ),
+                        const SizedBox(width: 8),
+                        _typeBtn(
+                          'Task',
+                          selType == 'task',
+                          () => setD(() => selType = 'task'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Title
+                  TextField(
+                    controller: titCtrl,
+                    decoration: AppInput.dialog('Title *'),
                   ),
-                  const SizedBox(height: 12),
-                ],
-
-                // Title
-                TextField(
-                  controller: titCtrl,
-                  decoration: AppInput.dialog('Title *'),
-                ),
-                const SizedBox(height: 10),
-
-                // Content
-                TextField(
-                  controller: conCtrl,
-                  maxLines: 3,
-                  decoration: AppInput.dialog('Details (optional)'),
-                ),
-
-                // Due date (tasks only)
-                if (selType == 'task') ...[
                   const SizedBox(height: 10),
+
+                  // Content
+                  TextField(
+                    controller: conCtrl,
+                    minLines: 5,
+                    maxLines: 12,
+                    keyboardType: TextInputType.multiline,
+                    decoration: AppInput.dialog('Notes'),
+                  ),
+
+                  const SizedBox(height: 12),
+                  _formInfoRow(
+                    icon: Icons.schedule_outlined,
+                    label: isEdit ? 'Date modified' : 'Date and time',
+                    value: AppHelpers.formatDateTime(
+                      isEdit ? _noteSortDate(existing) : DateTime.now(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Expanded(
-                        child: Text(
-                          pickedDate.isEmpty
-                              ? 'No due date'
-                              : AppHelpers.formatDate(pickedDate),
-                          style: const TextStyle(color: kGrey, fontSize: 13),
+                        child: _formInfoRow(
+                          icon: Icons.notifications_outlined,
+                          label: 'Reminder',
+                          value: pickedReminder.isEmpty
+                              ? 'No reminder set'
+                              : AppHelpers.formatDateTime(
+                                  DateTime.tryParse(pickedReminder) ??
+                                      DateTime.now(),
+                                ),
+                          color: pickedReminder.isEmpty ? kGrey : kOrange,
                         ),
                       ),
-                      TextButton(
+                      TextButton.icon(
                         onPressed: () async {
                           final d = await showDatePicker(
-                            context: ctx,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime.now().subtract(
-                              const Duration(days: 365),
+                            context: context,
+                            initialDate: DateTime.now().add(
+                              const Duration(hours: 1),
                             ),
+                            firstDate: DateTime.now(),
                             lastDate: DateTime(2035),
                           );
-                          if (d != null) {
-                            final mm = d.month.toString().padLeft(2, '0');
-                            final dd = d.day.toString().padLeft(2, '0');
-                            setD(() => pickedDate = '${d.year}-$mm-$dd');
+                          if (d == null) return;
+                          if (!mounted) return;
+                          final t = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.now(),
+                          );
+                          if (t == null) return;
+                          final dt = DateTime(
+                            d.year,
+                            d.month,
+                            d.day,
+                            t.hour,
+                            t.minute,
+                          );
+                          if (dt.isBefore(DateTime.now())) {
+                            if (ctx.mounted) {
+                              showSnack(
+                                ctx,
+                                'Choose a future reminder time.',
+                                isError: true,
+                              );
+                            }
+                            return;
                           }
+                          setD(() => pickedReminder = dt.toIso8601String());
                         },
-                        child: const Text(
-                          'Set Date',
-                          style: TextStyle(color: kRed),
+                        icon: const Icon(
+                          Icons.notifications_outlined,
+                          size: 16,
+                          color: kOrange,
+                        ),
+                        label: const Text(
+                          'Set Reminder',
+                          style: TextStyle(color: kOrange),
                         ),
                       ),
+                      if (pickedReminder.isNotEmpty)
+                        IconButton(
+                          tooltip: 'Clear reminder',
+                          onPressed: () => setD(() => pickedReminder = ''),
+                          icon: const Icon(Icons.close, color: kGrey, size: 18),
+                        ),
                     ],
                   ),
                 ],
-
-                // Reminder (datetime picker)
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        pickedReminder.isEmpty
-                            ? 'No reminder'
-                            : AppHelpers.formatDateTime(
-                                DateTime.tryParse(pickedReminder) ??
-                                    DateTime.now(),
-                              ),
-                        style: const TextStyle(color: kGrey, fontSize: 12),
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: () async {
-                        final d = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now().add(
-                            const Duration(hours: 1),
-                          ),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2035),
-                        );
-                        if (d == null) return;
-                        if (!mounted) return;
-                        final t = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.now(),
-                        );
-                        if (t == null) return;
-                        final dt = DateTime(
-                          d.year,
-                          d.month,
-                          d.day,
-                          t.hour,
-                          t.minute,
-                        );
-                        setD(() => pickedReminder = dt.toIso8601String());
-                      },
-                      icon: const Icon(
-                        Icons.notifications_outlined,
-                        size: 16,
-                        color: kOrange,
-                      ),
-                      label: const Text(
-                        'Set Reminder',
-                        style: TextStyle(color: kOrange),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
           actions: [
@@ -525,13 +529,25 @@ class _NotesPageState extends State<NotesPage> {
               ),
               onPressed: () async {
                 if (titCtrl.text.trim().isEmpty) return;
+                if (pickedReminder.isNotEmpty) {
+                  final reminderTime = DateTime.tryParse(pickedReminder);
+                  if (reminderTime == null ||
+                      reminderTime.isBefore(DateTime.now())) {
+                    showSnack(
+                      ctx,
+                      'Choose a future reminder time.',
+                      isError: true,
+                    );
+                    return;
+                  }
+                }
                 final note = NoteModel(
                   id: existing?.id ?? '',
                   storeId: '',
                   type: selType,
                   title: titCtrl.text.trim(),
                   content: conCtrl.text.trim(),
-                  date: pickedDate,
+                  date: createdAt,
                   reminderAt: pickedReminder,
                   done: existing?.done ?? false,
                   updatedAt: AppHelpers.nowStr(),
@@ -549,6 +565,59 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   // ── HELPERS ───────────────────────────────────────────────
+  DateTime _noteSortDate(NoteModel note) {
+    return DateTime.tryParse(note.updatedAt) ??
+        DateTime.tryParse(note.date) ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  String _shortDateTime(String iso) {
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return iso;
+    final time = TimeOfDay.fromDateTime(dt).format(context);
+    return '${dt.month}/${dt.day} $time';
+  }
+
+  Widget _formInfoRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    Color color = kGrey,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: kInputFill,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: kGrey, fontSize: 10)),
+                Text(
+                  value,
+                  style: TextStyle(
+                    color: color == kGrey ? kDark : color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _toggleDone(NoteModel note) async {
     await NoteRepository.save(note.copyWith(done: !note.done));
     _load();

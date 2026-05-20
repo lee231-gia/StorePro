@@ -273,7 +273,7 @@ class AuthRepository {
     Session.ownerUsername = user.username;
     Session.ownerEmail = user.email;
     Session.trackActivity = user.trackActivity;
-    Session.employeeFeature = user.employeeFeature;
+    Session.employeeFeature = false;
   }
 
   static Future<bool> restoreLocalSession() async {

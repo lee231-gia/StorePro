@@ -5,24 +5,12 @@ extension _InventoryReplenish on _InventoryPageState {
     return Column(
       children: [
         _buildTopFilters(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0)),
-        Expanded(
-          child: _filtered.isEmpty
-              ? const Center(
-                  child: Text(
-                    'No products found.',
-                    style: TextStyle(color: kGrey),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _filtered.length,
-                  itemBuilder: (_, i) => _replenishCard(_filtered[i]),
-                ),
-        ),
+        Expanded(child: _buildReplenishProductView()),
       ],
     );
   }
 
+  // ignore: unused_element
   Widget _replenishCard(ProductModel p) {
     final color =
         kCategoryColors[p.colorIndex.clamp(0, kCategoryColors.length - 1)];
@@ -459,20 +447,8 @@ extension _InventoryReplenish on _InventoryPageState {
                     updatedVariants[varIdx].batches,
                   )..add(newBatch);
 
-                  updatedVariants[varIdx] = VariantModel(
-                    id: variant.id,
-                    name: variant.name,
-                    sku: variant.sku,
-                    unit: variant.unit,
-                    packaging: variant.packaging,
-                    pcsPerUnit: variant.pcsPerUnit,
-                    price: variant.price,
-                    originalPrice: variant.originalPrice,
-                    costPrice: variant.costPrice,
-                    hasDiscount: variant.hasDiscount,
-                    conditions: variant.conditions,
+                  updatedVariants[varIdx] = variant.copyWith(
                     batches: oldBatches,
-                    imageUrl: variant.imageUrl,
                   );
 
                   final newProd = product.copyWith(variants: updatedVariants);

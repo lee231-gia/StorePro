@@ -1,91 +1,48 @@
+import '../../../core/services/sync_service.dart';
 import '../../../core/utils/app_helpers.dart';
 import '../../../core/utils/session.dart';
 import '../../../models/inventory_model.dart';
 import '../../../models/product_model.dart';
 import '../../../models/sale_model.dart';
-import '../../../models/customer_model.dart';
+import '../../../models/utang_model.dart';
 import '../../../repositories/customer_repository.dart';
 import '../../../repositories/inventory_repository.dart';
 import '../../../repositories/product_repository.dart';
 import '../../../repositories/sale_repository.dart';
+import '../../../repositories/utang_repository.dart';
 
 class SaleOperationsService {
   SaleOperationsService._();
-
-  static Future<CustomerModel?> linkCustomerPurchase({
-    required String customerId,
-    required String customerName,
-    required String customerPhone,
-    required String customerAddress,
-    required double amount,
-  }) async {
-    if (customerName == 'Walk-in' || customerName.trim().isEmpty) return null;
-    final customers = await CustomerRepository.getAll();
-    CustomerModel? customer;
-    if (customerId.isNotEmpty) {
-      final matches = customers.where((c) => c.id == customerId).toList();
-      if (matches.isNotEmpty) customer = matches.first;
-    }
-    if (customer == null) {
-      final matches = customers
-          .where((c) => c.name.toLowerCase() == customerName.toLowerCase())
-          .toList();
-      if (matches.isNotEmpty) customer = matches.first;
-    }
-    customer ??= await CustomerRepository.save(
-      CustomerModel(
-        id: '',
-        storeId: Session.storeId,
-        name: customerName,
-        phone: customerPhone,
-        address: customerAddress,
-        createdAt: AppHelpers.nowStr(),
-        updatedAt: AppHelpers.nowStr(),
-      ),
-    );
-    await CustomerRepository.addPurchase(customer.id, amount);
-    return customer;
-  }
 
   static Future<SaleModel> refundSale(
     SaleModel sale, {
     required String reason,
   }) async {
+    if (sale.status == 'refunded') return sale;
+
     await restoreSaleStock(sale, reason: reason);
-    final edited = SaleModel(
-      id: sale.id,
-      storeId: sale.storeId,
-      customerId: sale.customerId,
-      customerName: sale.customerName,
+    await _adjustCustomerPurchases(sale, -sale.total);
+    await _syncUtangForSale(
+      sale.copyWith(status: 'refunded', amountPaid: 0, change: 0),
+    );
+
+    final updated = sale.copyWith(
       employeeId: Session.safeEmployeeId,
       employeeName: Session.safeEmployeeName,
-      items: sale.items,
-      subtotal: sale.subtotal,
-      totalDiscount: sale.totalDiscount,
-      total: sale.total,
-      amountPaid: sale.amountPaid,
-      change: sale.change,
-      paymentType: sale.paymentType,
       status: 'refunded',
+      amountPaid: 0,
+      change: 0,
       notes: [
         sale.notes,
         'Refund reason: $reason',
       ].where((value) => value.trim().isNotEmpty).join('\n'),
-      date: sale.date,
-      timestamp: sale.timestamp,
       updatedAt: AppHelpers.nowStr(),
       editHistory: [
         ...sale.editHistory,
-        {
-          'type': 'refund',
-          'reason': reason,
-          'at': AppHelpers.nowStr(),
-          'employeeId': Session.safeEmployeeId,
-          'employeeName': Session.safeEmployeeName,
-        },
+        _historyEntry('refund', reason, before: sale.toMap()),
       ],
     );
-    return SaleRepository.refund(sale, edited);
+    return SaleRepository.updateEdited(updated, action: 'refund_sale');
   }
 
   static Future<SaleModel> editSale({
@@ -94,25 +51,30 @@ class SaleOperationsService {
     required String reason,
   }) async {
     await _applyInventoryDelta(original.items, edited.items);
-    final history = [
-      ...original.editHistory,
-      {
-        'type': 'edit',
-        'reason': reason,
-        'at': AppHelpers.nowStr(),
-        'employeeId': Session.safeEmployeeId,
-        'employeeName': Session.safeEmployeeName,
-        'before': original.toMap(),
-      },
-    ];
-    return SaleRepository.updateEdited(
-      edited.copyWith(
-        employeeId: Session.safeEmployeeId,
-        employeeName: Session.safeEmployeeName,
-        updatedAt: AppHelpers.nowStr(),
-        editHistory: history,
-      ),
+    await _adjustCustomerPurchases(original, -original.total);
+    await _adjustCustomerPurchases(edited, edited.total);
+
+    final paid = edited.amountPaid.clamp(0, double.infinity);
+    final total = edited.total.clamp(0, double.infinity);
+    final updated = edited.copyWith(
+      employeeId: Session.safeEmployeeId,
+      employeeName: Session.safeEmployeeName,
+      amountPaid: paid.toDouble(),
+      change: (paid > total ? paid - total : 0).toDouble(),
+      status: edited.status == 'refunded'
+          ? 'refunded'
+          : edited.paymentType == 'utang' || paid < total
+          ? 'partial'
+          : 'completed',
+      updatedAt: AppHelpers.nowStr(),
+      editHistory: [
+        ...original.editHistory,
+        _historyEntry('edit', reason, before: original.toMap()),
+      ],
     );
+
+    await _syncUtangForSale(updated);
+    return SaleRepository.updateEdited(updated, action: 'edit_sale');
   }
 
   static Future<void> restoreSaleStock(
@@ -120,43 +82,22 @@ class SaleOperationsService {
     required String reason,
   }) async {
     for (final item in sale.items) {
-      final product = await ProductRepository.getOne(item.productId);
-      if (product == null) continue;
-      final variantIndex = product.variants.indexWhere(
-        (variant) => variant.id == item.variantId,
-      );
-      if (variantIndex < 0) continue;
-
-      final variant = product.variants[variantIndex];
-      final restoredBatch = BatchModel(
-        id: 'refund_${DateTime.now().microsecondsSinceEpoch}',
-        qty: item.qty,
-        costPrice: item.costPrice,
-        addedOn: AppHelpers.todayStr(),
-      );
-      final variants = List<VariantModel>.from(product.variants);
-      variants[variantIndex] = variant.copyWith(
-        batches: [...variant.batches, restoredBatch],
-      );
-      await ProductRepository.save(product.copyWith(variants: variants));
-      await InventoryRepository.log(
-        InventoryLogModel(
-          id: '',
-          storeId: Session.storeId,
-          productId: product.id,
-          productName: product.name,
-          variantId: variant.id,
-          variantName: variant.name,
-          type: 'refund',
-          qty: item.qty,
-          costPrice: item.costPrice,
-          reason: reason,
-          date: AppHelpers.todayStr(),
-          updatedAt: AppHelpers.nowStr(),
-        ),
-      );
+      await _restoreItem(item, item.qty, reason: reason);
     }
   }
+
+  static Map<String, dynamic> _historyEntry(
+    String type,
+    String reason, {
+    required Map<String, dynamic> before,
+  }) => {
+    'type': type,
+    'reason': reason,
+    'at': AppHelpers.nowStr(),
+    'actorId': Session.safeEmployeeId,
+    'actorName': Session.safeEmployeeName,
+    'before': before,
+  };
 
   static Future<void> _applyInventoryDelta(
     List<SaleItemModel> oldItems,
@@ -170,11 +111,12 @@ class SaleOperationsService {
       final newItem = newQty[key]?.item;
       final ref = newItem ?? oldItem;
       if (ref == null) continue;
+
       final delta = (newQty[key]?.qty ?? 0) - (oldQty[key]?.qty ?? 0);
       if (delta > 0) {
         await ProductRepository.deductFifo(ref.productId, ref.variantId, delta);
       } else if (delta < 0) {
-        await _restoreItem(ref, -delta, reason: 'sale_edit_adjustment');
+        await _restoreItem(ref, -delta, reason: 'sale_edit_return');
       }
     }
   }
@@ -194,19 +136,21 @@ class SaleOperationsService {
     int qty, {
     required String reason,
   }) async {
+    if (qty <= 0) return;
     final product = await ProductRepository.getOne(item.productId);
     if (product == null) return;
     final variantIndex = product.variants.indexWhere(
       (variant) => variant.id == item.variantId,
     );
     if (variantIndex < 0) return;
+
     final variant = product.variants[variantIndex];
     final variants = List<VariantModel>.from(product.variants);
     variants[variantIndex] = variant.copyWith(
       batches: [
         ...variant.batches,
         BatchModel(
-          id: 'edit_${DateTime.now().microsecondsSinceEpoch}',
+          id: 'return_${DateTime.now().microsecondsSinceEpoch}',
           qty: qty,
           costPrice: item.costPrice,
           addedOn: AppHelpers.todayStr(),
@@ -222,7 +166,7 @@ class SaleOperationsService {
         productName: product.name,
         variantId: variant.id,
         variantName: variant.name,
-        type: 'edit',
+        type: 'return',
         qty: qty,
         costPrice: item.costPrice,
         reason: reason,
@@ -231,6 +175,99 @@ class SaleOperationsService {
       ),
     );
   }
+
+  static Future<void> _adjustCustomerPurchases(
+    SaleModel sale,
+    double delta,
+  ) async {
+    if (sale.customerName == 'Walk-in' || delta == 0) return;
+    final customers = await CustomerRepository.getAll();
+    final matches = customers
+        .where(
+          (customer) =>
+              customer.id == sale.customerId ||
+              customer.name == sale.customerName,
+        )
+        .toList();
+    if (matches.isEmpty) return;
+    final customer = matches.first;
+    final total = (customer.totalPurchases + delta).clamp(0, double.infinity);
+    await CustomerRepository.save(
+      customer.copyWith(totalPurchases: total.toDouble()),
+    );
+  }
+
+  static Future<void> _syncUtangForSale(SaleModel sale) async {
+    final all = await UtangRepository.getAll();
+    final matches = all.where((utang) => utang.saleId == sale.id).toList();
+    if (matches.isEmpty) return;
+
+    for (final utang in matches) {
+      if (sale.status == 'refunded') {
+        await UtangRepository.save(
+          _copyUtang(
+            utang,
+            totalAmount: 0,
+            amountPaid: 0,
+            status: 'paid',
+            notes: [
+              utang.notes,
+              'Linked sale was refunded on ${AppHelpers.nowStr()}',
+            ].where((value) => value.trim().isNotEmpty).join('\n'),
+          ),
+        );
+        continue;
+      }
+
+      final paid = sale.paymentType == 'multi' || sale.paymentType == 'utang'
+          ? sale.amountPaid
+          : sale.total;
+      final total = sale.total;
+      await UtangRepository.save(
+        _copyUtang(
+          utang,
+          customerId: sale.customerId,
+          customerName: sale.customerName,
+          items: sale.items.map((item) => item.toMap()).toList(),
+          totalAmount: total,
+          amountPaid: paid.clamp(0, total).toDouble(),
+          status: paid >= total
+              ? 'paid'
+              : paid > 0
+              ? 'partial'
+              : 'pending',
+        ),
+      );
+    }
+    SyncService.notifyChanged('utang');
+  }
+
+  static UtangModel _copyUtang(
+    UtangModel utang, {
+    String? customerId,
+    String? customerName,
+    List<Map<String, dynamic>>? items,
+    double? totalAmount,
+    double? amountPaid,
+    String? status,
+    String? notes,
+  }) => UtangModel(
+    id: utang.id,
+    storeId: utang.storeId,
+    customerId: customerId ?? utang.customerId,
+    customerName: customerName ?? utang.customerName,
+    customerPhone: utang.customerPhone,
+    saleId: utang.saleId,
+    items: items ?? utang.items,
+    totalAmount: totalAmount ?? utang.totalAmount,
+    amountPaid: amountPaid ?? utang.amountPaid,
+    startDate: utang.startDate,
+    dueDate: utang.dueDate,
+    status: status ?? utang.status,
+    payments: utang.payments,
+    notes: notes ?? utang.notes,
+    updatedAt: AppHelpers.nowStr(),
+  );
 }
 
 class _SaleLineQty {

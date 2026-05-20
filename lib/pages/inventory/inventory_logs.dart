@@ -22,6 +22,7 @@ extension _InventoryLogs on _InventoryPageState {
     final isAdd = log.qty > 0;
     final color = isAdd ? kGreen : kRed;
     final icon = isAdd ? Icons.add_circle_outline : Icons.remove_circle_outline;
+    final currentStock = _currentStockForLog(log);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -58,14 +59,22 @@ extension _InventoryLogs on _InventoryPageState {
                   ),
                 ),
                 Text(
-                  '${log.variantName}  ·  '
-                  '${_reasonLabel(log.reason)}',
+                  '${log.variantName}  -  ${_reasonLabel(log.reason)}',
                   style: const TextStyle(color: kGrey, fontSize: 11),
                 ),
                 if (log.employeeName.isNotEmpty)
                   Text(
                     'by ${log.employeeName}',
                     style: const TextStyle(color: kGrey, fontSize: 11),
+                  ),
+                if (currentStock != null)
+                  Text(
+                    'Current stock: $currentStock pcs left',
+                    style: TextStyle(
+                      color: AppHelpers.stockColor(currentStock),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
               ],
             ),
@@ -92,5 +101,14 @@ extension _InventoryLogs on _InventoryPageState {
     );
   }
 
-  // ── SHARED FILTERS BAR ────────────────────────────────────
+  int? _currentStockForLog(InventoryLogModel log) {
+    for (final product in _products) {
+      if (product.id != log.productId) continue;
+      for (final variant in product.variants) {
+        if (variant.id == log.variantId) return variant.totalStock;
+      }
+      return product.totalStock;
+    }
+    return null;
+  }
 }

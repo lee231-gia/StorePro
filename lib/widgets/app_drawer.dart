@@ -41,8 +41,7 @@ class AppDrawer extends StatelessWidget {
                 _navItem(context, Icons.sticky_note_2_outlined, 'Notes', 6),
                 _navItem(context, Icons.category_outlined, 'Categories', 7),
                 _navItem(context, Icons.people_outline, 'Customers', 8),
-                _navItem(context, Icons.badge_outlined, 'Employees', 9),
-                _navItem(context, Icons.bar_chart_outlined, 'Reports', 10),
+                _navItem(context, Icons.bar_chart_outlined, 'Reports', 9),
                 const Divider(indent: 16, endIndent: 16),
                 ListTile(
                   leading: const Icon(

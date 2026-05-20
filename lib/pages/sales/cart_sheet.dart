@@ -65,16 +65,24 @@ void showCartSheet({
                   itemBuilder: (_, i) {
                     final item = cart[i];
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 8),
-                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: kBg,
+                        color: kCard,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey.shade200),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.035),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
                                 child: Column(
@@ -83,10 +91,14 @@ void showCartSheet({
                                     Text(
                                       item.productName,
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: kDark,
                                       ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
+                                    const SizedBox(height: 2),
                                     Text(
                                       item.conditionName.isNotEmpty
                                           ? '${item.variantName} / ${item.conditionName}'
@@ -95,50 +107,23 @@ void showCartSheet({
                                         color: kGrey,
                                         fontSize: 11,
                                       ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
+                                    const SizedBox(height: 6),
                                     Text(
-                                      AppHelpers.peso(item.subtotal),
+                                      '${AppHelpers.peso(item.price)} each',
                                       style: const TextStyle(
-                                        color: kRed,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 13,
+                                        color: kGrey,
+                                        fontSize: 11,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              // Qty controls
+                              const SizedBox(width: 8),
                               IconButton(
-                                icon: const Icon(
-                                  Icons.remove_circle_outline,
-                                  color: kGrey,
-                                ),
-                                onPressed: () {
-                                  onChangeQty(i, -1);
-                                  setS(() {});
-                                  if (cart.isEmpty) {
-                                    Navigator.pop(ctx);
-                                  }
-                                },
-                              ),
-                              Text(
-                                '${item.qty}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.add_circle_outline,
-                                  color: kRed,
-                                ),
-                                onPressed: () {
-                                  onChangeQty(i, 1);
-                                  setS(() {});
-                                },
-                              ),
-                              IconButton(
+                                visualDensity: VisualDensity.compact,
                                 icon: const Icon(
                                   Icons.delete_outline,
                                   color: kGrey,
@@ -154,8 +139,81 @@ void showCartSheet({
                               ),
                             ],
                           ),
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: kInputFill,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: kGrey,
+                                      ),
+                                      onPressed: () {
+                                        onChangeQty(i, -1);
+                                        setS(() {});
+                                        if (cart.isEmpty) {
+                                          Navigator.pop(ctx);
+                                        }
+                                      },
+                                    ),
+                                    SizedBox(
+                                      width: 28,
+                                      child: Text(
+                                        '${item.qty}',
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    IconButton(
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(
+                                        Icons.add_circle_outline,
+                                        color: kRed,
+                                      ),
+                                      onPressed: () {
+                                        onChangeQty(i, 1);
+                                        setS(() {});
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Spacer(),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  const Text(
+                                    'Line total',
+                                    style: TextStyle(
+                                      color: kGrey,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                  Text(
+                                    AppHelpers.peso(item.subtotal),
+                                    style: const TextStyle(
+                                      color: kRed,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
 
-                          // Per-item discount
+                          const SizedBox(height: 10),
                           Row(
                             children: [
                               const Icon(
@@ -165,21 +223,29 @@ void showCartSheet({
                               ),
                               const SizedBox(width: 4),
                               const Text(
-                                'Item discount: ',
+                                'Discount',
                                 style: TextStyle(fontSize: 11, color: kGrey),
                               ),
+                              const Spacer(),
                               SizedBox(
-                                width: 70,
+                                width: 92,
                                 child: TextField(
                                   keyboardType: TextInputType.number,
                                   style: const TextStyle(fontSize: 12),
-                                  decoration: const InputDecoration(
+                                  textAlign: TextAlign.right,
+                                  decoration: InputDecoration(
                                     isDense: true,
                                     hintText: '0.00',
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(
+                                    prefixText: 'P ',
+                                    filled: true,
+                                    fillColor: kInputFill,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(
                                       horizontal: 6,
-                                      vertical: 4,
+                                      vertical: 8,
                                     ),
                                   ),
                                   onChanged: (v) {

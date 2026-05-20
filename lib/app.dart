@@ -23,9 +23,7 @@ import 'pages/utang/utang_page.dart';
 import 'pages/notes/notes_page.dart';
 import 'pages/categories/categories_page.dart';
 import 'pages/customers/customers_page.dart';
-import 'pages/employees/employees_page.dart';
 import 'pages/reports/reports_page.dart';
-import 'widgets/employee_picker.dart';
 
 class StorePro extends StatefulWidget {
   final bool localBootstrapped;
@@ -170,15 +168,6 @@ class _MainNavPageState extends State<MainNavPage> {
   int _index = 0;
   final Map<int, Widget> _pageCache = {};
 
-  @override
-  void initState() {
-    super.initState();
-    // Show employee picker once after login
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      showSessionEmployeePicker(context);
-    });
-  }
-
   void _changeTab(int i) => setState(() => _index = i);
 
   // All 11 pages — index must match AppDrawer nav items
@@ -202,8 +191,6 @@ class _MainNavPageState extends State<MainNavPage> {
         case 8:
           return CustomersPage(changeTab: _changeTab, currentIndex: index);
         case 9:
-          return EmployeesPage(changeTab: _changeTab, currentIndex: index);
-        case 10:
           return ReportsPage(changeTab: _changeTab, currentIndex: index);
         case 0:
         default:

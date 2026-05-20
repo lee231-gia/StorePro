@@ -263,8 +263,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   Widget _buildVariantTile(VariantModel v) {
     final batches = v.batches;
     final totalStock = v.totalStock;
-    final expiry = v.nearestExpiry;
-    final status = AppHelpers.expiryStatus(expiry);
+    final primaryDue = v.nearestExpiryIndicator;
+    final status = primaryDue == null
+        ? 'good'
+        : AppHelpers.expiryStatus(primaryDue.date);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -340,8 +342,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
           ],
 
-          // Expiry badge
-          if (expiry.isNotEmpty) ...[
+          // Shelf-life badge. Only true due-date indicators can appear here.
+          if (primaryDue != null) ...[
             const SizedBox(height: 4),
             Row(
               children: [
@@ -352,12 +354,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  '${status == 'expired'
-                      ? 'EXPIRED'
-                      : status == 'expiring'
-                      ? '${AppHelpers.daysLeft(expiry)}d left'
-                      : ''}'
-                  '  ${AppHelpers.formatDate(expiry)}',
+                  '${_lifeIndicatorStatus(primaryDue)}  '
+                  '${AppHelpers.formatDate(primaryDue.date)}',
                   style: TextStyle(
                     fontSize: 11,
                     color: AppHelpers.statusColor(status),
@@ -382,32 +380,32 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             ),
             const SizedBox(height: 4),
             ...batches.map((b) {
-              final expiry = b.primaryExpiry;
-              final bs = AppHelpers.expiryStatus(expiry);
+              final indicators = b.indicators.where((i) => i.hasDate);
               return Padding(
-                padding: const EdgeInsets.only(bottom: 3),
-                child: Row(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 3,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     Text(
                       '${b.qty} pcs',
                       style: const TextStyle(fontSize: 12, color: kDark),
                     ),
-                    const SizedBox(width: 8),
-                    if (expiry.isNotEmpty)
-                      Text(
-                        'Exp: ${AppHelpers.formatDate(expiry)}',
+                    ...indicators.map(
+                      (i) => Text(
+                        '${i.shortLabel}: ${AppHelpers.formatDate(i.date)}',
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppHelpers.statusColor(bs),
+                          color: _lifeIndicatorColor(i),
                         ),
                       ),
-                    if (b.costPrice > 0) ...[
-                      const SizedBox(width: 8),
+                    ),
+                    if (b.costPrice > 0)
                       Text(
                         'Cost: ${AppHelpers.peso(b.costPrice)}',
                         style: const TextStyle(fontSize: 11, color: kGrey),
                       ),
-                    ],
                   ],
                 ),
               );
@@ -454,4 +452,31 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     ),
     child: Icon(icon, color: color, size: size * 0.46),
   );
+
+  Color _lifeIndicatorColor(LifeIndicator indicator) {
+    if (!indicator.affectsExpiry) return kGrey;
+    return AppHelpers.statusColor(AppHelpers.expiryStatus(indicator.date));
+  }
+
+  String _lifeIndicatorStatus(LifeIndicator indicator) {
+    final status = AppHelpers.expiryStatus(indicator.date);
+    if (status == 'expired') {
+      switch (indicator.type) {
+        case 'Best Before':
+        case 'Best if Used By':
+          return 'PAST ${indicator.shortLabel.toUpperCase()}';
+        case 'Sell By':
+          return 'PAST SELL BY';
+        case 'Period After Opening':
+          return 'PAST PAO';
+        default:
+          return 'EXPIRED';
+      }
+    }
+    if (status == 'expiring') {
+      return '${indicator.shortLabel}: '
+          '${AppHelpers.daysLeft(indicator.date)}d left';
+    }
+    return indicator.shortLabel;
+  }
 }

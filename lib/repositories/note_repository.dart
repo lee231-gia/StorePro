@@ -35,7 +35,7 @@ class NoteRepository {
       type: note.type,
       title: note.title,
       content: note.content,
-      date: note.date,
+      date: note.date.isEmpty ? AppHelpers.nowStr() : note.date,
       reminderAt: note.reminderAt,
       done: note.done,
       updatedAt: AppHelpers.nowStr(),
@@ -47,15 +47,25 @@ class NoteRepository {
       _table,
       updated.toSql(),
     );
+
+    await NotificationService.cancel(updated.id.hashCode);
     if (updated.reminderAt.isNotEmpty) {
       try {
         final dt = DateTime.parse(updated.reminderAt);
-        NotificationService.schedule(
-          id: updated.id.hashCode,
-          title: 'StorePro Reminder',
-          body: updated.title,
-          scheduledTime: dt,
-        );
+        if (dt.isAfter(DateTime.now())) {
+          final overview = updated.content
+              .replaceAll(RegExp(r'\s+'), ' ')
+              .trim();
+          final reminderBody = overview.isEmpty
+              ? AppHelpers.formatDateTime(dt)
+              : '${AppHelpers.formatDateTime(dt)} - $overview';
+          await NotificationService.schedule(
+            id: updated.id.hashCode,
+            title: updated.title,
+            body: reminderBody,
+            scheduledTime: dt,
+          );
+        }
       } catch (_) {}
     }
     return updated;

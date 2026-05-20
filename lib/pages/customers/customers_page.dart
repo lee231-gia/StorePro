@@ -391,45 +391,72 @@ class _CustomersPageState extends State<CustomersPage> {
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(color: Colors.grey.shade200),
                             ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
                                         AppHelpers.formatDate(s.date),
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w600,
                                           fontSize: 13,
                                         ),
                                       ),
-                                      Text(
-                                        s.items
-                                            .map(
-                                              (i) =>
-                                                  '${i.productName} ×${i.qty}',
-                                            )
-                                            .join(', '),
-                                        style: const TextStyle(
-                                          color: kGrey,
-                                          fontSize: 11,
-                                        ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      AppHelpers.peso(s.total),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: kRed,
+                                        fontSize: 13,
                                       ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                                Text(
-                                  AppHelpers.peso(s.total),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: kRed,
-                                    fontSize: 13,
+                                const SizedBox(height: 6),
+                                ...s.items
+                                    .take(4)
+                                    .map(
+                                      (i) => Padding(
+                                        padding: const EdgeInsets.only(
+                                          bottom: 3,
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                '${i.productName} - ${i.variantName}'
+                                                '${i.conditionName.isNotEmpty ? ' / ${i.conditionName}' : ''}',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  color: kDark,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ),
+                                            Text(
+                                              'x${i.qty} @ ${AppHelpers.peso(i.price)}',
+                                              style: const TextStyle(
+                                                color: kGrey,
+                                                fontSize: 10,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                if (s.items.length > 4)
+                                  Text(
+                                    '+${s.items.length - 4} more item'
+                                    '${s.items.length - 4 == 1 ? '' : 's'}',
+                                    style: const TextStyle(
+                                      color: kGrey,
+                                      fontSize: 10,
+                                    ),
                                   ),
-                                ),
                               ],
                             ),
                           ),

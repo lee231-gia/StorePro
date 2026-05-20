@@ -1,15 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
+import '../../core/enums/product_browser_enums.dart';
 import '../../core/services/sync_service.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/product_model.dart';
 import '../../repositories/category_repository.dart';
 import '../../repositories/product_repository.dart';
+import '../../shared/controllers/product_browser_controller.dart';
+import '../../shared/widgets/product_browser_toolbar.dart';
+import '../../shared/widgets/product_browser_view.dart';
 import '../../widgets/app_drawer.dart';
-import '../../widgets/product_card.dart' hide FilterChip;
-import '../../widgets/product_card.dart' as pc;
+import '../../widgets/product_card.dart';
 import '../../widgets/shared_widgets.dart';
 import 'add_product_page.dart';
 import 'product_detail_page.dart';
@@ -31,70 +35,62 @@ class ProductsPage extends StatefulWidget {
 }
 
 class _ProductsPageState extends State<ProductsPage> {
-  // ── STATE ─────────────────────────────────────────────────
-  List<ProductModel> _products = [];
-  List<String> _categories = ['All'];
-
-  bool _loading = true;
-
-  String _search = '';
-  String _catFilter = 'All';
-  late String _statusFilter;
-
-  String _viewMode = 'list'; // list | compact | grid | details
-  String _sortBy = 'recent';
-
-  bool _groupVariants = true;
-
+  late final ProductBrowserController _browser;
   final _searchCtrl = TextEditingController();
   StreamSubscription<String>? _changeSub;
+
+  List<ProductModel> _products = [];
+  List<String> _categories = ['All'];
+  bool _loading = true;
+
+  List<ProductDisplayItem> get _items => _browser.displayItems(_products);
 
   @override
   void initState() {
     super.initState();
-
-    _statusFilter = widget.initialFilter;
-
+    _browser = ProductBrowserController(statusFilter: widget.initialFilter)
+      ..addListener(_refreshBrowser);
     _changeSub = SyncService.changes.listen((collection) {
-      if (collection == 'products' || collection == 'categories') {
-        _load();
-      }
+      if (collection == 'products' || collection == 'categories') _load();
     });
-
     _load();
   }
 
   @override
   void dispose() {
     _changeSub?.cancel();
+    _browser
+      ..removeListener(_refreshBrowser)
+      ..dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
 
-  // ── LOAD ──────────────────────────────────────────────────
+  void _refreshBrowser() {
+    if (mounted) setState(() {});
+  }
+
   Future<void> _load() async {
     setState(() => _loading = true);
 
     List<ProductModel> products = [];
-    List<String> catNames = ['All'];
-
+    List<String> categories = ['All'];
     try {
       final results = await Future.wait([
         ProductRepository.getAll(),
         CategoryRepository.getAll(),
       ]).timeout(const Duration(seconds: 3));
-
       products = results[0] as List<ProductModel>;
-
-      final categories = results[1] as List;
-
-      catNames = ['All', ...categories.map((c) => c.name as String)];
+      categories = [
+        'All',
+        ...(results[1] as List).map((category) => category.name as String),
+      ];
     } catch (_) {}
 
     if (mounted) {
       setState(() {
         _products = products;
-        _categories = catNames;
+        _categories = categories;
         _loading = false;
       });
     }
@@ -102,136 +98,18 @@ class _ProductsPageState extends State<ProductsPage> {
     ProductRepository.syncInBackground((fresh) {
       if (mounted) setState(() => _products = fresh);
     });
-
     CategoryRepository.syncInBackground((fresh) {
       if (mounted) {
-        setState(() {
-          _categories = ['All', ...fresh.map((c) => c.name)];
-        });
+        setState(() => _categories = ['All', ...fresh.map((c) => c.name)]);
       }
     });
   }
 
-  // ── FILTERED + SORTED ─────────────────────────────────────
-  List<ProductModel> get _filtered {
-    var list = List<ProductModel>.from(_products);
-
-    // Search
-    if (_search.isNotEmpty) {
-      final q = _search.toLowerCase();
-
-      list = list.where((p) {
-        return p.name.toLowerCase().contains(q) ||
-            p.variants.any((v) => v.name.toLowerCase().contains(q));
-      }).toList();
-    }
-
-    // Category
-    if (_catFilter != 'All') {
-      list = list.where((p) => p.categoryName == _catFilter).toList();
-    }
-
-    // Status filter
-    switch (_statusFilter) {
-      case 'Expiring':
-        list = list
-            .where(
-              (p) => AppHelpers.expiryStatus(p.nearestExpiry) == 'expiring',
-            )
-            .toList();
-        break;
-
-      case 'Expired':
-        list = list
-            .where((p) => AppHelpers.expiryStatus(p.nearestExpiry) == 'expired')
-            .toList();
-        break;
-
-      case 'Low Stock':
-        list = list
-            .where((p) => p.totalStock > 0 && p.totalStock <= 10)
-            .toList();
-        break;
-
-      case 'No Stock':
-        list = list.where((p) => p.totalStock == 0).toList();
-        break;
-    }
-
-    // Sort
-    switch (_sortBy) {
-      case 'a-z':
-        list.sort((a, b) => a.name.compareTo(b.name));
-        break;
-
-      case 'z-a':
-        list.sort((a, b) => b.name.compareTo(a.name));
-        break;
-
-      case 'cat-a-z':
-        list.sort((a, b) => a.categoryName.compareTo(b.categoryName));
-        break;
-
-      case 'cat-z-a':
-        list.sort((a, b) => b.categoryName.compareTo(a.categoryName));
-        break;
-
-      case 'stock-low':
-        list.sort((a, b) => a.totalStock.compareTo(b.totalStock));
-        break;
-
-      case 'stock-high':
-        list.sort((a, b) => b.totalStock.compareTo(a.totalStock));
-        break;
-
-      case 'expiry-asc':
-        list.sort((a, b) {
-          if (a.nearestExpiry.isEmpty) return 1;
-          if (b.nearestExpiry.isEmpty) return -1;
-          return a.nearestExpiry.compareTo(b.nearestExpiry);
-        });
-        break;
-
-      case 'expiry-desc':
-        list.sort((a, b) {
-          if (a.nearestExpiry.isEmpty) return 1;
-          if (b.nearestExpiry.isEmpty) return -1;
-          return b.nearestExpiry.compareTo(a.nearestExpiry);
-        });
-        break;
-
-      default:
-        list.sort((a, b) => b.addedOn.compareTo(a.addedOn));
-    }
-
-    return list;
-  }
-
-  List<ProductDisplayItem> get _displayItems =>
-      ProductDisplayItem.fromProducts(_filtered, groupVariants: _groupVariants);
-
-  // ── BUILD ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      appBar: buildAppBar(
-        title: 'Products',
-        context: context,
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.view_list_outlined),
-            onSelected: (v) => setState(() => _viewMode = v),
-            itemBuilder: (_) => const [
-              PopupMenuItem(value: 'list', child: Text('List')),
-              PopupMenuItem(value: 'compact', child: Text('Compact')),
-              PopupMenuItem(value: 'grid', child: Text('Grid')),
-              PopupMenuItem(value: 'details', child: Text('Details')),
-            ],
-          ),
-          IconButton(icon: const Icon(Icons.sort), onPressed: _showSortSheet),
-        ],
-      ),
+      appBar: buildAppBar(title: 'Products', context: context),
       drawer: AppDrawer(
         changeTab: widget.changeTab,
         currentIndex: widget.currentIndex,
@@ -246,349 +124,69 @@ class _ProductsPageState extends State<ProductsPage> {
       body: Column(
         children: [
           if (_loading) const LinearProgressIndicator(color: kRed),
-          _buildFilters(),
-          Expanded(child: _buildList()),
-        ],
-      ),
-    );
-  }
-
-  // ── FILTERS ───────────────────────────────────────────────
-  Widget _buildFilters() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: _searchCtrl,
-            onChanged: (v) => setState(() => _search = v),
-            decoration: AppInput.field(
-              'Search products...',
-              icon: Icons.search,
-            ),
-          ),
-
-          const SizedBox(height: 10),
-
-          // Category chips
-          SizedBox(
-            height: 32,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              itemBuilder: (_, i) {
-                final cat = _categories[i];
-                final active = _catFilter == cat;
-
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: GestureDetector(
-                    onTap: () => setState(() => _catFilter = cat),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: active ? kRed : kCard,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: active ? kRed : Colors.grey.shade300,
-                        ),
-                      ),
-                      child: Text(
-                        cat,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: active ? Colors.white : kGrey,
-                          fontWeight: active
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Status filter chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                for (final f in [
-                  'All',
-                  'Expiring',
-                  'Expired',
-                  'Low Stock',
-                  'No Stock',
-                ])
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: pc.FilterChip(
-                      label: f,
-                      isSelected: _statusFilter == f,
-                      onTap: () => setState(() => _statusFilter = f),
-                    ),
-                  ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
+            child: ProductBrowserToolbar(
+              controller: _browser,
+              searchController: _searchCtrl,
+              categories: _categories,
+              statusFilters: const [
+                'All',
+                'Available',
+                'Low Stock',
+                'No Stock',
+                'Expiring',
+                'Expired',
+              ],
+              itemCount: _items.length,
+              sortOptions: const [
+                ProductSortOption.recent,
+                ProductSortOption.nameAsc,
+                ProductSortOption.nameDesc,
+                ProductSortOption.categoryAsc,
+                ProductSortOption.categoryDesc,
+                ProductSortOption.stockAsc,
+                ProductSortOption.stockDesc,
+                ProductSortOption.expiryAsc,
+                ProductSortOption.expiryDesc,
+                ProductSortOption.priceAsc,
+                ProductSortOption.priceDesc,
               ],
             ),
           ),
-
-          const SizedBox(height: 6),
-
-          Row(
-            children: [
-              VariantToggleButton(
-                grouped: _groupVariants,
-                onChanged: (value) => setState(() => _groupVariants = value),
-              ),
-              const Spacer(),
-              Text(
-                '${_displayItems.length} item'
-                '${_displayItems.length != 1 ? 's' : ''}',
-                style: const TextStyle(color: kGrey, fontSize: 12),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── PRODUCT LIST ──────────────────────────────────────────
-  Widget _buildList() {
-    final items = _displayItems;
-
-    if (items.isEmpty) {
-      return const Center(
-        child: Text('No products found.', style: TextStyle(color: kGrey)),
-      );
-    }
-
-    // GRID VIEW
-    if (_viewMode == 'grid') {
-      return RefreshIndicator(
-        color: kRed,
-        onRefresh: _load,
-        child: GridView.builder(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.8,
-          ),
-          itemCount: items.length,
-          itemBuilder: (_, i) {
-            final item = items[i];
-
-            return ProductGridCard(
-              product: item.product,
-              variant: item.variant,
-              onTap: () => _goDetail(item.productId),
-            );
-          },
-        ),
-      );
-    }
-
-    // DETAILS VIEW
-    if (_viewMode == 'details') {
-      return RefreshIndicator(
-        color: kRed,
-        onRefresh: _load,
-        child: ListView.separated(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
-          itemCount: items.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (_, i) {
-            final item = items[i];
-            final p = item.product;
-
-            return InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => _goDetail(item.productId),
-              child: Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: kCard,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade200),
+          Expanded(
+            child: RefreshIndicator(
+              color: kRed,
+              onRefresh: _load,
+              child: ProductBrowserView(
+                items: _items,
+                viewMode: _browser.viewMode,
+                physics: const AlwaysScrollableScrollPhysics(),
+                onTap: (item) => _goDetail(item.productId),
+                trailingBuilder: (item) => Text(
+                  AppHelpers.peso(item.price),
+                  style: const TextStyle(
+                    color: kRed,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.name,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 14,
-                              color: kDark,
-                            ),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppHelpers.stockColor(
-                              item.totalStock,
-                            ).withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '${item.totalStock} pcs',
-                            style: TextStyle(
-                              color: AppHelpers.stockColor(item.totalStock),
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        _detailChip(Icons.category_outlined, p.categoryName),
-                        _detailChip(
-                          Icons.payments_outlined,
-                          AppHelpers.peso(item.variant?.price ?? p.lowestPrice),
-                        ),
-                        _detailChip(
-                          Icons.event_outlined,
-                          p.nearestExpiry.isEmpty
-                              ? 'No Expiry'
-                              : p.nearestExpiry,
-                        ),
-                      ],
-                    ),
-                  ],
+                detailTrailingBuilder: (item) => Text(
+                  AppHelpers.peso(item.price),
+                  style: const TextStyle(
+                    color: kRed,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
                 ),
               ),
-            );
-          },
-        ),
-      );
-    }
-
-    // LIST + COMPACT
-    return RefreshIndicator(
-      color: kRed,
-      onRefresh: _load,
-      child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: items.length,
-        itemBuilder: (_, i) {
-          final item = items[i];
-
-          return ProductCard(
-            product: item.product,
-            variant: item.variant,
-            onTap: () => _goDetail(item.productId),
-            compact: _viewMode == 'compact',
-          );
-        },
-      ),
-    );
-  }
-
-  // ── DETAIL CHIP ───────────────────────────────────────────
-  Widget _detailChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: kGrey),
-          const SizedBox(width: 4),
-          Text(label, style: const TextStyle(fontSize: 11, color: kGrey)),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ── SORT SHEET ────────────────────────────────────────────
-  void _showSortSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 12),
-
-          Container(
-            width: 40,
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-
-          const SizedBox(height: 12),
-
-          const Text(
-            'Sort By',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-
-          const Divider(),
-
-          for (final entry in {
-            'recent': 'Recently Added',
-            'a-z': 'Name A → Z',
-            'z-a': 'Name Z → A',
-            'cat-a-z': 'Category A → Z',
-            'cat-z-a': 'Category Z → A',
-            'stock-low': 'Stock: Low → High',
-            'stock-high': 'Stock: High → Low',
-            'expiry-asc': 'Expiry: Earliest',
-            'expiry-desc': 'Expiry: Latest',
-          }.entries)
-            ListTile(
-              title: Text(entry.value),
-              trailing: _sortBy == entry.key
-                  ? const Icon(Icons.check, color: kRed)
-                  : null,
-              onTap: () {
-                setState(() => _sortBy = entry.key);
-                Navigator.pop(context);
-              },
-            ),
-
-          const SizedBox(height: 16),
-        ],
-      ),
-    );
-  }
-
-  // ── NAVIGATION ────────────────────────────────────────────
   void _goDetail(String id) {
     Navigator.push(
       context,
