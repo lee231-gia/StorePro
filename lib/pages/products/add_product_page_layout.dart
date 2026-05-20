@@ -184,6 +184,7 @@ extension _AddProductPageLayout on _AddProductPageState {
               onTap: () => _showImagePicker(
                 onPicked: (f) => _update(() => _imageFile = f),
               ),
+              onLongPress: () => _previewImage(file: _imageFile, url: _imageUrl),
               child: Container(
                 width: 120,
                 height: 120,
@@ -342,9 +343,9 @@ extension _AddProductPageLayout on _AddProductPageState {
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
+                    crossAxisCount: 10,
+                    crossAxisSpacing: 5,
+                    mainAxisSpacing: 5,
                     childAspectRatio: 1,
                   ),
                   itemCount: AppIcons.icons.length,
@@ -355,12 +356,12 @@ extension _AddProductPageLayout on _AddProductPageState {
                       child: Container(
                         decoration: BoxDecoration(
                           color: active ? kRed : kInputFill,
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(7),
                         ),
                         child: Icon(
                           AppIcons.icons[i],
                           color: active ? Colors.white : kGrey,
-                          size: 22,
+                          size: 16,
                         ),
                       ),
                     );

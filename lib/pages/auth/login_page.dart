@@ -50,7 +50,11 @@ class _LoginPageState extends State<LoginPage> {
       showSnack(context, error, isError: true);
       return;
     }
-    Navigator.pushReplacementNamed(context, AppRoutes.home);
+    Navigator.pushNamedAndRemoveUntil(
+      context,
+      AppRoutes.home,
+      (route) => false,
+    );
   }
 
   @override

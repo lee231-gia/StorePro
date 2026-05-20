@@ -115,9 +115,12 @@ class _StoreProState extends State<StorePro> {
           ? AppRoutes.welcome
           : AppRoutes.home,
       routes: {
-        AppRoutes.welcome: (_) => const WelcomePage(),
-        AppRoutes.login: (_) => const LoginPage(),
-        AppRoutes.signup: (_) => const SignupPage(),
+        AppRoutes.welcome: (_) =>
+            Session.storeId.isEmpty ? const WelcomePage() : const MainNavPage(),
+        AppRoutes.login: (_) =>
+            Session.storeId.isEmpty ? const LoginPage() : const MainNavPage(),
+        AppRoutes.signup: (_) =>
+            Session.storeId.isEmpty ? const SignupPage() : const MainNavPage(),
         AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
         AppRoutes.settings: (_) => const SettingsPage(),
         AppRoutes.home: (_) => const MainNavPage(),

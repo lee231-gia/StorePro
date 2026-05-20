@@ -11,7 +11,8 @@ void showCartSheet({
   required void Function(int, double) onItemDiscount,
   required VoidCallback onConfirm,
 }) {
-  showModalBottomSheet(
+  final discountCtrls = <String, TextEditingController>{};
+  final sheet = showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
@@ -70,6 +71,14 @@ void showCartSheet({
                   itemCount: cart.length,
                   itemBuilder: (_, i) {
                     final item = cart[i];
+                    final discountCtrl = discountCtrls.putIfAbsent(
+                      item.key,
+                      () => TextEditingController(
+                        text: item.itemDiscount > 0
+                            ? item.itemDiscount.toStringAsFixed(2)
+                            : '',
+                      ),
+                    );
                     return Container(
                       margin: const EdgeInsets.only(bottom: 10),
                       padding: const EdgeInsets.all(14),
@@ -90,12 +99,16 @@ void showCartSheet({
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              _cartThumb(item),
+                              const SizedBox(width: 10),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      item.productName,
+                                      item.variantName.trim().isEmpty
+                                          ? item.productName
+                                          : '${item.productName} - ${item.variantName}',
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 14,
@@ -107,8 +120,8 @@ void showCartSheet({
                                     const SizedBox(height: 2),
                                     Text(
                                       item.conditionName.isNotEmpty
-                                          ? '${item.variantName} / ${item.conditionName}'
-                                          : item.variantName,
+                                          ? item.conditionName
+                                          : '${item.qty} × ${AppHelpers.peso(item.price)}',
                                       style: const TextStyle(
                                         color: kGrey,
                                         fontSize: 11,
@@ -236,6 +249,7 @@ void showCartSheet({
                               SizedBox(
                                 width: 92,
                                 child: TextField(
+                                  controller: discountCtrl,
                                   keyboardType: TextInputType.number,
                                   style: const TextStyle(fontSize: 12),
                                   textAlign: TextAlign.right,
@@ -255,8 +269,15 @@ void showCartSheet({
                                     ),
                                   ),
                                   onChanged: (v) {
-                                    final d = double.tryParse(v) ?? 0.0;
+                                    final maxDiscount = item.price * item.qty;
+                                    final d = (double.tryParse(v) ?? 0.0)
+                                        .clamp(0, maxDiscount)
+                                        .toDouble();
                                     onItemDiscount(i, d);
+                                    setS(() {});
+                                  },
+                                  onEditingComplete: () {
+                                    FocusScope.of(ctx).nextFocus();
                                     setS(() {});
                                   },
                                 ),
@@ -389,6 +410,41 @@ void showCartSheet({
         );
       },
     ),
+  );
+  sheet.whenComplete(() {
+    for (final ctrl in discountCtrls.values) {
+      ctrl.dispose();
+    }
+  });
+}
+
+Widget _cartThumb(CartItem item) {
+  final color =
+      kCategoryColors[item.colorIndex.clamp(0, kCategoryColors.length - 1)];
+  if (item.imageUrl.isNotEmpty) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(8),
+      child: Image.network(
+        item.imageUrl,
+        width: 48,
+        height: 48,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => _cartIcon(item, color),
+      ),
+    );
+  }
+  return _cartIcon(item, color);
+}
+
+Widget _cartIcon(CartItem item, Color color) {
+  return Container(
+    width: 48,
+    height: 48,
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Icon(AppIcons.get(item.iconIndex), color: color, size: 22),
   );
 }
 

@@ -99,9 +99,9 @@ void showPaymentSheet({
                 TextField(
                   controller: cashCtrl,
                   keyboardType: TextInputType.number,
+                  textAlign: TextAlign.right,
                   decoration: AppInput.field(
                     '0.00',
-                    icon: Icons.payments_outlined,
                   ),
                   onChanged: (v) {
                     final paid = double.tryParse(v) ?? 0;

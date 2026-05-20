@@ -371,13 +371,32 @@ class _UtangPageState extends State<UtangPage> {
                       padding: const EdgeInsets.only(bottom: 4),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '${item['productName']} '
-                            '(${item['variantName']}) '
-                            '×${item['qty']}',
-                            style: const TextStyle(fontSize: 13, color: kDark),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _utangItemName(item),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: kDark,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  '${item['qty']} × ${AppHelpers.peso((item['price'] as num?)?.toDouble() ?? 0.0)}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: kGrey,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
+                          const SizedBox(width: 8),
                           Text(
                             AppHelpers.peso(
                               ((item['price'] as num?)?.toDouble() ?? 0.0) *
@@ -416,20 +435,12 @@ class _UtangPageState extends State<UtangPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  AppHelpers.formatDate(p.date),
+                                  _paymentDateTime(p.date),
                                   style: const TextStyle(
                                     fontSize: 12,
                                     color: kDark,
                                   ),
                                 ),
-                                if (p.employeeName.isNotEmpty)
-                                  Text(
-                                    'by ${p.employeeName}',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: kGrey,
-                                    ),
-                                  ),
                               ],
                             ),
                             Text(
@@ -617,14 +628,7 @@ class _UtangPageState extends State<UtangPage> {
           ],
         ),
       ),
-    ).whenComplete(() {
-      nameCtrl.dispose();
-      phoneCtrl.dispose();
-      totalCtrl.dispose();
-      paidCtrl.dispose();
-      dueCtrl.dispose();
-      notesCtrl.dispose();
-    });
+    );
   }
 
   Future<void> _confirmDelete(UtangModel u) async {
@@ -763,9 +767,7 @@ class _UtangPageState extends State<UtangPage> {
                           children: [
                             Expanded(
                               child: Text(
-                                '${item['productName']}'
-                                ' (${item['variantName']})'
-                                ' ×${item['qty']}',
+                                '${_utangItemName(item)} ×${item['qty']}',
                                 style: const TextStyle(fontSize: 13),
                               ),
                             ),
@@ -811,9 +813,7 @@ class _UtangPageState extends State<UtangPage> {
                   );
                   if (item.isNotEmpty) {
                     paidItemId = item['variantId'] ?? '';
-                    paidItemName =
-                        '${item['productName']} '
-                        '(${item['variantName']})';
+                    paidItemName = _utangItemName(item);
                     paidQty = (item['qty'] as num?)?.toInt() ?? 0;
                     payAmount =
                         ((item['price'] as num?)?.toDouble() ?? 0.0) * paidQty;
@@ -829,7 +829,7 @@ class _UtangPageState extends State<UtangPage> {
                   paidItemId: paidItemId,
                   paidItemName: paidItemName,
                   paidQty: paidQty,
-                  date: AppHelpers.todayStr(),
+                  date: AppHelpers.nowStr(),
                 );
 
                 await UtangRepository.addPayment(u, payment);
@@ -842,5 +842,18 @@ class _UtangPageState extends State<UtangPage> {
         ),
       ),
     );
+  }
+
+  String _utangItemName(Map<String, dynamic> item) {
+    final product = '${item['productName'] ?? ''}'.trim();
+    final variant = '${item['variantName'] ?? ''}'.trim();
+    if (variant.isEmpty || variant == product) return product;
+    return '$product - $variant';
+  }
+
+  String _paymentDateTime(String iso) {
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return AppHelpers.formatDate(iso);
+    return AppHelpers.formatDateTime(dt);
   }
 }

@@ -203,6 +203,11 @@ void showVariantPickerSheet({
                                         productName: product.name,
                                         variantName: v.name,
                                         conditionName: c.name,
+                                        imageUrl: v.imageUrl.isNotEmpty
+                                            ? v.imageUrl
+                                            : product.imageUrl,
+                                        iconIndex: product.iconIndex,
+                                        colorIndex: product.colorIndex,
                                         price: c.price,
                                         costPrice: v.costPrice,
                                       ),
@@ -234,6 +239,11 @@ void showVariantPickerSheet({
                                       variantId: v.id,
                                       productName: product.name,
                                       variantName: v.name,
+                                      imageUrl: v.imageUrl.isNotEmpty
+                                          ? v.imageUrl
+                                          : product.imageUrl,
+                                      iconIndex: product.iconIndex,
+                                      colorIndex: product.colorIndex,
                                       price: v.price,
                                       costPrice: v.costPrice,
                                     ),

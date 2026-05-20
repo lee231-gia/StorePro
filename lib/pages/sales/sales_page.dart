@@ -51,6 +51,8 @@ class _SalesPageState extends State<SalesPage> {
   List<CustomerModel> _customers = [];
   List<String> _categories = ['All'];
   final List<CartItem> _cart = [];
+  String _historyRange = 'all';
+  DateTimeRange? _historyCustomRange;
 
   final _searchCtrl = TextEditingController();
   final _customerCtrl = TextEditingController();
@@ -140,6 +142,42 @@ class _SalesPageState extends State<SalesPage> {
 
   List<ProductDisplayItem> get _saleItems => _browser.displayItems(_products);
   bool get _showLegacySaleList => false;
+  List<SaleModel> get _historySales {
+    final now = DateTime.now();
+    DateTime start;
+    DateTime end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    switch (_historyRange) {
+      case 'today':
+        start = DateTime(now.year, now.month, now.day);
+        break;
+      case 'week':
+        start = DateTime(now.year, now.month, now.day).subtract(
+          Duration(days: now.weekday - 1),
+        );
+        break;
+      case 'month':
+        start = DateTime(now.year, now.month);
+        break;
+      case 'year':
+        start = DateTime(now.year);
+        break;
+      case 'custom':
+        final range = _historyCustomRange;
+        if (range == null) return _sales;
+        start = DateTime(range.start.year, range.start.month, range.start.day);
+        end = DateTime(range.end.year, range.end.month, range.end.day, 23, 59, 59);
+        break;
+      default:
+        return _sales;
+    }
+    return _sales.where((sale) {
+      final dt = DateTime.tryParse(
+        sale.timestamp.isNotEmpty ? sale.timestamp : sale.date,
+      );
+      if (dt == null) return false;
+      return !dt.isBefore(start) && !dt.isAfter(end);
+    }).toList();
+  }
 
   // ── ADD TO CART ───────────────────────────────────────────
   void _addToCart(CartItem item) {
@@ -169,7 +207,10 @@ class _SalesPageState extends State<SalesPage> {
   }
 
   void _setItemDiscount(int index, double disc) {
-    setState(() => _cart[index].itemDiscount = disc);
+    setState(() {
+      final maxDiscount = _cart[index].price * _cart[index].qty;
+      _cart[index].itemDiscount = disc.clamp(0, maxDiscount).toDouble();
+    });
   }
 
   // ── VARIANT PICKER SHORTCUT ───────────────────────────────
@@ -185,6 +226,11 @@ class _SalesPageState extends State<SalesPage> {
           variantId: variants.first.id,
           productName: product.name,
           variantName: variants.first.name,
+          imageUrl: variants.first.imageUrl.isNotEmpty
+              ? variants.first.imageUrl
+              : product.imageUrl,
+          iconIndex: product.iconIndex,
+          colorIndex: product.colorIndex,
           price: variants.first.price,
           costPrice: variants.first.costPrice,
         ),
@@ -209,6 +255,11 @@ class _SalesPageState extends State<SalesPage> {
           variantId: variant.id,
           productName: item.product.name,
           variantName: variant.name,
+          imageUrl: variant.imageUrl.isNotEmpty
+              ? variant.imageUrl
+              : item.product.imageUrl,
+          iconIndex: item.product.iconIndex,
+          colorIndex: item.product.colorIndex,
           price: variant.price,
           costPrice: variant.costPrice,
         ),
@@ -719,6 +770,7 @@ class _SalesPageState extends State<SalesPage> {
   }
 
   Widget _buildHistory() {
+    final sales = _historySales;
     if (_sales.isEmpty) {
       return const Center(
         child: Text('No sales yet.', style: TextStyle(color: kGrey)),
@@ -730,9 +782,10 @@ class _SalesPageState extends State<SalesPage> {
       onRefresh: _load,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _sales.length,
+        itemCount: sales.length + 1,
         itemBuilder: (_, i) {
-          final sale = _sales[i];
+          if (i == 0) return _historyFilterBar(sales.length);
+          final sale = sales[i - 1];
           return SalesHistoryCard(
             sale: sale,
             onTap: () => Navigator.push(
@@ -742,15 +795,93 @@ class _SalesPageState extends State<SalesPage> {
             onEdit: sale.status == 'refunded' ? null : () => _editSale(sale),
             onRefund: sale.status == 'refunded'
                 ? null
-                : () => _confirmRefund(i),
-            onDelete: () => _confirmDelete(i),
+                : () => _confirmRefund(sale),
+            onDelete: () => _confirmDelete(sale),
           );
         },
       ),
     );
   }
 
-  Future<void> _confirmRefund(int index) async {
+  Widget _historyFilterBar(int count) {
+    final chips = {
+      'all': 'All',
+      'today': 'Today',
+      'week': 'Week',
+      'month': 'Month',
+      'year': 'Year',
+      'custom': 'Custom',
+    };
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: chips.entries.map((entry) {
+                  final active = _historyRange == entry.key;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: GestureDetector(
+                      onTap: () async {
+                        if (entry.key == 'custom') {
+                          final now = DateTime.now();
+                          final picked = await showDateRangePicker(
+                            context: context,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2040),
+                            initialDateRange: _historyCustomRange ??
+                                DateTimeRange(start: now, end: now),
+                          );
+                          if (picked == null) return;
+                          setState(() {
+                            _historyCustomRange = picked;
+                            _historyRange = 'custom';
+                          });
+                          return;
+                        }
+                        setState(() {
+                          _historyRange = entry.key;
+                          if (entry.key != 'custom') _historyCustomRange = null;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: active ? kRed : kCard,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: active ? kRed : Colors.grey.shade300,
+                          ),
+                        ),
+                        child: Text(
+                          entry.value,
+                          style: TextStyle(
+                            color: active ? Colors.white : kGrey,
+                            fontSize: 11,
+                            fontWeight:
+                                active ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          Text('$count', style: const TextStyle(color: kGrey, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmRefund(SaleModel sale) async {
     final reasonCtrl = TextEditingController(text: 'Customer refund');
     final reason = await showDialog<String>(
       context: context,
@@ -774,7 +905,7 @@ class _SalesPageState extends State<SalesPage> {
     );
     reasonCtrl.dispose();
     if (reason == null || reason.trim().isEmpty || !mounted) return;
-    await SaleOperationsService.refundSale(_sales[index], reason: reason);
+    await SaleOperationsService.refundSale(sale, reason: reason);
     await _load();
   }
 
@@ -1022,7 +1153,7 @@ class _SalesPageState extends State<SalesPage> {
     await _load();
   }
 
-  Future<void> _confirmDelete(int index) async {
+  Future<void> _confirmDelete(SaleModel sale) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -1040,7 +1171,6 @@ class _SalesPageState extends State<SalesPage> {
       ),
     );
     if (confirm == true && mounted) {
-      final sale = _sales[index];
       if (sale.status != 'refunded') {
         await SaleOperationsService.refundSale(
           sale,

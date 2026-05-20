@@ -130,14 +130,7 @@ class _ProductsPageState extends State<ProductsPage> {
               controller: _browser,
               searchController: _searchCtrl,
               categories: _categories,
-              statusFilters: const [
-                'All',
-                'Available',
-                'Low Stock',
-                'No Stock',
-                'Expiring',
-                'Expired',
-              ],
+              statusFilters: const [],
               itemCount: _items.length,
               sortOptions: const [
                 ProductSortOption.recent,

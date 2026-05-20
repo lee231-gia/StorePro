@@ -444,65 +444,70 @@ class _NotesPageState extends State<NotesPage> {
                     ),
                   ),
                   const SizedBox(height: 8),
+                  _formInfoRow(
+                    icon: Icons.notifications_outlined,
+                    label: 'Reminder',
+                    value: pickedReminder.isEmpty
+                        ? 'No reminder set'
+                        : AppHelpers.formatDateTime(
+                            DateTime.tryParse(pickedReminder) ??
+                                DateTime.now(),
+                          ),
+                    color: pickedReminder.isEmpty ? kGrey : kOrange,
+                  ),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Expanded(
-                        child: _formInfoRow(
-                          icon: Icons.notifications_outlined,
-                          label: 'Reminder',
-                          value: pickedReminder.isEmpty
-                              ? 'No reminder set'
-                              : AppHelpers.formatDateTime(
-                                  DateTime.tryParse(pickedReminder) ??
-                                      DateTime.now(),
-                                ),
-                          color: pickedReminder.isEmpty ? kGrey : kOrange,
-                        ),
-                      ),
-                      TextButton.icon(
-                        onPressed: () async {
-                          final d = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now().add(
-                              const Duration(hours: 1),
-                            ),
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime(2035),
-                          );
-                          if (d == null) return;
-                          if (!mounted) return;
-                          final t = await showTimePicker(
-                            context: context,
-                            initialTime: TimeOfDay.now(),
-                          );
-                          if (t == null) return;
-                          final dt = DateTime(
-                            d.year,
-                            d.month,
-                            d.day,
-                            t.hour,
-                            t.minute,
-                          );
-                          if (dt.isBefore(DateTime.now())) {
-                            if (ctx.mounted) {
-                              showSnack(
-                                ctx,
-                                'Choose a future reminder time.',
-                                isError: true,
-                              );
+                        child: TextButton.icon(
+                          style: TextButton.styleFrom(
+                            alignment: Alignment.centerLeft,
+                            padding: EdgeInsets.zero,
+                          ),
+                          onPressed: () async {
+                            final d = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now().add(
+                                const Duration(hours: 1),
+                              ),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2035),
+                            );
+                            if (d == null) return;
+                            if (!mounted) return;
+                            final t = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                            );
+                            if (t == null) return;
+                            final dt = DateTime(
+                              d.year,
+                              d.month,
+                              d.day,
+                              t.hour,
+                              t.minute,
+                            );
+                            if (dt.isBefore(DateTime.now())) {
+                              if (ctx.mounted) {
+                                showSnack(
+                                  ctx,
+                                  'Choose a future reminder time.',
+                                  isError: true,
+                                );
+                              }
+                              return;
                             }
-                            return;
-                          }
-                          setD(() => pickedReminder = dt.toIso8601String());
-                        },
-                        icon: const Icon(
-                          Icons.notifications_outlined,
-                          size: 16,
-                          color: kOrange,
-                        ),
-                        label: const Text(
-                          'Set Reminder',
-                          style: TextStyle(color: kOrange),
+                            setD(() => pickedReminder = dt.toIso8601String());
+                          },
+                          icon: const Icon(
+                            Icons.notifications_outlined,
+                            size: 16,
+                            color: kOrange,
+                          ),
+                          label: const Text(
+                            'Set Reminder',
+                            style: TextStyle(color: kOrange),
+                          ),
                         ),
                       ),
                       if (pickedReminder.isNotEmpty)

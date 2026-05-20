@@ -47,6 +47,7 @@ extension _InventoryProductViews on _InventoryPageState {
         ),
       ).then((_) => _load()),
       trailingBuilder: showStock ? _stockTrailing : null,
+      showInlineInfo: !showStock,
       gridFooterBuilder: showStock
           ? (item) => _stockTrailing(item, alignRight: false)
           : null,

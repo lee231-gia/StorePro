@@ -13,7 +13,7 @@ extension _ExpiryCards on _ExpiryPageState {
     return ProductCard(
       product: product,
       variant: variant,
-      onTap: () {},
+      onTap: () => _openProduct(product.id),
       extraBadges: [
         _tierBadge(tier, days, tierColor),
         if (indicators.where(_hasDate).isNotEmpty)
@@ -38,7 +38,7 @@ extension _ExpiryCards on _ExpiryPageState {
       product: product,
       variant: variant,
       compact: true,
-      onTap: () {},
+      onTap: () => _openProduct(product.id),
       extraBadges: [_tierBadge(tier, days, tierColor)],
       trailing: Text(
         expiry.isNotEmpty ? AppHelpers.formatDate(expiry) : '-',
@@ -62,7 +62,7 @@ extension _ExpiryCards on _ExpiryPageState {
     return ProductGridCard(
       product: product,
       variant: variant,
-      onTap: () {},
+      onTap: () => _openProduct(product.id),
       badges: [_tierBadge(tier, days, tierColor)],
       footer: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,7 +77,7 @@ extension _ExpiryCards on _ExpiryPageState {
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            '${variant.totalStock} pcs | ${_ExpiryPageState._tierLabel(tier)}',
+            '${variant.totalStock} pcs • ${_ExpiryPageState._tierLabel(tier)}',
             style: const TextStyle(color: kGrey, fontSize: 10),
             overflow: TextOverflow.ellipsis,
           ),
@@ -161,6 +161,13 @@ extension _ExpiryCards on _ExpiryPageState {
         ],
       ),
     );
+  }
+
+  void _openProduct(String productId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProductDetailPage(productId: productId)),
+    ).then((_) => _load());
   }
 
   ProductBadge _tierBadge(String tier, int days, Color color) {

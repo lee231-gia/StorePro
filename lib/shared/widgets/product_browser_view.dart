@@ -19,6 +19,7 @@ class ProductBrowserView extends StatelessWidget {
   final Widget Function(ProductDisplayItem item)? gridFooterBuilder;
   final Widget Function(ProductDisplayItem item)? actionBuilder;
   final bool Function(ProductDisplayItem item)? enabledBuilder;
+  final bool showInlineInfo;
   final String emptyText;
 
   const ProductBrowserView({
@@ -35,6 +36,7 @@ class ProductBrowserView extends StatelessWidget {
     this.gridFooterBuilder,
     this.actionBuilder,
     this.enabledBuilder,
+    this.showInlineInfo = true,
     this.emptyText = 'No products found.',
   });
 
@@ -113,6 +115,7 @@ class ProductBrowserView extends StatelessWidget {
             trailing: trailingBuilder?.call(items[i]),
             extraBadges: badgeBuilder?.call(items[i]) ?? const [],
             enabled: enabledBuilder?.call(items[i]) ?? true,
+            showInlineInfo: showInlineInfo,
           ),
         );
     }
@@ -148,46 +151,72 @@ class _ProductDetailTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                ProductImage(
+                  item: item,
+                  size: 48,
+                  padding: EdgeInsets.zero,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    item.name,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: kDark,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: kDark,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 3),
+                      ProductInlineInfo(
+                        entries: [
+                          ProductInlineEntry(
+                            Icons.inventory_2_outlined,
+                            '${item.totalStock} pcs',
+                            AppHelpers.stockColor(item.totalStock),
+                          ),
+                          ProductInlineEntry(
+                            Icons.event_outlined,
+                            item.nearestExpiry.isEmpty
+                                ? 'No expiry'
+                                : AppHelpers.formatDate(item.nearestExpiry),
+                            kGrey,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                trailing ??
-                    Text(
-                      AppHelpers.peso(item.price),
-                      style: const TextStyle(
-                        color: kRed,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 13,
-                      ),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 88,
+                  child: Align(
+                    alignment: Alignment.topRight,
+                    child: trailing ??
+                        Text(
+                          AppHelpers.peso(item.price),
+                          textAlign: TextAlign.right,
+                          style: const TextStyle(
+                            color: kRed,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 13,
+                          ),
+                        ),
                     ),
+                ),
               ],
             ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              children: [
-                ProductDetailInfoChip(
-                  icon: Icons.inventory_2_outlined,
-                  label: '${item.totalStock} pcs',
-                ),
-                ProductDetailInfoChip(
-                  icon: Icons.event_outlined,
-                  label: item.nearestExpiry.isEmpty
-                      ? 'No Expiry'
-                      : item.nearestExpiry,
-                ),
-                ...badges,
-              ],
-            ),
+            if (badges.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(spacing: 6, runSpacing: 4, children: badges),
+            ],
             if (item.variant == null && item.variantCount > 1) ...[
               const SizedBox(height: 10),
               const Divider(height: 1),
@@ -206,8 +235,19 @@ class _ProductDetailTile extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          const Icon(Icons.subdirectory_arrow_right, size: 14, color: kGrey),
-          const SizedBox(width: 4),
+          if (variant.imageUrl.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(5),
+              child: Image.network(
+                variant.imageUrl,
+                width: 28,
+                height: 28,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const SizedBox(width: 28, height: 28),
+              ),
+            ),
+            const SizedBox(width: 7),
+          ],
           Expanded(
             child: Text(
               variant.name,
@@ -232,7 +272,7 @@ class _ProductDetailTile extends StatelessWidget {
                 Text(
                   expiry.isEmpty
                       ? '${variant.totalStock} pcs'
-                      : '${variant.totalStock} pcs | ${AppHelpers.formatDate(expiry)}',
+                      : '${variant.totalStock} pcs • ${AppHelpers.formatDate(expiry)}',
                   style: TextStyle(
                     fontSize: 10,
                     color: AppHelpers.stockColor(variant.totalStock),
@@ -311,12 +351,6 @@ class _ProductCompactTile extends StatelessWidget {
                           '${item.totalStock} pcs',
                           AppHelpers.stockColor(item.totalStock),
                         ),
-                        if (!item.isVariant && item.variantCount > 1)
-                          ProductInlineEntry(
-                            Icons.account_tree_outlined,
-                            '${item.variantCount} variants',
-                            kGrey,
-                          ),
                       ],
                     ),
                   ],

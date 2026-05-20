@@ -57,6 +57,9 @@ class CartItem {
   final String productName;
   final String variantName;
   final String conditionName;
+  final String imageUrl;
+  final int iconIndex;
+  final int colorIndex;
   double price;
   int qty;
   double costPrice;
@@ -68,6 +71,9 @@ class CartItem {
     required this.productName,
     required this.variantName,
     this.conditionName = '',
+    this.imageUrl = '',
+    this.iconIndex = 0,
+    this.colorIndex = 0,
     required this.price,
     this.qty = 1,
     this.costPrice = 0.0,
@@ -77,7 +83,9 @@ class CartItem {
   // Unique key for deduplication in cart
   String get key => '$productId|$variantId|$conditionName';
 
-  double get subtotal => (price * qty) - itemDiscount;
+  double get subtotal => ((price * qty) - itemDiscount)
+      .clamp(0, double.infinity)
+      .toDouble();
   double get profit => (price - costPrice) * qty - itemDiscount;
 }
 

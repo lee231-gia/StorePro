@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icons.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/product_model.dart';
 import '../../repositories/product_repository.dart';
+import '../../widgets/product_card.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/employee_picker.dart';
 import 'add_product_page.dart';
@@ -101,13 +100,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     }
 
     final p = _product!;
-    final catColor =
-        kCategoryColors[p.colorIndex.clamp(0, kCategoryColors.length - 1)];
-    final icon = AppIcons.get(p.iconIndex);
     final variantNames = p.variants.map((v) => v.name).join(', ');
-    final imageCacheSize = (96 * MediaQuery.devicePixelRatioOf(context))
-        .clamp(160, 480)
-        .round();
+    final headerVariant = p.imageUrl.isEmpty ? _firstVariantImage(p) : null;
 
     return Scaffold(
       backgroundColor: kBg,
@@ -140,29 +134,15 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             appCard(
               child: Row(
                 children: [
-                  // Image or icon
-                  p.imageUrl.isNotEmpty
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: _optimizedImageUrl(
-                              p.imageUrl,
-                              imageCacheSize,
-                            ),
-                            width: 72,
-                            height: 72,
-                            fit: BoxFit.cover,
-                            fadeInDuration: Duration.zero,
-                            fadeOutDuration: Duration.zero,
-                            memCacheWidth: imageCacheSize,
-                            memCacheHeight: imageCacheSize,
-                            maxWidthDiskCache: imageCacheSize,
-                            maxHeightDiskCache: imageCacheSize,
-                            errorWidget: (context, url, error) =>
-                                _iconBox(catColor, icon, 72),
-                          ),
-                        )
-                      : _iconBox(catColor, icon, 72),
+                  ProductImage(
+                    item: ProductDisplayItem(
+                      product: p,
+                      variant: headerVariant,
+                    ),
+                    size: 82,
+                    padding: EdgeInsets.zero,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
 
                   const SizedBox(width: 14),
 
@@ -180,15 +160,27 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          p.categoryName,
-                          style: TextStyle(color: catColor, fontSize: 13),
+                          p.description.trim().isEmpty
+                              ? p.name
+                              : p.description.trim(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: kGrey, fontSize: 12),
                         ),
-                        Text(
-                          '${p.totalStock} pcs total',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppHelpers.stockColor(p.totalStock),
-                          ),
+                        const SizedBox(height: 3),
+                        ProductInlineInfo(
+                          entries: [
+                            ProductInlineEntry(
+                              Icons.category_outlined,
+                              p.categoryName,
+                              kGrey,
+                            ),
+                            ProductInlineEntry(
+                              Icons.inventory_outlined,
+                              '${p.totalStock} pcs',
+                              AppHelpers.stockColor(p.totalStock),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -205,33 +197,28 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   infoRow(
                     'Added On',
                     AppHelpers.formatDate(p.addedOn),
-                    icon: Icons.calendar_today_outlined,
                   ),
                   const Divider(height: 1),
                   infoRow(
-                    'Category',
-                    p.categoryName,
-                    icon: Icons.category_outlined,
+                    'Description',
+                    p.description.trim().isEmpty ? p.name : p.description.trim(),
                   ),
                   const Divider(height: 1),
                   infoRow(
                     'Variants',
                     '${p.variants.length}',
-                    icon: Icons.list_alt_outlined,
                   ),
                   if (variantNames.isNotEmpty) ...[
                     const Divider(height: 1),
                     infoRow(
                       'Variant Names',
                       variantNames,
-                      icon: Icons.account_tree_outlined,
                     ),
                   ],
                   const Divider(height: 1),
                   infoRow(
                     'Total Stock',
                     '${p.totalStock} pcs',
-                    icon: Icons.inventory_outlined,
                   ),
                 ],
               ),
@@ -244,8 +231,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.layers_outlined, color: kRed, size: 18),
-                      const SizedBox(width: 8),
                       const Text(
                         'Variants & Stock',
                         style: TextStyle(
@@ -302,7 +287,22 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         children: [
           // Name + stock
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (v.imageUrl.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    v.imageUrl,
+                    width: 46,
+                    height: 46,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) =>
+                        const SizedBox(width: 46, height: 46),
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
               Expanded(
                 child: Text(
                   v.name,
@@ -368,12 +368,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(
-                  Icons.event_outlined,
-                  size: 13,
-                  color: AppHelpers.statusColor(status),
-                ),
-                const SizedBox(width: 4),
                 Text(
                   '${_lifeIndicatorStatus(primaryDue)}  '
                   '${AppHelpers.formatDate(primaryDue.date)}',
@@ -464,23 +458,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     ),
   );
 
-  Widget _iconBox(Color color, IconData icon, double size) => Container(
-    width: size,
-    height: size,
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Icon(icon, color: color, size: size * 0.46),
-  );
-
-  String _optimizedImageUrl(String url, int width) {
-    if (!url.contains('/upload/') || url.contains('/upload/c_')) return url;
-    final targetWidth = width.clamp(160, 900);
-    return url.replaceFirst(
-      '/upload/',
-      '/upload/c_fill,g_auto,w_$targetWidth,q_auto,f_auto/',
-    );
+  VariantModel? _firstVariantImage(ProductModel product) {
+    for (final variant in product.variants) {
+      if (variant.imageUrl.isNotEmpty) return variant;
+    }
+    return null;
   }
 
   Color _lifeIndicatorColor(LifeIndicator indicator) {

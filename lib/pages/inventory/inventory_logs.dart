@@ -70,14 +70,9 @@ extension _InventoryLogs on _InventoryPageState {
                     ),
                   ),
                   Text(
-                    '${log.variantName}  -  ${_reasonLabel(log.reason)}',
+                    '${log.variantName} • ${_reasonLabel(log.reason)}',
                     style: const TextStyle(color: kGrey, fontSize: 11),
                   ),
-                  if (log.employeeName.isNotEmpty)
-                    Text(
-                      'by ${log.employeeName}',
-                      style: const TextStyle(color: kGrey, fontSize: 11),
-                    ),
                   if (currentStock != null)
                     Text(
                       'Current stock: $currentStock pcs left',
@@ -102,7 +97,7 @@ extension _InventoryLogs on _InventoryPageState {
                   ),
                 ),
                 Text(
-                  AppHelpers.formatDate(log.date),
+                  _logDateTime(log),
                   style: const TextStyle(color: kGrey, fontSize: 11),
                 ),
               ],
@@ -122,5 +117,13 @@ extension _InventoryLogs on _InventoryPageState {
       return product.totalStock;
     }
     return null;
+  }
+
+  String _logDateTime(InventoryLogModel log) {
+    final dt = DateTime.tryParse(
+      log.updatedAt.isNotEmpty ? log.updatedAt : log.date,
+    );
+    if (dt == null) return AppHelpers.formatDate(log.date);
+    return AppHelpers.formatDateTime(dt);
   }
 }

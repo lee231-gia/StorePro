@@ -6,6 +6,7 @@ import '../../repositories/product_repository.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
 import '../../widgets/product_card.dart';
+import '../products/product_detail_page.dart';
 
 part 'expiry_filters.dart';
 part 'expiry_content.dart';
@@ -34,6 +35,7 @@ class _ExpiryPageState extends State<ExpiryPage> {
   // all | expired | urgent | standard | good | excellent | no_date
   String _catFilter = 'All';
   String _viewMode = 'list';
+  bool _groupVariants = false;
   String _sortBy = 'expiry-asc';
   String _search = '';
   String _liFilter = 'all'; // product life indicator filter
@@ -266,7 +268,13 @@ class _ExpiryPageState extends State<ExpiryPage> {
       }
     });
 
-    return list;
+    if (!_groupVariants) return list;
+    final grouped = <String, Map<String, dynamic>>{};
+    for (final entry in list) {
+      final product = entry['product'] as ProductModel;
+      grouped.putIfAbsent(product.id, () => entry);
+    }
+    return grouped.values.toList();
   }
 
   // ── TIER COUNTS ───────────────────────────────────────────
@@ -297,6 +305,15 @@ class _ExpiryPageState extends State<ExpiryPage> {
         title: 'Expiry Tracker',
         context: context,
         actions: [
+          IconButton(
+            tooltip: _groupVariants ? 'Grouped' : 'Ungrouped',
+            icon: Icon(
+              _groupVariants
+                  ? Icons.account_tree_outlined
+                  : Icons.view_agenda_outlined,
+            ),
+            onPressed: () => setState(() => _groupVariants = !_groupVariants),
+          ),
           // View mode
           PopupMenuButton<String>(
             icon: const Icon(Icons.view_module),

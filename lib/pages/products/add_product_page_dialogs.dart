@@ -46,6 +46,8 @@ extension _AddProductPageDialogs on _AddProductPageState {
                       onTap: () => _showImagePicker(
                         onPicked: (f) => setD(() => varImgFile = f),
                       ),
+                      onLongPress: () =>
+                          _previewImage(file: varImgFile, url: varImgUrl),
                       child: Container(
                         width: 116,
                         height: 116,
@@ -361,25 +363,17 @@ extension _AddProductPageDialogs on _AddProductPageState {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  fieldLabel('Cost (₱)'),
+                  fieldLabel('Selling Price (PHP) *'),
                   TextField(
-                    controller: costCtrl,
+                    controller: priceCtrl,
                     keyboardType: TextInputType.number,
+                    textAlign: TextAlign.right,
                     decoration: AppInput.field('0.00'),
                   ),
                 ],
               ),
             ),
           ],
-        ),
-
-        const SizedBox(height: 10),
-
-        fieldLabel('Selling Price (₱) *'),
-        TextField(
-          controller: priceCtrl,
-          keyboardType: TextInputType.number,
-          decoration: AppInput.field('0.00', icon: Icons.attach_money),
         ),
 
         const SizedBox(height: 10),

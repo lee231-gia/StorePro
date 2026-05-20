@@ -99,28 +99,31 @@ class ProductImage extends StatelessWidget {
     final cacheWidth = (w * dpr).clamp(96, 720).round();
     final cacheHeight = (h * dpr).clamp(96, 720).round();
 
-    return Container(
-      width: w,
-      height: h,
-      clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: borderRadius,
-      ),
-      child: Padding(
-        padding: padding,
-        child: CachedNetworkImage(
-          imageUrl: _optimizedImageUrl(item.imageUrl, cacheWidth),
-          fit: BoxFit.cover,
-          alignment: Alignment.center,
-          fadeInDuration: Duration.zero,
-          fadeOutDuration: Duration.zero,
-          memCacheWidth: cacheWidth,
-          memCacheHeight: cacheHeight,
-          maxWidthDiskCache: cacheWidth,
-          maxHeightDiskCache: cacheHeight,
-          placeholder: (_, _) => _iconBox(w, h, color),
-          errorWidget: (_, _, _) => _iconBox(w, h, color),
+    return GestureDetector(
+      onTap: () => _showImagePreview(context, item.imageUrl),
+      child: Container(
+        width: w,
+        height: h,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: borderRadius,
+        ),
+        child: Padding(
+          padding: padding,
+          child: CachedNetworkImage(
+            imageUrl: _optimizedImageUrl(item.imageUrl, cacheWidth),
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            fadeInDuration: Duration.zero,
+            fadeOutDuration: Duration.zero,
+            memCacheWidth: cacheWidth,
+            memCacheHeight: cacheHeight,
+            maxWidthDiskCache: cacheWidth,
+            maxHeightDiskCache: cacheHeight,
+            placeholder: (_, _) => _iconBox(w, h, color),
+            errorWidget: (_, _, _) => _iconBox(w, h, color),
+          ),
         ),
       ),
     );
@@ -148,6 +151,52 @@ class ProductImage extends StatelessWidget {
       size: height * 0.46,
     ),
   );
+
+  void _showImagePreview(BuildContext context, String url) {
+    if (url.isEmpty) return;
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 1,
+                  maxScale: 4,
+                  child: CachedNetworkImage(
+                    imageUrl: url,
+                    fit: BoxFit.contain,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    errorWidget: (_, _, _) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.white70,
+                      size: 48,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton.filled(
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.white24,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class ProductBadge extends StatelessWidget {
@@ -200,6 +249,7 @@ class ProductCard extends StatelessWidget {
   final Widget? trailing;
   final List<Widget> extraBadges;
   final bool enabled;
+  final bool showInlineInfo;
 
   const ProductCard({
     super.key,
@@ -210,6 +260,7 @@ class ProductCard extends StatelessWidget {
     this.trailing,
     this.extraBadges = const [],
     this.enabled = true,
+    this.showInlineInfo = true,
   });
 
   @override
@@ -281,21 +332,16 @@ class ProductCard extends StatelessWidget {
                         ],
                       ),
                     const SizedBox(height: 2),
-                    ProductInlineInfo(
-                      entries: [
-                        ProductInlineEntry(
-                          Icons.inventory_2_outlined,
-                          '$stock pcs',
-                          AppHelpers.stockColor(stock),
-                        ),
-                        if (!item.isVariant && item.variantCount > 1)
+                    if (showInlineInfo)
+                      ProductInlineInfo(
+                        entries: [
                           ProductInlineEntry(
-                            Icons.account_tree_outlined,
-                            '${item.variantCount} variants',
-                            kGrey,
+                            Icons.inventory_2_outlined,
+                            '$stock pcs',
+                            AppHelpers.stockColor(stock),
                           ),
-                      ],
-                    ),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -324,11 +370,6 @@ class ProductCard extends StatelessWidget {
                         color: kDark,
                       ),
                     ),
-                    if (!item.isVariant && item.variantCount > 1)
-                      Text(
-                        '${item.variantCount} variants',
-                        style: const TextStyle(fontSize: 10, color: kGrey),
-                      ),
                   ],
                 ),
               if (trailing == null) ...[
@@ -563,8 +604,8 @@ class ProductDetailInfoChip extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Icon(icon, size: 14, color: kGrey),
-      const SizedBox(width: 4),
+      const Text('•', style: TextStyle(fontSize: 12, color: kGrey)),
+      const SizedBox(width: 5),
       Flexible(
         child: Text(
           label,
@@ -597,27 +638,28 @@ class ProductInlineInfo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Wrap(
-    spacing: 8,
+    spacing: 7,
     runSpacing: 2,
-    children: entries
-        .map(
-          (entry) => Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(entry.icon, size: fontSize + 2, color: entry.color),
-              const SizedBox(width: 3),
-              Text(
-                entry.text,
-                style: TextStyle(
-                  fontSize: fontSize,
-                  color: entry.color,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+    children: [
+      for (var i = 0; i < entries.length; i++)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (i > 0) ...[
+              const Text('•', style: TextStyle(fontSize: 10, color: kGrey)),
+              const SizedBox(width: 5),
             ],
-          ),
-        )
-        .toList(),
+            Text(
+              entries[i].text,
+              style: TextStyle(
+                fontSize: fontSize,
+                color: entries[i].color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+    ],
   );
 }
 

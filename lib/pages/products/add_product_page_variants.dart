@@ -110,9 +110,10 @@ extension _AddProductPageVariants on _AddProductPageState {
               onTap: () => _showImagePicker(
                 onPicked: (f) => setS(() => variantImageFile = f),
               ),
+              onLongPress: () => _previewImage(file: variantImageFile),
               child: Container(
-                height: 88,
-                width: double.infinity,
+                height: 104,
+                width: 104,
                 margin: const EdgeInsets.only(bottom: 12),
                 decoration: BoxDecoration(
                   color: kInputFill,
