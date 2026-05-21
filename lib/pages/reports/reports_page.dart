@@ -79,7 +79,10 @@ class _ReportsPageState extends State<ReportsPage>
           collection == 'products' ||
           collection == 'utang' ||
           collection == 'activity_logs' ||
-          collection == 'inventory_logs') {
+          collection == 'inventory_logs' ||
+          collection == 'customers' ||
+          collection == 'categories' ||
+          collection == 'notes') {
         _generate();
       }
     });

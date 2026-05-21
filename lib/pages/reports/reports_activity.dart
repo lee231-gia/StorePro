@@ -124,6 +124,17 @@ extension _ReportsActivity on _ReportsPageState {
           : 'Edited Product: "$productName"';
     }
     if (action == 'delete_product') return 'Deleted Product';
+    if (action == 'add_customer') {
+      return productName.isEmpty
+          ? 'Added Customer'
+          : 'Added Customer: "$productName"';
+    }
+    if (action == 'edit_customer') {
+      return productName.isEmpty
+          ? 'Updated Customer'
+          : 'Updated Customer: "$productName"';
+    }
+    if (action == 'delete_customer') return 'Deleted Customer';
     return _capitalize(action.replaceAll('_', ' '));
   }
 

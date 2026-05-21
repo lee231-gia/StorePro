@@ -348,6 +348,9 @@ class _SalesPageState extends State<SalesPage> {
     final cartSnapshot = _cart.toList();
     final total = _cartTotal;
     final discount = _discTotal;
+    final normalizedCustomerName = customerName.trim().isEmpty
+        ? 'Walk-in'
+        : customerName.trim();
     // Build sale items
     final items = cartSnapshot
         .map(
@@ -365,34 +368,41 @@ class _SalesPageState extends State<SalesPage> {
         )
         .toList();
 
-    // Build sale record
-    final sale = SaleModel(
-      id: '',
-      storeId: Session.storeId,
-      customerId: customerId,
-      customerName: customerName,
-      employeeId: Session.safeEmployeeId,
-      employeeName: Session.safeEmployeeName,
-      items: items,
-      subtotal: total + discount,
-      totalDiscount: discount,
-      total: total,
-      amountPaid: amountPaid,
-      change: change,
-      paymentType: paymentType,
-      status:
-          paymentType == 'utang' ||
-              (paymentType == 'multi' && amountPaid < total)
-          ? 'partial'
-          : 'completed',
-      notes: _notesCtrl.text.trim(),
-      date: AppHelpers.todayStr(),
-      timestamp: AppHelpers.nowStr(),
-      updatedAt: AppHelpers.nowStr(),
-    );
-
     late final SaleModel saved;
     try {
+      final customer = await _syncSaleCustomer(
+        customerId: customerId,
+        customerName: normalizedCustomerName,
+        customerPhone: customerPhone,
+        customerAddress: customerAddress,
+      );
+
+      // Build sale record
+      final sale = SaleModel(
+        id: '',
+        storeId: Session.storeId,
+        customerId: customer?.id ?? '',
+        customerName: customer?.name ?? normalizedCustomerName,
+        employeeId: Session.safeEmployeeId,
+        employeeName: Session.safeEmployeeName,
+        items: items,
+        subtotal: total + discount,
+        totalDiscount: discount,
+        total: total,
+        amountPaid: amountPaid,
+        change: change,
+        paymentType: paymentType,
+        status:
+            paymentType == 'utang' ||
+                (paymentType == 'multi' && amountPaid < total)
+            ? 'partial'
+            : 'completed',
+        notes: _notesCtrl.text.trim(),
+        date: AppHelpers.todayStr(),
+        timestamp: AppHelpers.nowStr(),
+        updatedAt: AppHelpers.nowStr(),
+      );
+
       // Save sale
       saved = await SaleRepository.save(sale);
 
@@ -408,32 +418,13 @@ class _SalesPageState extends State<SalesPage> {
       // If utang or multi — create debt record
       if (paymentType == 'utang' ||
           (paymentType == 'multi' && amountPaid < total)) {
-        // Save/find customer
-        final custList = await CustomerRepository.getAll();
-        CustomerModel? customer =
-            custList.where((c) => c.name == customerName).isNotEmpty
-            ? custList.firstWhere((c) => c.name == customerName)
-            : null;
-
-        customer ??= await CustomerRepository.save(
-          CustomerModel(
-            id: '',
-            storeId: Session.storeId,
-            name: customerName,
-            phone: customerPhone,
-            address: customerAddress,
-            createdAt: AppHelpers.nowStr(),
-            updatedAt: AppHelpers.nowStr(),
-          ),
-        );
-
         final paidSoFar = paymentType == 'multi' ? amountPaid : 0.0;
         final utang = UtangModel(
           id: '',
           storeId: Session.storeId,
-          customerId: customer.id,
-          customerName: customerName,
-          customerPhone: customerPhone,
+          customerId: customer?.id ?? '',
+          customerName: customer?.name ?? normalizedCustomerName,
+          customerPhone: customer?.phone ?? customerPhone,
           saleId: saved.id,
           items: cartSnapshot
               .map(
@@ -461,7 +452,9 @@ class _SalesPageState extends State<SalesPage> {
         await UtangRepository.save(utang);
 
         // Update customer total purchases
-        await CustomerRepository.addPurchase(customer.id, total);
+        if (customer != null) {
+          await CustomerRepository.addPurchase(customer.id, total);
+        }
       } else {
         // Cash sale — update customer if named
         if (customerName != 'Walk-in') {
@@ -502,6 +495,59 @@ class _SalesPageState extends State<SalesPage> {
   }
 
   // ── BUILD ─────────────────────────────────────────────────
+  Future<CustomerModel?> _syncSaleCustomer({
+    required String customerId,
+    required String customerName,
+    required String customerPhone,
+    required String customerAddress,
+  }) async {
+    final name = customerName.trim();
+    if (name.isEmpty || name.toLowerCase() == 'walk-in') return null;
+
+    final customers = await CustomerRepository.getAll();
+    CustomerModel? customer;
+    final id = customerId.trim();
+    if (id.isNotEmpty) {
+      final idMatches = customers.where((c) => c.id == id).toList();
+      if (idMatches.isNotEmpty) customer = idMatches.first;
+    }
+
+    final nameMatches = customers
+        .where((c) => c.name.trim().toLowerCase() == name.toLowerCase())
+        .toList();
+    customer ??= nameMatches.isEmpty ? null : nameMatches.first;
+
+    if (customer == null) {
+      return CustomerRepository.save(
+        CustomerModel(
+          id: '',
+          storeId: Session.storeId,
+          name: name,
+          phone: customerPhone.trim(),
+          address: customerAddress.trim(),
+          createdAt: AppHelpers.nowStr(),
+          updatedAt: AppHelpers.nowStr(),
+        ),
+      );
+    }
+
+    final phone = customerPhone.trim();
+    final address = customerAddress.trim();
+    final shouldUpdate =
+        customer.name != name ||
+        (phone.isNotEmpty && phone != customer.phone) ||
+        (address.isNotEmpty && address != customer.address);
+    if (!shouldUpdate) return customer;
+
+    return CustomerRepository.save(
+      customer.copyWith(
+        name: name,
+        phone: phone.isEmpty ? customer.phone : phone,
+        address: address.isEmpty ? customer.address : address,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

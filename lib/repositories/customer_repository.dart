@@ -2,6 +2,7 @@ import '../core/services/sqlite_service.dart';
 import '../core/services/sync_service.dart';
 import '../core/utils/app_helpers.dart';
 import '../core/utils/session.dart';
+import '../models/activity_log_model.dart';
 import '../models/customer_model.dart';
 
 class CustomerRepository {
@@ -27,8 +28,12 @@ class CustomerRepository {
     );
   }
 
-  static Future<CustomerModel> save(CustomerModel customer) async {
+  static Future<CustomerModel> save(
+    CustomerModel customer, {
+    bool logActivity = true,
+  }) async {
     final now = AppHelpers.nowStr();
+    final isNew = customer.id.isEmpty;
     final updated = CustomerModel(
       id: customer.id.isEmpty ? AppHelpers.newId() : customer.id,
       storeId: Session.storeId,
@@ -47,12 +52,32 @@ class CustomerRepository {
       _table,
       updated.toSql(),
     );
+    if (logActivity) {
+      await _log(
+        isNew ? 'add_customer' : 'edit_customer',
+        updated.id,
+        updated.name,
+        details: {
+          'customerName': updated.name,
+          'phone': updated.phone,
+          'address': updated.address,
+          'totalPurchases': updated.totalPurchases,
+        },
+      );
+    }
     return updated;
   }
 
   static Future<void> delete(String id) async {
+    final rows = await SQLiteService.query(
+      _table,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    final name = rows.isEmpty ? '' : CustomerModel.fromMap(rows.first).name;
     await SQLiteService.delete(_table, id);
     SyncService.deleteInBackground(_col, id);
+    await _log('delete_customer', id, name);
   }
 
   static Future<void> addPurchase(String customerId, double amount) async {
@@ -65,6 +90,34 @@ class CustomerRepository {
     if (rows.isEmpty) return;
     final c = CustomerModel.fromMap(rows.first);
     final updated = c.copyWith(totalPurchases: c.totalPurchases + amount);
-    await save(updated);
+    await save(updated, logActivity: false);
+  }
+
+  static Future<void> _log(
+    String action,
+    String targetId,
+    String name, {
+    Map<String, dynamic> details = const {},
+  }) async {
+    if (!Session.trackActivity) return;
+    final log = ActivityLogModel(
+      id: AppHelpers.newId(),
+      storeId: Session.storeId,
+      employeeId: Session.safeEmployeeId,
+      employeeName: Session.safeEmployeeName,
+      action: action,
+      targetType: 'customer',
+      targetId: targetId,
+      targetName: name,
+      timestamp: AppHelpers.nowStr(),
+      details: details,
+    );
+    await SyncService.write(
+      'activity_logs',
+      log.id,
+      log.toMap(),
+      'activity_logs',
+      log.toSql(),
+    );
   }
 }

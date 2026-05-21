@@ -181,16 +181,21 @@ class ReportRepository {
         ? [Session.storeId, employeeId]
         : [Session.storeId];
 
-    final rows = await SQLiteService.query(
-      'activity_logs',
-      where: where,
-      whereArgs: args,
-      orderBy: 'timestamp DESC',
-      limit: limit,
-    );
-    final logs = rows
-        .map((row) => ActivityLogModel.fromMap(row).toMap())
-        .toList();
+    final logs = <Map<String, dynamic>>[];
+    try {
+      final rows = await SQLiteService.query(
+        'activity_logs',
+        where: where,
+        whereArgs: args,
+        orderBy: 'timestamp DESC',
+        limit: limit,
+      );
+      for (final row in rows) {
+        try {
+          logs.add(ActivityLogModel.fromMap(row).toMap());
+        } catch (_) {}
+      }
+    } catch (_) {}
     final synthetic = await _legacyActivityLogs(
       employeeId: employeeId,
       limit: limit,
@@ -208,11 +213,7 @@ class ReportRepository {
         return !explicitKeys.contains(key);
       }),
     );
-    logs.sort(
-      (a, b) => (b['timestamp'] ?? '').toString().compareTo(
-        (a['timestamp'] ?? '').toString(),
-      ),
-    );
+    logs.sort(_compareActivityLogs);
     return logs.take(limit).toList();
   }
 
@@ -232,28 +233,30 @@ class ReportRepository {
         orderBy: 'date DESC, updatedAt DESC',
         limit: queryLimit,
       );
-      final sales = saleRows.map(SaleModel.fromSql);
-      for (final sale in sales) {
-        final empId = sale.employeeId.isEmpty ? 'owner' : sale.employeeId;
-        if (!includeEmployee(empId)) continue;
-        logs.add(
-          ActivityLogModel(
-            id: 'legacy-sale-${sale.id}',
-            storeId: Session.storeId,
-            employeeId: empId,
-            employeeName: sale.employeeName.isEmpty
-                ? Session.safeEmployeeName
-                : sale.employeeName,
-            action: 'new_sale',
-            targetType: 'sale',
-            targetId: sale.id,
-            targetName: sale.customerName,
-            timestamp: sale.timestamp.isNotEmpty
-                ? sale.timestamp
-                : _dateFallback(sale.date),
-            details: _saleDetails(sale),
-          ),
-        );
+      for (final row in saleRows) {
+        try {
+          final sale = SaleModel.fromSql(row);
+          final empId = sale.employeeId.isEmpty ? 'owner' : sale.employeeId;
+          if (!includeEmployee(empId)) continue;
+          logs.add(
+            ActivityLogModel(
+              id: 'legacy-sale-${sale.id}',
+              storeId: Session.storeId,
+              employeeId: empId,
+              employeeName: sale.employeeName.isEmpty
+                  ? Session.safeEmployeeName
+                  : sale.employeeName,
+              action: 'new_sale',
+              targetType: 'sale',
+              targetId: sale.id,
+              targetName: sale.customerName,
+              timestamp: sale.timestamp.isNotEmpty
+                  ? sale.timestamp
+                  : _dateFallback(sale.date),
+              details: _saleDetails(sale),
+            ),
+          );
+        } catch (_) {}
       }
     } catch (_) {}
 
@@ -266,33 +269,35 @@ class ReportRepository {
         limit: queryLimit,
       );
       for (final row in inventoryRows) {
-        final entry = InventoryLogModel.fromMap(row);
-        final empId = entry.employeeId.isEmpty ? 'owner' : entry.employeeId;
-        if (!includeEmployee(empId)) continue;
-        logs.add(
-          ActivityLogModel(
-            id: 'legacy-inventory-${entry.id}',
-            storeId: Session.storeId,
-            employeeId: empId,
-            employeeName: entry.employeeName.isEmpty
-                ? Session.safeEmployeeName
-                : entry.employeeName,
-            action: entry.qty >= 0 ? 'inventory_add' : 'inventory_remove',
-            targetType: 'inventory',
-            targetId: entry.id,
-            targetName: entry.productName,
-            timestamp: entry.updatedAt.isNotEmpty
-                ? entry.updatedAt
-                : _dateFallback(entry.date),
-            details: {
-              'productName': entry.productName,
-              'variantName': entry.variantName,
-              'qty': entry.qty,
-              'reason': entry.reason,
-              'costPrice': entry.costPrice,
-            },
-          ),
-        );
+        try {
+          final entry = InventoryLogModel.fromMap(row);
+          final empId = entry.employeeId.isEmpty ? 'owner' : entry.employeeId;
+          if (!includeEmployee(empId)) continue;
+          logs.add(
+            ActivityLogModel(
+              id: 'legacy-inventory-${entry.id}',
+              storeId: Session.storeId,
+              employeeId: empId,
+              employeeName: entry.employeeName.isEmpty
+                  ? Session.safeEmployeeName
+                  : entry.employeeName,
+              action: entry.qty >= 0 ? 'inventory_add' : 'inventory_remove',
+              targetType: 'inventory',
+              targetId: entry.id,
+              targetName: entry.productName,
+              timestamp: entry.updatedAt.isNotEmpty
+                  ? entry.updatedAt
+                  : _dateFallback(entry.date),
+              details: {
+                'productName': entry.productName,
+                'variantName': entry.variantName,
+                'qty': entry.qty,
+                'reason': entry.reason,
+                'costPrice': entry.costPrice,
+              },
+            ),
+          );
+        } catch (_) {}
       }
     } catch (_) {}
 
@@ -305,37 +310,39 @@ class ReportRepository {
         limit: queryLimit,
       );
       for (final row in productRows) {
-        final product = ProductModel.fromSql(row);
-        if (!includeEmployee('owner')) continue;
-        logs.add(
-          ActivityLogModel(
-            id: 'legacy-product-${product.id}',
-            storeId: Session.storeId,
-            employeeId: 'owner',
-            employeeName: Session.safeEmployeeName,
-            action: 'add_product',
-            targetType: 'product',
-            targetId: product.id,
-            targetName: product.name,
-            timestamp: product.updatedAt.isNotEmpty
-                ? product.updatedAt
-                : _dateFallback(product.addedOn),
-            details: {
-              'productName': product.name,
-              'variantCount': product.variants.length,
-              'variants': product.variants
-                  .map(
-                    (variant) => {
-                      'name': variant.name,
-                      'stock': variant.totalStock,
-                      'price': variant.price,
-                      'costPrice': variant.costPrice,
-                    },
-                  )
-                  .toList(),
-            },
-          ),
-        );
+        try {
+          final product = ProductModel.fromSql(row);
+          if (!includeEmployee('owner')) continue;
+          logs.add(
+            ActivityLogModel(
+              id: 'legacy-product-${product.id}',
+              storeId: Session.storeId,
+              employeeId: 'owner',
+              employeeName: Session.safeEmployeeName,
+              action: 'add_product',
+              targetType: 'product',
+              targetId: product.id,
+              targetName: product.name,
+              timestamp: product.updatedAt.isNotEmpty
+                  ? product.updatedAt
+                  : _dateFallback(product.addedOn),
+              details: {
+                'productName': product.name,
+                'variantCount': product.variants.length,
+                'variants': product.variants
+                    .map(
+                      (variant) => {
+                        'name': variant.name,
+                        'stock': variant.totalStock,
+                        'price': variant.price,
+                        'costPrice': variant.costPrice,
+                      },
+                    )
+                    .toList(),
+              },
+            ),
+          );
+        } catch (_) {}
       }
     } catch (_) {}
 
@@ -352,7 +359,7 @@ class ReportRepository {
         action: 'add_customer',
         targetType: 'customer',
         targetNameColumn: 'name',
-        timestampColumn: 'updatedAt',
+        timestampColumn: 'createdAt',
       ),
       _LegacyTableSpec(
         table: 'notes',
@@ -400,6 +407,18 @@ class ReportRepository {
     }
 
     return logs.map((log) => log.toMap()).toList();
+  }
+
+  static int _compareActivityLogs(
+    Map<String, dynamic> a,
+    Map<String, dynamic> b,
+  ) {
+    DateTime parse(Map<String, dynamic> log) {
+      final raw = (log['timestamp'] ?? '').toString();
+      return DateTime.tryParse(raw) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
+    return parse(b).compareTo(parse(a));
   }
 
   static String _dateFallback(String value) {

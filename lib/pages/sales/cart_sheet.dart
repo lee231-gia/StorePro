@@ -521,15 +521,67 @@ Widget _customerSelector({
     if (matches.isNotEmpty) fill(matches.first);
   }
 
-  return TextField(
-    controller: controller,
-    focusNode: focusNode,
-    textInputAction: TextInputAction.next,
-    decoration: AppInput.field(hint, icon: Icons.person_outline),
-    onChanged: fillExact,
-    onEditingComplete: () {
-      fillExact(controller.text);
-      focusNode.unfocus();
+  return StatefulBuilder(
+    builder: (context, setLocal) {
+      final query = controller.text.trim().toLowerCase();
+      final matches = customers
+          .where(
+            (customer) =>
+                query.isEmpty ||
+                customer.name.toLowerCase().contains(query) ||
+                customer.phone.toLowerCase().contains(query),
+          )
+          .take(5)
+          .toList();
+
+      return Column(
+        children: [
+          TextField(
+            controller: controller,
+            focusNode: focusNode,
+            textInputAction: TextInputAction.next,
+            decoration: AppInput.field(hint, icon: Icons.person_outline),
+            onChanged: (value) {
+              fillExact(value);
+              setLocal(() {});
+            },
+            onEditingComplete: () {
+              fillExact(controller.text);
+              focusNode.unfocus();
+              setLocal(() {});
+            },
+          ),
+          if (customers.isNotEmpty && matches.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: matches.map((customer) {
+                  final selected =
+                      controller.text.trim().toLowerCase() ==
+                      customer.name.trim().toLowerCase();
+                  return ActionChip(
+                    visualDensity: VisualDensity.compact,
+                    avatar: Icon(
+                      selected ? Icons.check_circle : Icons.person_outline,
+                      color: selected ? kGreen : kRed,
+                      size: 16,
+                    ),
+                    label: Text(customer.name, overflow: TextOverflow.ellipsis),
+                    onPressed: () {
+                      fill(customer);
+                      focusNode.unfocus();
+                      setLocal(() {});
+                    },
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ],
+      );
     },
   );
 }
