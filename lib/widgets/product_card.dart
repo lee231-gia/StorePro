@@ -206,16 +206,20 @@ class ProductBadge extends StatelessWidget {
   const ProductBadge({super.key, required this.label, required this.color});
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(6),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
-    ),
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text('•', style: TextStyle(fontSize: 10, color: color)),
+      const SizedBox(width: 4),
+      Text(
+        label,
+        style: TextStyle(
+          fontSize: 10,
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
   );
 }
 
@@ -269,6 +273,9 @@ class ProductCard extends StatelessWidget {
     final expiry = item.nearestExpiry;
     final status = AppHelpers.expiryStatus(expiry);
     final stock = item.totalStock;
+    final dateText = expiry.isEmpty
+        ? 'No expiry'
+        : AppHelpers.formatDate(expiry);
 
     return Opacity(
       opacity: enabled ? 1 : 0.62,
@@ -316,11 +323,6 @@ class ProductCard extends StatelessWidget {
                         spacing: 5,
                         runSpacing: 3,
                         children: [
-                          if (!item.isVariant && item.variantCount > 1)
-                            ProductBadge(
-                              label: '${item.variantCount} variants',
-                              color: kGrey,
-                            ),
                           if (status == 'expiring')
                             ProductBadge(
                               label: '${AppHelpers.daysLeft(expiry)}d',
@@ -339,6 +341,11 @@ class ProductCard extends StatelessWidget {
                             Icons.inventory_2_outlined,
                             '$stock pcs',
                             AppHelpers.stockColor(stock),
+                          ),
+                          ProductInlineEntry(
+                            Icons.event_outlined,
+                            dateText,
+                            kGrey,
                           ),
                         ],
                       ),
@@ -407,7 +414,6 @@ class ProductGridCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final item = ProductDisplayItem(product: product, variant: variant);
-    final stock = item.totalStock;
 
     return Opacity(
       opacity: enabled ? 1 : 0.62,
@@ -471,32 +477,7 @@ class ProductGridCard extends StatelessWidget {
                         Wrap(spacing: 4, runSpacing: 4, children: badges),
                       ],
                       const Spacer(),
-                      footer ??
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  AppHelpers.peso(item.price),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: kRed,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '$stock pcs',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppHelpers.stockColor(stock),
-                                ),
-                              ),
-                            ],
-                          ),
+                      footer ?? _DefaultProductGridFooter(item: item),
                     ],
                   ),
                 ),
@@ -505,6 +486,57 @@ class ProductGridCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DefaultProductGridFooter extends StatelessWidget {
+  final ProductDisplayItem item;
+
+  const _DefaultProductGridFooter({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    final stock = item.totalStock;
+    final expiry = item.nearestExpiry;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '$stock pcs',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppHelpers.stockColor(stock),
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              AppHelpers.peso(item.price),
+              textAlign: TextAlign.right,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: kRed,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 1),
+        Text(
+          expiry.isEmpty ? 'No expiry' : AppHelpers.formatDate(expiry),
+          textAlign: TextAlign.right,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 10, color: kGrey),
+        ),
+      ],
     );
   }
 }

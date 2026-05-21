@@ -19,6 +19,7 @@ void showPaymentSheet({
   final cashCtrl = TextEditingController();
   final cPhoneCtrl = TextEditingController();
   final cAddrCtrl = TextEditingController();
+  final customerFocus = FocusNode();
   final selectedCustomer = customers.where(
     (customer) =>
         customer.name.toLowerCase() == customerCtrl.text.trim().toLowerCase(),
@@ -29,7 +30,7 @@ void showPaymentSheet({
   }
   double change = 0.0;
 
-  showModalBottomSheet(
+  final sheet = showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
@@ -100,9 +101,7 @@ void showPaymentSheet({
                   controller: cashCtrl,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.right,
-                  decoration: AppInput.field(
-                    '0.00',
-                  ),
+                  decoration: AppInput.field('0.00'),
                   onChanged: (v) {
                     final paid = double.tryParse(v) ?? 0;
                     setP(() => change = paid - total);
@@ -151,6 +150,7 @@ void showPaymentSheet({
                 const SizedBox(height: 8),
                 _customerSelector(
                   controller: customerCtrl,
+                  focusNode: customerFocus,
                   customers: customers,
                   hint: 'Customer name *',
                   phoneController: cPhoneCtrl,
@@ -205,6 +205,7 @@ void showPaymentSheet({
       ),
     ),
   );
+  sheet.whenComplete(customerFocus.dispose);
 }
 
 // Extension for capitalize

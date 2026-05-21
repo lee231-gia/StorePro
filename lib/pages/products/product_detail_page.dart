@@ -167,21 +167,6 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: kGrey, fontSize: 12),
                         ),
-                        const SizedBox(height: 3),
-                        ProductInlineInfo(
-                          entries: [
-                            ProductInlineEntry(
-                              Icons.category_outlined,
-                              p.categoryName,
-                              kGrey,
-                            ),
-                            ProductInlineEntry(
-                              Icons.inventory_outlined,
-                              '${p.totalStock} pcs',
-                              AppHelpers.stockColor(p.totalStock),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -194,32 +179,22 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             appCard(
               child: Column(
                 children: [
-                  infoRow(
-                    'Added On',
-                    AppHelpers.formatDate(p.addedOn),
-                  ),
+                  infoRow('Added On', AppHelpers.formatDate(p.addedOn)),
                   const Divider(height: 1),
                   infoRow(
                     'Description',
-                    p.description.trim().isEmpty ? p.name : p.description.trim(),
+                    p.description.trim().isEmpty
+                        ? p.name
+                        : p.description.trim(),
                   ),
                   const Divider(height: 1),
-                  infoRow(
-                    'Variants',
-                    '${p.variants.length}',
-                  ),
+                  infoRow('Variants', '${p.variants.length}'),
                   if (variantNames.isNotEmpty) ...[
                     const Divider(height: 1),
-                    infoRow(
-                      'Variant Names',
-                      variantNames,
-                    ),
+                    infoRow('Variant Names', variantNames),
                   ],
                   const Divider(height: 1),
-                  infoRow(
-                    'Total Stock',
-                    '${p.totalStock} pcs',
-                  ),
+                  infoRow('Total Stock', '${p.totalStock} pcs'),
                 ],
               ),
             ),
@@ -290,22 +265,12 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (v.imageUrl.isNotEmpty) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    v.imageUrl,
-                    width: 46,
-                    height: 46,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) =>
-                        const SizedBox(width: 46, height: 46),
-                  ),
-                ),
+                _variantImage(v.imageUrl),
                 const SizedBox(width: 10),
               ],
               Expanded(
                 child: Text(
-                  v.name,
+                  _variantDisplayName(v),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
@@ -326,7 +291,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           const SizedBox(height: 4),
 
           // Detail rows (Kotatsu style)
-          _detRow('Unit', '${v.unit} · ${v.pcsPerUnit} pcs/unit'),
+          _detRow('Unit', '${v.unit} \u2022 ${v.pcsPerUnit} pcs/unit'),
           _detRow('Selling Price', AppHelpers.peso(v.price)),
           if (v.costPrice > 0)
             _detRow('Cost Price', AppHelpers.peso(v.costPrice)),
@@ -429,6 +394,73 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ],
       ),
     );
+  }
+
+  Widget _variantImage(String imageUrl) {
+    return GestureDetector(
+      onTap: () => _previewNetworkImage(imageUrl),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          imageUrl,
+          width: 46,
+          height: 46,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) => const SizedBox(width: 46, height: 46),
+        ),
+      ),
+    );
+  }
+
+  void _previewNetworkImage(String imageUrl) {
+    if (imageUrl.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (_) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.8,
+                  maxScale: 4,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.white,
+                      size: 42,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton.filled(
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _variantDisplayName(VariantModel variant) {
+    final productName = _product?.name.trim() ?? '';
+    final variantName = variant.name.trim();
+    if (productName.isEmpty) return variantName;
+    if (variantName.isEmpty || variantName == productName) return productName;
+    return '$productName - $variantName';
   }
 
   Widget _detRow(String label, String value) => Padding(

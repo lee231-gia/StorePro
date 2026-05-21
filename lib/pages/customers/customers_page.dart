@@ -507,6 +507,18 @@ class _CustomersPageState extends State<CustomersPage> {
                 maxLines: 3,
                 decoration: AppInput.dialog('Notes (optional)'),
               ),
+              if (isEdit) ...[
+                const SizedBox(height: 10),
+                _formInfoRow(
+                  label: 'Created',
+                  value: _formatMaybeDateTime(existing.createdAt),
+                ),
+                const SizedBox(height: 8),
+                _formInfoRow(
+                  label: 'Modified',
+                  value: _formatMaybeDateTime(existing.updatedAt),
+                ),
+              ],
             ],
           ),
         ),
@@ -584,4 +596,43 @@ class _CustomersPageState extends State<CustomersPage> {
     keyboardType: type,
     decoration: AppInput.dialog(hint),
   );
+
+  Widget _formInfoRow({required String label, required String value}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: kInputFill,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(color: kGrey, fontSize: 10)),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: kDark,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatMaybeDateTime(String value) {
+    final dt = DateTime.tryParse(value);
+    if (dt == null) return value.isEmpty ? 'Not recorded' : value;
+    return AppHelpers.formatDateTime(dt);
+  }
 }

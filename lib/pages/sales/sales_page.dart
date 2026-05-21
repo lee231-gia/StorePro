@@ -151,9 +151,11 @@ class _SalesPageState extends State<SalesPage> {
         start = DateTime(now.year, now.month, now.day);
         break;
       case 'week':
-        start = DateTime(now.year, now.month, now.day).subtract(
-          Duration(days: now.weekday - 1),
-        );
+        start = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(Duration(days: now.weekday - 1));
         break;
       case 'month':
         start = DateTime(now.year, now.month);
@@ -165,7 +167,14 @@ class _SalesPageState extends State<SalesPage> {
         final range = _historyCustomRange;
         if (range == null) return _sales;
         start = DateTime(range.start.year, range.start.month, range.start.day);
-        end = DateTime(range.end.year, range.end.month, range.end.day, 23, 59, 59);
+        end = DateTime(
+          range.end.year,
+          range.end.month,
+          range.end.day,
+          23,
+          59,
+          59,
+        );
         break;
       default:
         return _sales;
@@ -665,7 +674,7 @@ class _SalesPageState extends State<SalesPage> {
                                     ),
                                     Text(
                                       '${item.isVariant ? 'Variant' : '${p.variants.length} variant${p.variants.length != 1 ? 's' : ''}'}'
-                                      '  ·  $stock pcs',
+                                      '  \u2022  $stock pcs',
                                       style: TextStyle(
                                         fontSize: 11,
                                         color: AppHelpers.stockColor(stock),
@@ -748,21 +757,22 @@ class _SalesPageState extends State<SalesPage> {
       children: [
         Expanded(
           child: Text(
-            AppHelpers.peso(item.price),
-            style: const TextStyle(
-              color: kRed,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
+            '${item.totalStock} pcs',
+            style: TextStyle(
+              color: AppHelpers.stockColor(item.totalStock),
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
             ),
             overflow: TextOverflow.ellipsis,
           ),
         ),
         Text(
-          '${item.totalStock} pcs',
-          style: TextStyle(
-            color: AppHelpers.stockColor(item.totalStock),
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
+          AppHelpers.peso(item.price),
+          textAlign: TextAlign.right,
+          style: const TextStyle(
+            color: kRed,
+            fontSize: 12,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ],
@@ -832,7 +842,8 @@ class _SalesPageState extends State<SalesPage> {
                             context: context,
                             firstDate: DateTime(2020),
                             lastDate: DateTime(2040),
-                            initialDateRange: _historyCustomRange ??
+                            initialDateRange:
+                                _historyCustomRange ??
                                 DateTimeRange(start: now, end: now),
                           );
                           if (picked == null) return;
@@ -864,8 +875,9 @@ class _SalesPageState extends State<SalesPage> {
                           style: TextStyle(
                             color: active ? Colors.white : kGrey,
                             fontSize: 11,
-                            fontWeight:
-                                active ? FontWeight.bold : FontWeight.normal,
+                            fontWeight: active
+                                ? FontWeight.bold
+                                : FontWeight.normal,
                           ),
                         ),
                       ),
@@ -988,6 +1000,7 @@ class _SalesPageState extends State<SalesPage> {
                     TextField(
                       controller: paidCtrl,
                       keyboardType: TextInputType.number,
+                      textAlign: TextAlign.right,
                       onChanged: (_) => setD(() {}),
                       decoration: AppInput.dialog('Amount paid'),
                     ),

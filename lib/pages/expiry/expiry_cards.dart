@@ -77,7 +77,7 @@ extension _ExpiryCards on _ExpiryPageState {
             overflow: TextOverflow.ellipsis,
           ),
           Text(
-            '${variant.totalStock} pcs • ${_ExpiryPageState._tierLabel(tier)}',
+            '${variant.totalStock} pcs \u2022 ${_ExpiryPageState._tierLabel(tier)}',
             style: const TextStyle(color: kGrey, fontSize: 10),
             overflow: TextOverflow.ellipsis,
           ),
@@ -166,7 +166,9 @@ extension _ExpiryCards on _ExpiryPageState {
   void _openProduct(String productId) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => ProductDetailPage(productId: productId)),
+      MaterialPageRoute(
+        builder: (_) => ProductDetailPage(productId: productId),
+      ),
     ).then((_) => _load());
   }
 

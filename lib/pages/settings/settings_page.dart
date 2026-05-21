@@ -462,9 +462,10 @@ class _SettingsPageState extends State<SettingsPage> {
                       onTap: () async {
                         await AuthRepository.logout();
                         if (context.mounted) {
-                          Navigator.pushReplacementNamed(
+                          Navigator.pushNamedAndRemoveUntil(
                             context,
                             AppRoutes.welcome,
+                            (route) => false,
                           );
                         }
                       },

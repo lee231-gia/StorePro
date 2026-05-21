@@ -12,6 +12,7 @@ void showCartSheet({
   required VoidCallback onConfirm,
 }) {
   final discountCtrls = <String, TextEditingController>{};
+  final customerFocus = FocusNode();
   final sheet = showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -235,12 +236,6 @@ void showCartSheet({
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              const Icon(
-                                Icons.discount_outlined,
-                                size: 13,
-                                color: kGrey,
-                              ),
-                              const SizedBox(width: 4),
                               const Text(
                                 'Discount',
                                 style: TextStyle(fontSize: 11, color: kGrey),
@@ -256,7 +251,7 @@ void showCartSheet({
                                   decoration: InputDecoration(
                                     isDense: true,
                                     hintText: '0.00',
-                                    prefixText: 'P ',
+                                    prefixText: '\u20B1 ',
                                     filled: true,
                                     fillColor: kInputFill,
                                     border: OutlineInputBorder(
@@ -362,6 +357,7 @@ void showCartSheet({
 
                       _customerSelector(
                         controller: customerCtrl,
+                        focusNode: customerFocus,
                         customers: customers,
                         hint: 'Customer name (optional)',
                       ),
@@ -415,6 +411,7 @@ void showCartSheet({
     for (final ctrl in discountCtrls.values) {
       ctrl.dispose();
     }
+    customerFocus.dispose();
   });
 }
 
@@ -451,6 +448,7 @@ Widget _cartIcon(CartItem item, Color color) {
 // ══════════════════════════════════════════════════════════════
 Widget _customerSelector({
   required TextEditingController controller,
+  required FocusNode focusNode,
   required List<CustomerModel> customers,
   required String hint,
   TextEditingController? phoneController,
@@ -465,7 +463,7 @@ Widget _customerSelector({
   return LayoutBuilder(
     builder: (context, constraints) => RawAutocomplete<CustomerModel>(
       textEditingController: controller,
-      focusNode: FocusNode(),
+      focusNode: focusNode,
       displayStringForOption: (customer) => customer.name,
       optionsBuilder: (value) {
         final query = value.text.trim().toLowerCase();

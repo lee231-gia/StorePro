@@ -520,7 +520,11 @@ class _UtangPageState extends State<UtangPage> {
     );
     final dueCtrl = TextEditingController(text: existing?.dueDate ?? '');
     final notesCtrl = TextEditingController(text: existing?.notes ?? '');
-    var status = existing?.status ?? 'pending';
+    const validStatuses = {'pending', 'partial', 'paid'};
+    final existingStatus = existing?.status ?? 'pending';
+    var status = validStatuses.contains(existingStatus)
+        ? existingStatus
+        : ((existing?.amountPaid ?? 0) > 0 ? 'partial' : 'pending');
 
     showDialog(
       context: context,
@@ -576,6 +580,13 @@ class _UtangPageState extends State<UtangPage> {
                   controller: notesCtrl,
                   maxLines: 2,
                   decoration: AppInput.dialog('Notes'),
+                ),
+                const SizedBox(height: 10),
+                _editIndicatorRow(
+                  existing == null ? 'Date and time' : 'Date modified',
+                  existing == null
+                      ? AppHelpers.formatDateTime(DateTime.now())
+                      : _paymentDateTime(existing.updatedAt),
                 ),
               ],
             ),
@@ -849,6 +860,41 @@ class _UtangPageState extends State<UtangPage> {
     final variant = '${item['variantName'] ?? ''}'.trim();
     if (variant.isEmpty || variant == product) return product;
     return '$product - $variant';
+  }
+
+  Widget _editIndicatorRow(String label, String value) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: kInputFill,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.schedule_outlined, size: 16, color: kGrey),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 10, color: kGrey)),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: kDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _paymentDateTime(String iso) {

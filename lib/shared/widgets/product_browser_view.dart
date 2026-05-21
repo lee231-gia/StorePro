@@ -199,7 +199,8 @@ class _ProductDetailTile extends StatelessWidget {
                   width: 88,
                   child: Align(
                     alignment: Alignment.topRight,
-                    child: trailing ??
+                    child:
+                        trailing ??
                         Text(
                           AppHelpers.peso(item.price),
                           textAlign: TextAlign.right,
@@ -209,7 +210,7 @@ class _ProductDetailTile extends StatelessWidget {
                             fontSize: 13,
                           ),
                         ),
-                    ),
+                  ),
                 ),
               ],
             ),
@@ -221,7 +222,9 @@ class _ProductDetailTile extends StatelessWidget {
               const SizedBox(height: 10),
               const Divider(height: 1),
               const SizedBox(height: 8),
-              ...item.product.variants.map(_variantRow),
+              ...item.product.variants.map(
+                (variant) => _variantRow(context, variant),
+              ),
             ],
           ],
         ),
@@ -229,28 +232,32 @@ class _ProductDetailTile extends StatelessWidget {
     );
   }
 
-  Widget _variantRow(VariantModel variant) {
+  Widget _variantRow(BuildContext context, VariantModel variant) {
     final expiry = variant.nearestExpiry;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
           if (variant.imageUrl.isNotEmpty) ...[
-            ClipRRect(
-              borderRadius: BorderRadius.circular(5),
-              child: Image.network(
-                variant.imageUrl,
-                width: 28,
-                height: 28,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => const SizedBox(width: 28, height: 28),
+            GestureDetector(
+              onTap: () => _previewVariantImage(context, variant.imageUrl),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: Image.network(
+                  variant.imageUrl,
+                  width: 28,
+                  height: 28,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) =>
+                      const SizedBox(width: 28, height: 28),
+                ),
               ),
             ),
             const SizedBox(width: 7),
           ],
           Expanded(
             child: Text(
-              variant.name,
+              _variantDisplayName(variant),
               style: const TextStyle(fontSize: 12, color: kDark),
               overflow: TextOverflow.ellipsis,
             ),
@@ -272,7 +279,7 @@ class _ProductDetailTile extends StatelessWidget {
                 Text(
                   expiry.isEmpty
                       ? '${variant.totalStock} pcs'
-                      : '${variant.totalStock} pcs • ${AppHelpers.formatDate(expiry)}',
+                      : '${variant.totalStock} pcs \u2022 ${AppHelpers.formatDate(expiry)}',
                   style: TextStyle(
                     fontSize: 10,
                     color: AppHelpers.stockColor(variant.totalStock),
@@ -283,6 +290,56 @@ class _ProductDetailTile extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  String _variantDisplayName(VariantModel variant) {
+    final productName = item.product.name.trim();
+    final variantName = variant.name.trim();
+    if (variantName.isEmpty || variantName == productName) return productName;
+    return '$productName - $variantName';
+  }
+
+  void _previewVariantImage(BuildContext context, String imageUrl) {
+    if (imageUrl.isEmpty) return;
+    showDialog(
+      context: context,
+      builder: (_) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: SafeArea(
+          child: Stack(
+            children: [
+              Center(
+                child: InteractiveViewer(
+                  minScale: 0.8,
+                  maxScale: 4,
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.broken_image_outlined,
+                      color: Colors.white,
+                      size: 42,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8,
+                right: 8,
+                child: IconButton.filled(
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black54,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

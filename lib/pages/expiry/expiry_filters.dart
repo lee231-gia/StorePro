@@ -85,13 +85,27 @@ extension _ExpiryFilters on _ExpiryPageState {
           ),
 
           const SizedBox(height: 4),
-          Text(
-            '${_entries.length} item'
-            '${_entries.length != 1 ? 's' : ''}',
-            style: const TextStyle(color: kGrey, fontSize: 12),
-          ),
+          _expiryOverviewLine(),
         ],
       ),
+    );
+  }
+
+  Widget _expiryOverviewLine() {
+    final counts = _tierCounts;
+    final total = counts.values.fold<int>(0, (sum, count) => sum + count);
+    final parts = [
+      '$total total',
+      '${counts['expired'] ?? 0} expired',
+      '${counts['urgent'] ?? 0} urgent',
+      '${counts['no_date'] ?? 0} no date',
+      '${_entries.length} shown',
+    ];
+    return Text(
+      parts.join(' \u2022 '),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: const TextStyle(color: kGrey, fontSize: 12),
     );
   }
 
