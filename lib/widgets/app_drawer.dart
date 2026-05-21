@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../core/constants/app_colors.dart';
 import '../core/constants/app_routes.dart';
 import '../core/utils/session.dart';
-import '../repositories/auth_repository.dart';
 
 class AppDrawer extends StatelessWidget {
   final Function(int) changeTab;
@@ -19,13 +18,11 @@ class AppDrawer extends StatelessWidget {
     return Drawer(
       child: Column(
         children: [
-          // ── HEADER ────────────────────────────────────────
           _buildHeader(),
-          const SizedBox(height: 4),
-
+          const SizedBox(height: 6),
           Expanded(
             child: ListView(
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.symmetric(vertical: 8),
               children: [
                 _navItem(context, Icons.dashboard_outlined, 'Dashboard', 0),
                 _navItem(context, Icons.inventory_2_outlined, 'Products', 1),
@@ -44,11 +41,13 @@ class AppDrawer extends StatelessWidget {
                 _navItem(context, Icons.bar_chart_outlined, 'Reports', 9),
                 const Divider(indent: 16, endIndent: 16),
                 ListTile(
-                  dense: true,
-                  minLeadingWidth: 28,
-                  horizontalTitleGap: 8,
-                  visualDensity: const VisualDensity(vertical: -3),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+                  minLeadingWidth: 30,
+                  horizontalTitleGap: 12,
+                  minVerticalPadding: 10,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 2,
+                  ),
                   leading: const Icon(
                     Icons.settings_outlined,
                     color: kDark,
@@ -63,37 +62,11 @@ class AppDrawer extends StatelessWidget {
               ],
             ),
           ),
-
-          // ── LOGOUT ────────────────────────────────────────
-          ListTile(
-            dense: true,
-            minLeadingWidth: 28,
-            horizontalTitleGap: 8,
-            visualDensity: const VisualDensity(vertical: -3),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 18),
-            leading: const Icon(Icons.logout, color: kRed),
-            title: const Text(
-              'Log out',
-              style: TextStyle(color: kRed, fontWeight: FontWeight.w600),
-            ),
-            onTap: () async {
-              await AuthRepository.logout();
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  AppRoutes.welcome,
-                  (route) => false,
-                );
-              }
-            },
-          ),
-          const SizedBox(height: 8),
         ],
       ),
     );
   }
 
-  // ── HEADER ────────────────────────────────────────────────
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
@@ -141,15 +114,13 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  // ── NAV ITEM ──────────────────────────────────────────────
   Widget _navItem(BuildContext ctx, IconData icon, String title, int tabIndex) {
     final active = currentIndex == tabIndex;
     return ListTile(
-      dense: true,
-      minLeadingWidth: 28,
-      horizontalTitleGap: 8,
-      visualDensity: const VisualDensity(vertical: -3),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+      minLeadingWidth: 30,
+      horizontalTitleGap: 12,
+      minVerticalPadding: 10,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
       leading: Icon(icon, color: active ? kRed : kDark, size: 20),
       title: Text(
         title,

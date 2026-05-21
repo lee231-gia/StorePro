@@ -137,6 +137,7 @@ extension _AddProductPageVariants on _AddProductPageState {
                             ),
                             Text(
                               'Variant image (optional)',
+                              textAlign: TextAlign.center,
                               style: TextStyle(color: kGrey, fontSize: 11),
                             ),
                           ],
