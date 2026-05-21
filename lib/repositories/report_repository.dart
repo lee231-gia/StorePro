@@ -45,7 +45,7 @@ class ReportRepository {
       grossRevenue += sale.subtotal;
       totalProfit += sale.profit;
       totalDiscount += sale.totalDiscount;
-      if (sale.paymentType == 'utang') {
+      if (sale.paymentType == 'utang' || sale.paymentType == 'multi') {
         final cash = sale.amountPaid.clamp(0, sale.total).toDouble();
         cashCollected += cash;
         utangTotal += (sale.total - cash).clamp(0, sale.total).toDouble();

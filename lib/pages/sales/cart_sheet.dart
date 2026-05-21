@@ -68,7 +68,7 @@ void showCartSheet({
                 ListView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.zero,
                   itemCount: cart.length,
                   itemBuilder: (_, i) {
                     final item = cart[i];
@@ -81,18 +81,13 @@ void showCartSheet({
                       ),
                     );
                     return Container(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      padding: const EdgeInsets.all(14),
+                      margin: EdgeInsets.zero,
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                       decoration: BoxDecoration(
                         color: kCard,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.035),
-                            blurRadius: 8,
-                          ),
-                        ],
+                        border: Border(
+                          bottom: BorderSide(color: Colors.grey.shade100),
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,8 +95,8 @@ void showCartSheet({
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _cartThumb(item),
-                              const SizedBox(width: 10),
+                              _cartThumb(item, size: 78),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,88 +115,67 @@ void showCartSheet({
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      item.conditionName.isNotEmpty
-                                          ? item.conditionName
-                                          : '${item.qty} × ${AppHelpers.peso(item.price)}',
+                                      [
+                                        if (item.conditionName.isNotEmpty)
+                                          item.conditionName,
+                                        '${item.qty} x ${AppHelpers.peso(item.price)}',
+                                      ].join('  '),
                                       style: const TextStyle(
                                         color: kGrey,
-                                        fontSize: 11,
+                                        fontSize: 12,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      '${AppHelpers.peso(item.price)} each',
+                                      AppHelpers.peso(item.subtotal),
                                       style: const TextStyle(
-                                        color: kGrey,
-                                        fontSize: 11,
+                                        color: kRed,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  color: kGrey,
-                                  size: 18,
-                                ),
-                                onPressed: () {
-                                  onRemove(i);
-                                  setS(() {});
-                                  if (cart.isEmpty) {
-                                    Navigator.pop(ctx);
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: kInputFill,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                              SizedBox(
+                                height: 78,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      icon: const Icon(
-                                        Icons.remove_circle_outline,
-                                        color: kGrey,
+                                    SizedBox(
+                                      width: 28,
+                                      height: 24,
+                                      child: IconButton(
+                                        padding: EdgeInsets.zero,
+                                        tooltip: 'Remove',
+                                        icon: const Icon(
+                                          Icons.close,
+                                          color: kGrey,
+                                          size: 18,
+                                        ),
+                                        onPressed: () {
+                                          onRemove(i);
+                                          setS(() {});
+                                          if (cart.isEmpty) {
+                                            Navigator.pop(ctx);
+                                          }
+                                        },
                                       ),
-                                      onPressed: () {
+                                    ),
+                                    const Spacer(),
+                                    _cartQtyStepper(
+                                      qty: item.qty,
+                                      onDecrease: () {
                                         onChangeQty(i, -1);
                                         setS(() {});
                                         if (cart.isEmpty) {
                                           Navigator.pop(ctx);
                                         }
                                       },
-                                    ),
-                                    SizedBox(
-                                      width: 28,
-                                      child: Text(
-                                        '${item.qty}',
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                    IconButton(
-                                      visualDensity: VisualDensity.compact,
-                                      icon: const Icon(
-                                        Icons.add_circle_outline,
-                                        color: kRed,
-                                      ),
-                                      onPressed: () {
+                                      onIncrease: () {
                                         onChangeQty(i, 1);
                                         setS(() {});
                                       },
@@ -209,75 +183,76 @@ void showCartSheet({
                                   ],
                                 ),
                               ),
-                              const Spacer(),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  const Text(
-                                    'Line total',
-                                    style: TextStyle(
-                                      color: kGrey,
-                                      fontSize: 10,
-                                    ),
-                                  ),
-                                  Text(
-                                    AppHelpers.peso(item.subtotal),
-                                    style: const TextStyle(
-                                      color: kRed,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ],
                           ),
-
-                          const SizedBox(height: 10),
-                          Row(
-                            children: [
-                              const Text(
-                                'Discount',
-                                style: TextStyle(fontSize: 11, color: kGrey),
-                              ),
-                              const Spacer(),
-                              SizedBox(
-                                width: 92,
-                                child: TextField(
-                                  controller: discountCtrl,
-                                  keyboardType: TextInputType.number,
-                                  style: const TextStyle(fontSize: 12),
-                                  textAlign: TextAlign.right,
-                                  decoration: InputDecoration(
-                                    isDense: true,
-                                    hintText: '0.00',
-                                    prefixText: '\u20B1 ',
-                                    filled: true,
-                                    fillColor: kInputFill,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 8,
-                                    ),
-                                  ),
-                                  onChanged: (v) {
-                                    final maxDiscount = item.price * item.qty;
-                                    final d = (double.tryParse(v) ?? 0.0)
-                                        .clamp(0, maxDiscount)
-                                        .toDouble();
-                                    onItemDiscount(i, d);
-                                    setS(() {});
-                                  },
-                                  onEditingComplete: () {
-                                    FocusScope.of(ctx).nextFocus();
-                                    setS(() {});
-                                  },
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.only(
+                              left: 2,
+                              top: 2,
+                              bottom: 2,
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.confirmation_num_outlined,
+                                  color: kRed,
+                                  size: 18,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Seller discount',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: kDark,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const Spacer(),
+                                SizedBox(
+                                  width: 104,
+                                  child: TextField(
+                                    controller: discountCtrl,
+                                    keyboardType: TextInputType.number,
+                                    style: const TextStyle(fontSize: 12),
+                                    textAlign: TextAlign.right,
+                                    decoration: InputDecoration(
+                                      isDense: true,
+                                      hintText: '0.00',
+                                      prefixText: '\u20B1 ',
+                                      filled: true,
+                                      fillColor: kRedLight,
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                            horizontal: 8,
+                                            vertical: 8,
+                                          ),
+                                    ),
+                                    onChanged: (v) {
+                                      final maxDiscount = item.price * item.qty;
+                                      final d = (double.tryParse(v) ?? 0.0)
+                                          .clamp(0, maxDiscount)
+                                          .toDouble();
+                                      onItemDiscount(i, d);
+                                      setS(() {});
+                                    },
+                                    onEditingComplete: () {
+                                      FocusScope.of(ctx).nextFocus();
+                                      setS(() {});
+                                    },
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: kGrey,
+                                  size: 18,
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
@@ -415,7 +390,56 @@ void showCartSheet({
   });
 }
 
-Widget _cartThumb(CartItem item) {
+Widget _cartQtyStepper({
+  required int qty,
+  required VoidCallback onDecrease,
+  required VoidCallback onIncrease,
+}) {
+  return Container(
+    height: 36,
+    decoration: BoxDecoration(
+      color: kInputFill,
+      borderRadius: BorderRadius.circular(8),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          width: 34,
+          height: 36,
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.remove, color: kGrey, size: 18),
+            onPressed: onDecrease,
+          ),
+        ),
+        Container(width: 1, height: 18, color: Colors.white),
+        SizedBox(
+          width: 34,
+          child: Text(
+            '$qty',
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+          ),
+        ),
+        Container(width: 1, height: 18, color: Colors.white),
+        SizedBox(
+          width: 34,
+          height: 36,
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            visualDensity: VisualDensity.compact,
+            icon: const Icon(Icons.add, color: kDark, size: 19),
+            onPressed: onIncrease,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _cartThumb(CartItem item, {double size = 48}) {
   final color =
       kCategoryColors[item.colorIndex.clamp(0, kCategoryColors.length - 1)];
   if (item.imageUrl.isNotEmpty) {
@@ -423,25 +447,25 @@ Widget _cartThumb(CartItem item) {
       borderRadius: BorderRadius.circular(8),
       child: Image.network(
         item.imageUrl,
-        width: 48,
-        height: 48,
+        width: size,
+        height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _cartIcon(item, color),
+        errorBuilder: (_, _, _) => _cartIcon(item, color, size),
       ),
     );
   }
-  return _cartIcon(item, color);
+  return _cartIcon(item, color, size);
 }
 
-Widget _cartIcon(CartItem item, Color color) {
+Widget _cartIcon(CartItem item, Color color, double size) {
   return Container(
-    width: 48,
-    height: 48,
+    width: size,
+    height: size,
     decoration: BoxDecoration(
       color: color.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(8),
     ),
-    child: Icon(AppIcons.get(item.iconIndex), color: color, size: 22),
+    child: Icon(AppIcons.get(item.iconIndex), color: color, size: size * 0.46),
   );
 }
 

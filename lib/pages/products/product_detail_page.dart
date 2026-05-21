@@ -265,7 +265,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (v.imageUrl.isNotEmpty) ...[
-                _variantImage(v.imageUrl),
+                _variantImageFor(v),
                 const SizedBox(width: 10),
               ],
               Expanded(
@@ -396,62 +396,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     );
   }
 
-  Widget _variantImage(String imageUrl) {
-    return GestureDetector(
-      onTap: () => _previewNetworkImage(imageUrl),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          imageUrl,
-          width: 46,
-          height: 46,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => const SizedBox(width: 46, height: 46),
-        ),
-      ),
-    );
-  }
-
-  void _previewNetworkImage(String imageUrl) {
-    if (imageUrl.isEmpty) return;
-    showDialog(
-      context: context,
-      builder: (_) => Dialog.fullscreen(
-        backgroundColor: Colors.black,
-        child: SafeArea(
-          child: Stack(
-            children: [
-              Center(
-                child: InteractiveViewer(
-                  minScale: 0.8,
-                  maxScale: 4,
-                  child: Image.network(
-                    imageUrl,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Icons.broken_image_outlined,
-                      color: Colors.white,
-                      size: 42,
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 8,
-                right: 8,
-                child: IconButton.filled(
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.black54,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+  Widget _variantImageFor(VariantModel variant) {
+    final product = _product;
+    if (product == null) return const SizedBox(width: 46, height: 46);
+    return ProductImage(
+      item: ProductDisplayItem(product: product, variant: variant),
+      size: 46,
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(8),
     );
   }
 

@@ -368,7 +368,11 @@ class _SalesPageState extends State<SalesPage> {
       amountPaid: amountPaid,
       change: change,
       paymentType: paymentType,
-      status: paymentType == 'utang' ? 'partial' : 'completed',
+      status:
+          paymentType == 'utang' ||
+              (paymentType == 'multi' && amountPaid < _cartTotal)
+          ? 'partial'
+          : 'completed',
       notes: _notesCtrl.text.trim(),
       date: AppHelpers.todayStr(),
       timestamp: AppHelpers.nowStr(),

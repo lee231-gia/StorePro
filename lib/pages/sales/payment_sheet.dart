@@ -20,6 +20,7 @@ void showPaymentSheet({
   final cPhoneCtrl = TextEditingController();
   final cAddrCtrl = TextEditingController();
   final customerFocus = FocusNode();
+  String paymentError = '';
   final selectedCustomer = customers.where(
     (customer) =>
         customer.name.toLowerCase() == customerCtrl.text.trim().toLowerCase(),
@@ -70,7 +71,10 @@ void showPaymentSheet({
                       child: Padding(
                         padding: const EdgeInsets.only(right: 6),
                         child: GestureDetector(
-                          onTap: () => setP(() => payType = t),
+                          onTap: () => setP(() {
+                            payType = t;
+                            paymentError = '';
+                          }),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             decoration: BoxDecoration(
@@ -104,7 +108,10 @@ void showPaymentSheet({
                   decoration: AppInput.field('0.00'),
                   onChanged: (v) {
                     final paid = double.tryParse(v) ?? 0;
-                    setP(() => change = paid - total);
+                    setP(() {
+                      change = paid - total;
+                      paymentError = '';
+                    });
                   },
                 ),
                 const SizedBox(height: 8),
@@ -134,6 +141,17 @@ void showPaymentSheet({
                     ],
                   ),
                 ),
+                if (paymentError.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    paymentError,
+                    style: const TextStyle(
+                      color: kRed,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ],
 
               // Customer info for utang
@@ -179,14 +197,30 @@ void showPaymentSheet({
               PrimaryButton(
                 label: 'Confirm Payment',
                 onTap: () {
+                  final paid = payType == 'utang'
+                      ? 0.0
+                      : (double.tryParse(cashCtrl.text) ?? 0.0);
+                  if (payType == 'cash' && paid < total) {
+                    setP(() {
+                      paymentError =
+                          'Amount received must be at least the grand total.';
+                    });
+                    return;
+                  }
+                  if (payType == 'multi' && paid <= 0) {
+                    setP(() {
+                      paymentError = 'Enter the amount received.';
+                    });
+                    return;
+                  }
                   if ((payType == 'utang' || payType == 'multi') &&
                       customerCtrl.text.trim().isEmpty) {
+                    setP(() {
+                      paymentError = 'Customer name is required for utang.';
+                    });
                     return;
                   }
                   Navigator.pop(ctx);
-                  final paid = payType == 'utang'
-                      ? 0.0
-                      : (double.tryParse(cashCtrl.text) ?? total);
                   onPay(
                     paymentType: payType,
                     amountPaid: paid,
@@ -205,7 +239,12 @@ void showPaymentSheet({
       ),
     ),
   );
-  sheet.whenComplete(customerFocus.dispose);
+  sheet.whenComplete(() {
+    cashCtrl.dispose();
+    cPhoneCtrl.dispose();
+    cAddrCtrl.dispose();
+    customerFocus.dispose();
+  });
 }
 
 // Extension for capitalize

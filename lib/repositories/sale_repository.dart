@@ -144,10 +144,11 @@ class SaleRepository {
   }
 
   static Map<String, dynamic> _saleDetails(SaleModel sale) {
-    final cashPaid = sale.paymentType == 'utang'
+    final cashPaid = sale.paymentType == 'utang' || sale.paymentType == 'multi'
         ? sale.amountPaid.clamp(0, sale.total).toDouble()
         : sale.total;
-    final utangBalance = sale.paymentType == 'utang'
+    final utangBalance =
+        sale.paymentType == 'utang' || sale.paymentType == 'multi'
         ? (sale.total - cashPaid).clamp(0, sale.total).toDouble()
         : 0.0;
     final cogs = sale.items.fold(

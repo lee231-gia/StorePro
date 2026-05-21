@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../models/utang_model.dart';
+import '../../repositories/sale_repository.dart';
 import '../../repositories/utang_repository.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
@@ -272,24 +273,35 @@ class _UtangPageState extends State<UtangPage> {
             const SizedBox(height: 4),
 
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Paid: ${AppHelpers.peso(u.amountPaid)}',
-                  style: const TextStyle(color: kGrey, fontSize: 11),
-                ),
-                Text(
-                  'Balance: ${AppHelpers.peso(u.balance)}',
-                  style: TextStyle(
-                    color: statusColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
+                _utangAmountMetric('Total', u.totalAmount, kDark),
+                _utangAmountMetric('Paid', u.amountPaid, kGreen),
+                _utangAmountMetric('Balance', u.balance, statusColor),
               ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _utangAmountMetric(String label, double amount, Color color) {
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: const TextStyle(color: kGrey, fontSize: 10)),
+          Text(
+            AppHelpers.peso(amount),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -563,17 +575,41 @@ class _UtangPageState extends State<UtangPage> {
                   decoration: AppInput.dialog('Due date (YYYY-MM-DD)'),
                 ),
                 const SizedBox(height: 10),
-                DropdownButtonFormField<String>(
-                  initialValue: status,
-                  decoration: AppInput.dialog('Status'),
-                  items: const [
-                    DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                    DropdownMenuItem(value: 'partial', child: Text('Partial')),
-                    DropdownMenuItem(value: 'paid', child: Text('Paid')),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Status',
+                    style: TextStyle(
+                      color: Colors.grey.shade700,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    _statusChoice(
+                      label: 'Pending',
+                      value: 'pending',
+                      selected: status,
+                      onTap: () => setD(() => status = 'pending'),
+                    ),
+                    const SizedBox(width: 6),
+                    _statusChoice(
+                      label: 'Partial',
+                      value: 'partial',
+                      selected: status,
+                      onTap: () => setD(() => status = 'partial'),
+                    ),
+                    const SizedBox(width: 6),
+                    _statusChoice(
+                      label: 'Paid',
+                      value: 'paid',
+                      selected: status,
+                      onTap: () => setD(() => status = 'paid'),
+                    ),
                   ],
-                  onChanged: (value) {
-                    if (value != null) setD(() => status = value);
-                  },
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -612,7 +648,7 @@ class _UtangPageState extends State<UtangPage> {
                     : paid > 0
                     ? 'partial'
                     : status;
-                await UtangRepository.save(
+                final saved = await UtangRepository.save(
                   UtangModel(
                     id: existing?.id ?? '',
                     storeId: Session.storeId,
@@ -631,6 +667,7 @@ class _UtangPageState extends State<UtangPage> {
                     updatedAt: AppHelpers.nowStr(),
                   ),
                 );
+                await _syncLinkedSale(saved);
                 if (ctx.mounted) Navigator.pop(ctx);
                 _load();
               },
@@ -831,6 +868,7 @@ class _UtangPageState extends State<UtangPage> {
                   }
                 }
 
+                payAmount = payAmount.clamp(0, u.balance).toDouble();
                 if (payAmount <= 0) return;
 
                 final payment = UtangPaymentModel(
@@ -843,7 +881,8 @@ class _UtangPageState extends State<UtangPage> {
                   date: AppHelpers.nowStr(),
                 );
 
-                await UtangRepository.addPayment(u, payment);
+                final updated = await UtangRepository.addPayment(u, payment);
+                await _syncLinkedSale(updated);
                 if (ctx.mounted) Navigator.pop(ctx);
                 _load();
               },
@@ -860,6 +899,23 @@ class _UtangPageState extends State<UtangPage> {
     final variant = '${item['variantName'] ?? ''}'.trim();
     if (variant.isEmpty || variant == product) return product;
     return '$product - $variant';
+  }
+
+  Future<void> _syncLinkedSale(UtangModel utang) async {
+    if (utang.saleId.isEmpty) return;
+    final sales = await SaleRepository.getAll();
+    final matches = sales.where((sale) => sale.id == utang.saleId);
+    if (matches.isEmpty) return;
+    final sale = matches.first;
+    final paid = utang.amountPaid.clamp(0, sale.total).toDouble();
+    await SaleRepository.updateEdited(
+      sale.copyWith(
+        amountPaid: paid,
+        change: 0,
+        status: paid >= sale.total ? 'completed' : 'partial',
+      ),
+      action: 'edit_sale',
+    );
   }
 
   Widget _editIndicatorRow(String label, String value) {
@@ -893,6 +949,42 @@ class _UtangPageState extends State<UtangPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _statusChoice({
+    required String label,
+    required String value,
+    required String selected,
+    required VoidCallback onTap,
+  }) {
+    final active = selected == value;
+    final color = value == 'paid'
+        ? kGreen
+        : value == 'partial'
+        ? kOrange
+        : kRed;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: active ? color : kInputFill,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: active ? color : Colors.grey.shade300),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              color: active ? Colors.white : kGrey,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }

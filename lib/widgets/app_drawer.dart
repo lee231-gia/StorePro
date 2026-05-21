@@ -21,7 +21,7 @@ class AppDrawer extends StatelessWidget {
         children: [
           // ── HEADER ────────────────────────────────────────
           _buildHeader(),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4),
 
           Expanded(
             child: ListView(
@@ -44,6 +44,11 @@ class AppDrawer extends StatelessWidget {
                 _navItem(context, Icons.bar_chart_outlined, 'Reports', 9),
                 const Divider(indent: 16, endIndent: 16),
                 ListTile(
+                  dense: true,
+                  minLeadingWidth: 28,
+                  horizontalTitleGap: 8,
+                  visualDensity: const VisualDensity(vertical: -3),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 18),
                   leading: const Icon(
                     Icons.settings_outlined,
                     color: kDark,
@@ -61,6 +66,11 @@ class AppDrawer extends StatelessWidget {
 
           // ── LOGOUT ────────────────────────────────────────
           ListTile(
+            dense: true,
+            minLeadingWidth: 28,
+            horizontalTitleGap: 8,
+            visualDensity: const VisualDensity(vertical: -3),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 18),
             leading: const Icon(Icons.logout, color: kRed),
             title: const Text(
               'Log out',
@@ -77,7 +87,7 @@ class AppDrawer extends StatelessWidget {
               }
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -87,14 +97,14 @@ class AppDrawer extends StatelessWidget {
   Widget _buildHeader() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
+      padding: const EdgeInsets.fromLTRB(18, 42, 18, 16),
       color: kRed,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 58,
-            height: 58,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.18),
               shape: BoxShape.circle,
@@ -106,16 +116,16 @@ class AppDrawer extends StatelessWidget {
             child: const Icon(
               Icons.storefront_outlined,
               color: Colors.white,
-              size: 28,
+              size: 24,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           const Text(
             'STOREPRO',
             style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-              fontSize: 18,
+              fontSize: 16,
             ),
           ),
           const SizedBox(height: 2),
@@ -123,7 +133,7 @@ class AppDrawer extends StatelessWidget {
             Session.storeName,
             style: TextStyle(
               color: Colors.white.withValues(alpha: 0.85),
-              fontSize: 12,
+              fontSize: 11,
             ),
           ),
         ],
@@ -135,11 +145,16 @@ class AppDrawer extends StatelessWidget {
   Widget _navItem(BuildContext ctx, IconData icon, String title, int tabIndex) {
     final active = currentIndex == tabIndex;
     return ListTile(
-      leading: Icon(icon, color: active ? kRed : kDark, size: 22),
+      dense: true,
+      minLeadingWidth: 28,
+      horizontalTitleGap: 8,
+      visualDensity: const VisualDensity(vertical: -3),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+      leading: Icon(icon, color: active ? kRed : kDark, size: 20),
       title: Text(
         title,
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 13,
           fontWeight: active ? FontWeight.bold : FontWeight.normal,
           color: active ? kRed : kDark,
         ),

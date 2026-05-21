@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_routes.dart';
 import 'core/services/alert_service.dart';
+import 'core/services/data_sync_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/sync_service.dart';
 import 'core/services/sqlite_service.dart';
@@ -45,7 +46,7 @@ class _StoreProState extends State<StorePro> {
     if (!_bootstrapped) _bootstrapLocalApp();
     _onlineSub = SyncService.onlineStream.listen((online) {
       Session.isOnline = online;
-      if (online) SyncService.flushInBackground();
+      if (online) DataSyncService.syncAllInBackground();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _warmUpServices();
@@ -77,7 +78,7 @@ class _StoreProState extends State<StorePro> {
   void _warmUpServices() {
     SQLiteService.warmUp();
     NotificationService.init().ignore();
-    SyncService.flushInBackground();
+    DataSyncService.syncAllInBackground();
     Future<void>.delayed(const Duration(seconds: 2), () {
       AlertService.runAll().ignore();
     });
@@ -158,7 +159,7 @@ class _StoreProBootScreen extends StatelessWidget {
 
 // ══════════════════════════════════════════════════════════════
 // MAIN NAV PAGE
-// The bottom navigation shell for all 11 main pages.
+// Drawer-driven shell for all main pages.
 // ══════════════════════════════════════════════════════════════
 class MainNavPage extends StatefulWidget {
   const MainNavPage({super.key});
@@ -225,56 +226,7 @@ class _MainNavPageState extends State<MainNavPage> {
           _changeTab(0);
         }
       },
-      child: Scaffold(
-        body: _buildPageStack(),
-        bottomNavigationBar: _buildNavBar(),
-      ),
-    );
-  }
-
-  // Bottom nav shows the 5 most-used tabs.
-  // Rest accessible from the drawer.
-  BottomNavigationBar _buildNavBar() {
-    // Map bottom nav positions to page indices
-    const navMap = [0, 1, 4, 6, 7]; // dash, products, sales, notes, categories
-    final navIndex = navMap.contains(_index) ? navMap.indexOf(_index) : 0;
-
-    return BottomNavigationBar(
-      currentIndex: navIndex,
-      onTap: (i) => _changeTab(navMap[i]),
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: kRed,
-      unselectedItemColor: kGrey,
-      selectedFontSize: 10,
-      unselectedFontSize: 10,
-      iconSize: 22,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard_outlined),
-          activeIcon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.inventory_2_outlined),
-          activeIcon: Icon(Icons.inventory_2),
-          label: 'Products',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.point_of_sale_outlined),
-          activeIcon: Icon(Icons.point_of_sale),
-          label: 'Sales',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.sticky_note_2_outlined),
-          activeIcon: Icon(Icons.sticky_note_2),
-          label: 'Notes',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.category_outlined),
-          activeIcon: Icon(Icons.category),
-          label: 'Categories',
-        ),
-      ],
+      child: Scaffold(body: _buildPageStack()),
     );
   }
 }

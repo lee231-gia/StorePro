@@ -62,6 +62,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
     try {
       final pdf = pw.Document();
       final sale = widget.sale;
+      final paymentInfo = _paymentInfo(sale);
 
       pdf.addPage(
         pw.Page(
@@ -91,7 +92,8 @@ class _ReceiptPageState extends State<ReceiptPage> {
                 // Info
                 pw.Text('Customer: ${sale.customerName}'),
                 pw.Text('Date: ${AppHelpers.formatDate(sale.date)}'),
-                pw.Text('Payment: ${sale.paymentType.toUpperCase()}'),
+                pw.Text('Payment: ${paymentInfo.label}'),
+                if (paymentInfo.detail.isNotEmpty) pw.Text(paymentInfo.detail),
 
                 pw.Divider(),
 
@@ -197,6 +199,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
   @override
   Widget build(BuildContext context) {
     final sale = widget.sale;
+    final paymentInfo = _paymentInfo(sale);
 
     return Scaffold(
       backgroundColor: kBg,
@@ -267,6 +270,10 @@ class _ReceiptPageState extends State<ReceiptPage> {
                     'SUCCESSFUL TRANSACTION',
                     style: TextStyle(color: kGrey, fontSize: 12),
                   ),
+                  if (paymentInfo.detail.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _paymentBadge(paymentInfo),
+                  ],
                   const SizedBox(height: 12),
 
                   // Receipt number + date
@@ -284,7 +291,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                         _receiptRow('Transaction #', sale.id),
                         _receiptRow('Date', AppHelpers.formatDate(sale.date)),
                         _receiptRow('Customer', sale.customerName),
-                        _receiptRow('Payment', sale.paymentType.toUpperCase()),
+                        _receiptRow('Payment', paymentInfo.label),
                       ],
                     ),
                   ),
@@ -379,6 +386,12 @@ class _ReceiptPageState extends State<ReceiptPage> {
                           'Amount Paid',
                           AppHelpers.peso(sale.amountPaid),
                         ),
+                        if (paymentInfo.balance > 0)
+                          _receiptRow(
+                            'Utang Balance',
+                            AppHelpers.peso(paymentInfo.balance),
+                            valueColor: kOrange,
+                          ),
                         _receiptRow('Change', AppHelpers.peso(sale.change)),
                       ],
                     ),
@@ -415,29 +428,109 @@ class _ReceiptPageState extends State<ReceiptPage> {
     );
   }
 
-  Widget _receiptRow(String label, String value, {bool bold = false}) =>
-      Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: kGrey,
-                fontSize: 12,
-                fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-              ),
+  Widget _paymentBadge(_PaymentInfo info) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    decoration: BoxDecoration(
+      color: info.color.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: info.color.withValues(alpha: 0.35)),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(info.icon, color: info.color, size: 16),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            info.detail,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: info.color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
             ),
-            Text(
-              value,
-              style: TextStyle(
-                color: kDark,
-                fontSize: bold ? 15 : 12,
-                fontWeight: bold ? FontWeight.bold : FontWeight.normal,
-              ),
-            ),
-          ],
+          ),
         ),
+      ],
+    ),
+  );
+
+  _PaymentInfo _paymentInfo(SaleModel sale) {
+    final type = sale.paymentType.toLowerCase();
+    final balance = (sale.total - sale.amountPaid)
+        .clamp(0, double.infinity)
+        .toDouble();
+    if (type == 'utang') {
+      return _PaymentInfo(
+        label: 'UTANG',
+        detail: 'Utang recorded: ${AppHelpers.peso(balance)} balance',
+        balance: balance,
+        color: kOrange,
+        icon: Icons.account_balance_wallet_outlined,
       );
+    }
+    if (type == 'multi') {
+      return _PaymentInfo(
+        label: 'MULTI',
+        detail:
+            'Multi payment: ${AppHelpers.peso(sale.amountPaid)} paid, ${AppHelpers.peso(balance)} utang',
+        balance: balance,
+        color: balance > 0 ? kOrange : kGreen,
+        icon: Icons.payments_outlined,
+      );
+    }
+    return _PaymentInfo(
+      label: 'CASH',
+      detail: '',
+      balance: 0,
+      color: kGreen,
+      icon: Icons.payments_outlined,
+    );
+  }
+
+  Widget _receiptRow(
+    String label,
+    String value, {
+    bool bold = false,
+    Color? valueColor,
+  }) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: kGrey,
+            fontSize: 12,
+            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: valueColor ?? kDark,
+            fontSize: bold ? 15 : 12,
+            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _PaymentInfo {
+  final String label;
+  final String detail;
+  final double balance;
+  final Color color;
+  final IconData icon;
+
+  const _PaymentInfo({
+    required this.label,
+    required this.detail,
+    required this.balance,
+    required this.color,
+    required this.icon,
+  });
 }

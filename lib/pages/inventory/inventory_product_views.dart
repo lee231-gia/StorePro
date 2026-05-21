@@ -130,7 +130,14 @@ extension _InventoryProductViews on _InventoryPageState {
   }
 
   void _showVariantAdjustSheet(ProductDisplayItem item) {
-    if (item.variant != null) return;
+    if (item.variant != null) {
+      _showAdjustDialog(
+        product: item.product,
+        variant: item.variant!,
+        isAdding: true,
+      );
+      return;
+    }
     if (item.product.variants.length == 1) {
       final variant = item.product.variants.first;
       _showAdjustDialog(

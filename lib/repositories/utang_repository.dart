@@ -61,7 +61,9 @@ class UtangRepository {
     UtangModel utang,
     UtangPaymentModel payment,
   ) async {
-    final newPaid = utang.amountPaid + payment.amount;
+    final newPaid = (utang.amountPaid + payment.amount)
+        .clamp(0, utang.totalAmount)
+        .toDouble();
     final newStatus = newPaid >= utang.totalAmount
         ? 'paid'
         : newPaid > 0

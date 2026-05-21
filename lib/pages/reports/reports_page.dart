@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -7,6 +8,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../../core/constants/app_colors.dart';
+import '../../core/services/sync_service.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../repositories/report_repository.dart';
@@ -61,6 +63,7 @@ class _ReportsPageState extends State<ReportsPage>
   bool _loading = false;
   bool _exporting = false;
   bool _activityDetailed = false;
+  StreamSubscription<String>? _syncSub;
 
   final _reportKey = GlobalKey();
 
@@ -70,12 +73,23 @@ class _ReportsPageState extends State<ReportsPage>
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 4, vsync: this);
+    _syncSub = SyncService.changes.listen((collection) {
+      if (!mounted) return;
+      if (collection == 'sales' ||
+          collection == 'products' ||
+          collection == 'utang' ||
+          collection == 'activity_logs' ||
+          collection == 'inventory_logs') {
+        _generate();
+      }
+    });
     _setRange('today');
   }
 
   @override
   void dispose() {
     _tabCtrl.dispose();
+    _syncSub?.cancel();
     super.dispose();
   }
 
@@ -130,26 +144,28 @@ class _ReportsPageState extends State<ReportsPage>
     var products = <ProductModel>[];
     var utang = <UtangModel>[];
     var activityLogs = <Map<String, dynamic>>[];
-    try {
-      final results = await Future.wait([
-        ReportRepository.getSummary(_fmt(_from), _fmt(_to)),
-        ProductRepository.getAll(),
-        UtangRepository.getAll(),
-        ReportRepository.getPresetSummaries(),
-        ReportRepository.getActivityLogs(limit: 500),
-      ]).timeout(const Duration(seconds: 3));
-      summary = results[0] as Map<String, dynamic>;
-      products = results[1] as List<ProductModel>;
-      utang = results[2] as List<UtangModel>;
-      rangeSummaries = results[3] as Map<String, Map<String, dynamic>>;
-      activityLogs = results[4] as List<Map<String, dynamic>>;
-    } catch (_) {
-      summary = _summary;
-      rangeSummaries = _rangeSummaries;
-      products = _products;
-      utang = _utang;
-      activityLogs = _activityLogs;
+    Future<T> safe<T>(Future<T> future, T fallback) async {
+      try {
+        return await future.timeout(const Duration(seconds: 10));
+      } catch (_) {
+        return fallback;
+      }
     }
+
+    summary = await safe(
+      ReportRepository.getSummary(_fmt(_from), _fmt(_to)),
+      _summary ?? <String, dynamic>{},
+    );
+    products = await safe(ProductRepository.getAll(), _products);
+    utang = await safe(UtangRepository.getAll(), _utang);
+    rangeSummaries = await safe(
+      ReportRepository.getPresetSummaries(),
+      _rangeSummaries,
+    );
+    activityLogs = await safe(
+      ReportRepository.getActivityLogs(limit: 500),
+      _activityLogs,
+    );
     if (mounted) {
       setState(() {
         _summary = summary;

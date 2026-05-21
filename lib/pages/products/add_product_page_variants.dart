@@ -106,41 +106,43 @@ extension _AddProductPageVariants on _AddProductPageState {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: () => _showImagePicker(
-                onPicked: (f) => setS(() => variantImageFile = f),
-              ),
-              onLongPress: () => _previewImage(file: variantImageFile),
-              child: Container(
-                height: 104,
-                width: 104,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: kInputFill,
-                  borderRadius: BorderRadius.circular(10),
-                  image: variantImageFile != null
-                      ? DecorationImage(
-                          image: FileImage(variantImageFile!),
-                          fit: BoxFit.cover,
+            Center(
+              child: GestureDetector(
+                onTap: () => _showImagePicker(
+                  onPicked: (f) => setS(() => variantImageFile = f),
+                ),
+                onLongPress: () => _previewImage(file: variantImageFile),
+                child: Container(
+                  height: 104,
+                  width: 104,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: kInputFill,
+                    borderRadius: BorderRadius.circular(10),
+                    image: variantImageFile != null
+                        ? DecorationImage(
+                            image: FileImage(variantImageFile!),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: variantImageFile == null
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.add_photo_alternate_outlined,
+                              color: kGrey,
+                              size: 28,
+                            ),
+                            Text(
+                              'Variant image (optional)',
+                              style: TextStyle(color: kGrey, fontSize: 11),
+                            ),
+                          ],
                         )
                       : null,
                 ),
-                child: variantImageFile == null
-                    ? const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_photo_alternate_outlined,
-                            color: kGrey,
-                            size: 28,
-                          ),
-                          Text(
-                            'Variant image (optional)',
-                            style: TextStyle(color: kGrey, fontSize: 11),
-                          ),
-                        ],
-                      )
-                    : null,
               ),
             ),
             _variantFields(

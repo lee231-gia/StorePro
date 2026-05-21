@@ -458,7 +458,7 @@ class ProductGridCard extends StatelessWidget {
               Expanded(
                 flex: 4,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+                  padding: const EdgeInsets.fromLTRB(10, 7, 10, 7),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -476,7 +476,7 @@ class ProductGridCard extends StatelessWidget {
                         const SizedBox(height: 4),
                         Wrap(spacing: 4, runSpacing: 4, children: badges),
                       ],
-                      const Spacer(),
+                      const SizedBox(height: 4),
                       footer ?? _DefaultProductGridFooter(item: item),
                     ],
                   ),

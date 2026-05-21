@@ -60,7 +60,7 @@ class ProductBrowserView extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.78,
+            childAspectRatio: 0.82,
           ),
           itemCount: items.length,
           itemBuilder: (_, i) => ProductGridCard(

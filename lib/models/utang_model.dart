@@ -82,7 +82,8 @@ class UtangModel {
     required this.updatedAt,
   });
 
-  double get balance => totalAmount - amountPaid;
+  double get balance =>
+      (totalAmount - amountPaid).clamp(0, double.infinity).toDouble();
 
   factory UtangModel.fromMap(Map<String, dynamic> m) => UtangModel(
     id: m['id'] ?? '',

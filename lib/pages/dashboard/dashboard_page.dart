@@ -6,6 +6,7 @@ import '../../core/constants/app_routes.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../core/services/alert_service.dart';
+import '../../core/services/data_sync_service.dart';
 import '../../core/services/sync_service.dart';
 import '../../models/product_model.dart';
 import '../../models/sale_model.dart';
@@ -42,6 +43,8 @@ class _DashboardPageState extends State<DashboardPage> {
   double _todayRevenue = 0.0;
   double _todayProfit = 0.0;
   bool _loading = true;
+  bool _loadingNow = false;
+  bool _reloadAfterLoad = false;
   StreamSubscription<String>? _changeSub;
 
   @override
@@ -50,8 +53,17 @@ class _DashboardPageState extends State<DashboardPage> {
     _changeSub = SyncService.changes.listen((collection) {
       if (collection == 'products' ||
           collection == 'sales' ||
-          collection == 'activity_logs') {
-        _load();
+          collection == 'activity_logs' ||
+          collection == 'utang' ||
+          collection == 'inventory_logs' ||
+          collection == 'customers' ||
+          collection == 'categories' ||
+          collection == 'notes') {
+        if (_loadingNow) {
+          _reloadAfterLoad = true;
+        } else {
+          _load();
+        }
       }
     });
     _load();
@@ -64,7 +76,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Future<void> _load() async {
+    if (_loadingNow) return;
+    _loadingNow = true;
     setState(() => _loading = true);
+    DataSyncService.syncAllInBackground();
 
     // ── INSTANT FROM SQLITE ──────────────────────────────────
     try {
@@ -72,7 +87,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ProductRepository.getAll(),
         SaleRepository.getAll(),
         ReportRepository.getActivityLogs(limit: 10),
-      ]).timeout(const Duration(seconds: 3));
+      ]).timeout(const Duration(seconds: 10));
 
       _buildState(
         results[0] as List<ProductModel>,
@@ -81,17 +96,15 @@ class _DashboardPageState extends State<DashboardPage> {
       );
     } catch (_) {
       if (mounted) setState(() => _loading = false);
+    } finally {
+      _loadingNow = false;
+      if (_reloadAfterLoad) {
+        _reloadAfterLoad = false;
+        _load();
+      }
     }
 
     // ── BACKGROUND FIREBASE SYNC ──────────────────────────────
-    ProductRepository.syncInBackground((fresh) {
-      if (!mounted) return;
-      SaleRepository.getAll().then((s) {
-        ReportRepository.getActivityLogs(limit: 10).then((l) {
-          _buildState(fresh, s, l);
-        });
-      });
-    });
   }
 
   void _buildState(
