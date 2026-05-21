@@ -1,11 +1,11 @@
 part of 'sales_sheets.dart';
 
-void showPaymentSheet({
+Future<void> showPaymentSheet({
   required BuildContext context,
   required double total,
   required TextEditingController customerCtrl,
   List<CustomerModel> customers = const [],
-  required void Function({
+  required Future<void> Function({
     required String paymentType,
     required double amountPaid,
     required double change,
@@ -14,7 +14,7 @@ void showPaymentSheet({
     required String customerAddress,
   })
   onPay,
-}) {
+}) async {
   String payType = 'cash';
   final cashCtrl = TextEditingController();
   final cPhoneCtrl = TextEditingController();
@@ -31,9 +31,8 @@ void showPaymentSheet({
   }
   double change = 0.0;
   var submitting = false;
-  Map<String, Object?>? pendingPayment;
 
-  final sheet = showModalBottomSheet(
+  final payment = await showModalBottomSheet<Map<String, Object?>>(
     context: context,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
@@ -201,7 +200,7 @@ void showPaymentSheet({
                 isLoading: submitting,
                 onTap: submitting
                     ? null
-                    : () {
+                    : () async {
                         final paid = payType == 'utang'
                             ? 0.0
                             : (double.tryParse(cashCtrl.text) ?? 0.0);
@@ -227,7 +226,7 @@ void showPaymentSheet({
                           return;
                         }
                         final customerName = customerCtrl.text.trim();
-                        pendingPayment = {
+                        final payment = {
                           'paymentType': payType,
                           'amountPaid': paid,
                           'change': change < 0 ? 0.0 : change,
@@ -238,9 +237,8 @@ void showPaymentSheet({
                         };
                         setP(() => submitting = true);
                         FocusManager.instance.primaryFocus?.unfocus();
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (ctx.mounted) Navigator.pop(ctx);
-                        });
+                        await _settleCheckoutOverlays();
+                        if (ctx.mounted) Navigator.pop(ctx, payment);
                       },
               ),
 
@@ -251,26 +249,21 @@ void showPaymentSheet({
       ),
     ),
   );
-  sheet.whenComplete(() {
-    final payment = pendingPayment;
-    cashCtrl.dispose();
-    cPhoneCtrl.dispose();
-    cAddrCtrl.dispose();
-    customerFocus.dispose();
-    if (payment != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        customerCtrl.text = (payment['customerName'] as String?) ?? '';
-        onPay(
-          paymentType: payment['paymentType'] as String,
-          amountPaid: payment['amountPaid'] as double,
-          change: payment['change'] as double,
-          customerId: payment['customerId'] as String,
-          customerPhone: payment['customerPhone'] as String,
-          customerAddress: payment['customerAddress'] as String,
-        );
-      });
-    }
-  });
+  _disposeCheckoutInputs(
+    controllers: [cashCtrl, cPhoneCtrl, cAddrCtrl],
+    focusNodes: [customerFocus],
+  );
+  if (payment == null) return;
+  await _settleCheckoutOverlays();
+  customerCtrl.text = (payment['customerName'] as String?) ?? '';
+  await onPay(
+    paymentType: payment['paymentType'] as String,
+    amountPaid: payment['amountPaid'] as double,
+    change: payment['change'] as double,
+    customerId: payment['customerId'] as String,
+    customerPhone: payment['customerPhone'] as String,
+    customerAddress: payment['customerAddress'] as String,
+  );
 }
 
 // Extension for capitalize

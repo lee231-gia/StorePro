@@ -229,7 +229,7 @@ class ReportRepository {
         'sales',
         where: 'storeId = ?',
         whereArgs: [Session.storeId],
-        orderBy: 'date DESC',
+        orderBy: 'date DESC, updatedAt DESC',
         limit: queryLimit,
       );
       final sales = saleRows.map(SaleModel.fromSql);

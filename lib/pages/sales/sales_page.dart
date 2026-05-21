@@ -58,6 +58,7 @@ class _SalesPageState extends State<SalesPage> {
   final _customerCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
   StreamSubscription<String>? _changeSub;
+  bool _checkoutInProgress = false;
 
   @override
   void initState() {
@@ -279,24 +280,31 @@ class _SalesPageState extends State<SalesPage> {
   }
 
   // ── OPEN CART ─────────────────────────────────────────────
-  void _openCart() {
-    showCartSheet(
-      context: context,
-      cart: _cart,
-      customerCtrl: _customerCtrl,
-      notesCtrl: _notesCtrl,
-      customers: _customers,
-      onChangeQty: _changeQty,
-      onRemove: _removeItem,
-      onItemDiscount: _setItemDiscount,
-      onConfirm: _openPayment,
-    );
+  Future<void> _openCart() async {
+    if (_cart.isEmpty || _checkoutInProgress) return;
+    _checkoutInProgress = true;
+    try {
+      final proceed = await showCartSheet(
+        context: context,
+        cart: _cart,
+        customerCtrl: _customerCtrl,
+        notesCtrl: _notesCtrl,
+        customers: _customers,
+        onChangeQty: _changeQty,
+        onRemove: _removeItem,
+        onItemDiscount: _setItemDiscount,
+      );
+      if (!mounted || !proceed || _cart.isEmpty) return;
+      await _openPayment();
+    } finally {
+      _checkoutInProgress = false;
+    }
   }
 
   // ── PAYMENT FLOW ──────────────────────────────────────────
-  void _openPayment() {
+  Future<void> _openPayment() async {
     if (!mounted || _cart.isEmpty) return;
-    showPaymentSheet(
+    await showPaymentSheet(
       context: context,
       total: _cartTotal,
       customerCtrl: _customerCtrl,

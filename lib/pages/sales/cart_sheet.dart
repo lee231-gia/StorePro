@@ -1,6 +1,6 @@
 part of 'sales_sheets.dart';
 
-void showCartSheet({
+Future<bool> showCartSheet({
   required BuildContext context,
   required List<CartItem> cart,
   required TextEditingController customerCtrl,
@@ -9,12 +9,10 @@ void showCartSheet({
   required void Function(int, int) onChangeQty,
   required void Function(int) onRemove,
   required void Function(int, double) onItemDiscount,
-  required VoidCallback onConfirm,
-}) {
+}) async {
   final discountCtrls = <String, TextEditingController>{};
   final customerFocus = FocusNode();
-  var proceedAfterClose = false;
-  final sheet = showModalBottomSheet(
+  final proceed = await showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     shape: const RoundedRectangleBorder(
@@ -161,7 +159,9 @@ void showCartSheet({
                                           onRemove(i);
                                           setS(() {});
                                           if (cart.isEmpty) {
-                                            Navigator.pop(ctx);
+                                            FocusManager.instance.primaryFocus
+                                                ?.unfocus();
+                                            Navigator.pop(ctx, false);
                                           }
                                         },
                                       ),
@@ -173,7 +173,9 @@ void showCartSheet({
                                         onChangeQty(i, -1);
                                         setS(() {});
                                         if (cart.isEmpty) {
-                                          Navigator.pop(ctx);
+                                          FocusManager.instance.primaryFocus
+                                              ?.unfocus();
+                                          Navigator.pop(ctx, false);
                                         }
                                       },
                                       onIncrease: () {
@@ -363,12 +365,12 @@ void showCartSheet({
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          onPressed: () {
-                            proceedAfterClose = true;
+                          onPressed: () async {
                             FocusManager.instance.primaryFocus?.unfocus();
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (ctx.mounted) Navigator.pop(ctx);
-                            });
+                            await Future<void>.delayed(
+                              const Duration(milliseconds: 100),
+                            );
+                            if (ctx.mounted) Navigator.pop(ctx, true);
                           },
                           child: Text(
                             'Proceed  ${AppHelpers.peso(subtotal)}',
@@ -386,13 +388,27 @@ void showCartSheet({
       },
     ),
   );
-  sheet.whenComplete(() {
-    for (final ctrl in discountCtrls.values) {
-      ctrl.dispose();
+  _disposeCheckoutInputs(
+    controllers: discountCtrls.values.toList(),
+    focusNodes: [customerFocus],
+  );
+  if (proceed == true) await _settleCheckoutOverlays();
+  return proceed == true;
+}
+
+Future<void> _settleCheckoutOverlays() =>
+    Future<void>.delayed(const Duration(milliseconds: 180));
+
+void _disposeCheckoutInputs({
+  List<TextEditingController> controllers = const [],
+  List<FocusNode> focusNodes = const [],
+}) {
+  Future<void>.delayed(const Duration(milliseconds: 700), () {
+    for (final focusNode in focusNodes) {
+      focusNode.dispose();
     }
-    customerFocus.dispose();
-    if (proceedAfterClose) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => onConfirm());
+    for (final controller in controllers) {
+      controller.dispose();
     }
   });
 }
@@ -496,73 +512,25 @@ Widget _customerSelector({
     addressController?.text = customer.address;
   }
 
-  return LayoutBuilder(
-    builder: (context, constraints) => RawAutocomplete<CustomerModel>(
-      textEditingController: controller,
-      focusNode: focusNode,
-      displayStringForOption: (customer) => customer.name,
-      optionsBuilder: (value) {
-        final query = value.text.trim().toLowerCase();
-        if (query.isEmpty) return customers.take(8);
-        return customers.where(
-          (customer) =>
-              customer.name.toLowerCase().contains(query) ||
-              customer.phone.toLowerCase().contains(query),
-        );
-      },
-      onSelected: fill,
-      fieldViewBuilder:
-          (context, textController, focusNode, onFieldSubmitted) => TextField(
-            controller: textController,
-            focusNode: focusNode,
-            decoration: AppInput.field(hint, icon: Icons.person_outline)
-                .copyWith(
-                  suffixIcon: customers.isEmpty
-                      ? null
-                      : const Icon(Icons.expand_more, size: 18),
-                ),
-            onChanged: (value) {
-              final match = customers.where(
-                (customer) =>
-                    customer.name.toLowerCase() == value.trim().toLowerCase(),
-              );
-              if (match.isNotEmpty) fill(match.first);
-            },
-          ),
-      optionsViewBuilder: (context, onSelected, options) {
-        final list = options.toList();
-        if (list.isEmpty) return const SizedBox.shrink();
-        return Align(
-          alignment: Alignment.topLeft,
-          child: Material(
-            elevation: 6,
-            borderRadius: BorderRadius.circular(10),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: constraints.maxWidth,
-                maxHeight: 220,
-              ),
-              child: ListView.builder(
-                padding: EdgeInsets.zero,
-                shrinkWrap: true,
-                itemCount: list.length,
-                itemBuilder: (_, i) {
-                  final customer = list[i];
-                  return ListTile(
-                    dense: true,
-                    title: Text(customer.name, overflow: TextOverflow.ellipsis),
-                    subtitle: customer.phone.isEmpty
-                        ? null
-                        : Text(customer.phone, overflow: TextOverflow.ellipsis),
-                    onTap: () => onSelected(customer),
-                  );
-                },
-              ),
-            ),
-          ),
-        );
-      },
-    ),
+  void fillExact(String value) {
+    final name = value.trim().toLowerCase();
+    if (name.isEmpty) return;
+    final matches = customers.where(
+      (customer) => customer.name.trim().toLowerCase() == name,
+    );
+    if (matches.isNotEmpty) fill(matches.first);
+  }
+
+  return TextField(
+    controller: controller,
+    focusNode: focusNode,
+    textInputAction: TextInputAction.next,
+    decoration: AppInput.field(hint, icon: Icons.person_outline),
+    onChanged: fillExact,
+    onEditingComplete: () {
+      fillExact(controller.text);
+      focusNode.unfocus();
+    },
   );
 }
 

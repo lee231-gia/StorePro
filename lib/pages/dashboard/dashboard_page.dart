@@ -40,6 +40,7 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> _expiryAlerts = [];
   List<Map<String, dynamic>> _lowStockList = [];
   List<Map<String, dynamic>> _activityLogs = [];
+  List<SaleModel> _salesSnapshot = [];
   double _todayRevenue = 0.0;
   double _todayProfit = 0.0;
   double _totalRevenue = 0.0;
@@ -85,21 +86,28 @@ class _DashboardPageState extends State<DashboardPage> {
     DataSyncService.syncAllInBackground();
 
     // ── INSTANT FROM SQLITE ──────────────────────────────────
+    Future<T> safe<T>(Future<T> future, T fallback) async {
+      try {
+        return await future.timeout(const Duration(seconds: 10));
+      } catch (_) {
+        return fallback;
+      }
+    }
+
     try {
       final results = await Future.wait([
-        ProductRepository.getAll(),
-        SaleRepository.getAll(),
-        ReportRepository.getActivityLogs(limit: 10),
-      ]).timeout(const Duration(seconds: 10));
+        safe(ProductRepository.getAll(), _products),
+        safe(SaleRepository.getAll(), _salesSnapshot),
+        safe(ReportRepository.getActivityLogs(limit: 10), _activityLogs),
+      ]);
 
       _buildState(
         results[0] as List<ProductModel>,
         results[1] as List<SaleModel>,
         results[2] as List<Map<String, dynamic>>,
       );
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
     } finally {
+      if (mounted) setState(() => _loading = false);
       _loadingNow = false;
       if (_reloadAfterLoad) {
         _reloadAfterLoad = false;
@@ -165,6 +173,7 @@ class _DashboardPageState extends State<DashboardPage> {
     if (mounted) {
       setState(() {
         _products = products;
+        _salesSnapshot = sales;
         _expiryAlerts = expiry;
         _lowStockList = lowStock;
         _activityLogs = logs;
