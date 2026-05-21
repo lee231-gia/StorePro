@@ -33,25 +33,59 @@ extension _ReportsSales on _ReportsPageState {
           padding: const EdgeInsets.all(16),
           children: [
             if (_rangeSummaries.isNotEmpty) ...[
-              const Text(
-                'Timeframe Summary',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: kDark,
+              appCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Timeframe Summary',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: kDark,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${AppHelpers.formatDate(_fmt(_from))} to '
+                      '${AppHelpers.formatDate(_fmt(_to))}',
+                      style: const TextStyle(color: kGrey, fontSize: 11),
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _pickCustom,
+                            icon: const Icon(Icons.date_range, size: 16),
+                            label: const Text('Customize'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _showExportOptions,
+                            icon: const Icon(Icons.ios_share, size: 16),
+                            label: const Text('Get Copy'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _timeframeHeaderRow(),
+                    ...[
+                      'total',
+                      'hour',
+                      'today',
+                      'yesterday',
+                      'week',
+                      'month',
+                      'year',
+                    ].map((key) => _rangeSummaryRow(key, _rangeSummaries[key])),
+                    _rangeSummaryRow('custom', s),
+                  ],
                 ),
               ),
-              const SizedBox(height: 10),
-              ...[
-                'total',
-                'hour',
-                'today',
-                'yesterday',
-                'week',
-                'month',
-                'year',
-              ].map((key) => _rangeSummaryRow(key, _rangeSummaries[key])),
-              _rangeSummaryRow('custom', s),
               const SizedBox(height: 14),
             ],
             _heroRevenueCard(revenue, txCount, avgSale),
@@ -89,51 +123,9 @@ extension _ReportsSales on _ReportsPageState {
             ),
             const SizedBox(height: 12),
             _collectionSummary(cashCollected, utangSales),
-            _calculationCard(revenue, cogs, profit),
+            _calculationCard(),
             const SizedBox(height: 4),
             _topProductsSection(topProds),
-            const SizedBox(height: 16),
-            appCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Custom Range',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: kDark,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${AppHelpers.formatDate(_fmt(_from))} to '
-                    '${AppHelpers.formatDate(_fmt(_to))}',
-                    style: const TextStyle(color: kGrey, fontSize: 11),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _pickCustom,
-                          icon: const Icon(Icons.date_range, size: 16),
-                          label: const Text('Customize'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _showExportOptions,
-                          icon: const Icon(Icons.ios_share, size: 16),
-                          label: const Text('Get Copy'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),
@@ -242,7 +234,7 @@ extension _ReportsSales on _ReportsPageState {
                               if (u.customerPhone.isNotEmpty) u.customerPhone,
                               if (u.dueDate.isNotEmpty)
                                 'Due ${AppHelpers.formatDate(u.dueDate)}',
-                            ].join(' | '),
+                            ].join(' • '),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontSize: 11, color: kGrey),
@@ -266,7 +258,7 @@ extension _ReportsSales on _ReportsPageState {
     );
   }
 
-  Widget _calculationCard(double revenue, double cogs, double profit) {
+  Widget _calculationCard() {
     return appCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,14 +271,6 @@ extension _ReportsSales on _ReportsPageState {
           _formulaRow('COGS', 'Units Sold x recorded Cost Price'),
           _formulaRow('Net Profit', 'Net Revenue - COGS'),
           _formulaRow('Profit Margin', '(Net Profit / Net Revenue) x 100'),
-          const Divider(height: 8),
-          _formulaRow(
-            'Current Range',
-            'Revenue: ${AppHelpers.peso(revenue)} | '
-                'COGS: ${AppHelpers.peso(cogs)} | '
-                'Profit: ${AppHelpers.peso(profit)}',
-            highlight: true,
-          ),
         ],
       ),
     );
@@ -428,47 +412,21 @@ extension _ReportsSales on _ReportsPageState {
     final margin = revenue > 0 ? (profit / revenue) * 100 : 0.0;
     final sales = (summary?['sales'] as List? ?? const []).whereType<Map>();
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+    return DecoratedBox(
       decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border(top: BorderSide(color: Colors.grey.shade200)),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
-          tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+          tilePadding: EdgeInsets.zero,
           childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          title: Text(
+          title: _timeframeDataRow(
             _rangeTitle(key),
-            style: const TextStyle(
-              color: kDark,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
-          ),
-          subtitle: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: ProductInlineInfo(
-              entries: [
-                ProductInlineEntry(
-                  Icons.payments_outlined,
-                  AppHelpers.peso(revenue),
-                  kRed,
-                ),
-                ProductInlineEntry(
-                  Icons.receipt_long_outlined,
-                  '$tx sales',
-                  kGrey,
-                ),
-                ProductInlineEntry(
-                  Icons.trending_up,
-                  '${margin.toStringAsFixed(1)}%',
-                  kGreen,
-                ),
-              ],
-            ),
+            AppHelpers.peso(revenue),
+            '$tx',
+            '${margin.toStringAsFixed(1)}%',
+            margin >= 20 ? kGreen : kOrange,
           ),
           children: [
             Align(
@@ -503,8 +461,8 @@ extension _ReportsSales on _ReportsPageState {
                   time == null
                       ? sale['date'].toString()
                       : AppHelpers.formatDateTime(time),
-                  '${sale['customerName'] ?? 'Walk-in'} | '
-                  '${AppHelpers.peso(total)} | '
+                  '${sale['customerName'] ?? 'Walk-in'} • '
+                  '${AppHelpers.peso(total)} • '
                   'Profit ${AppHelpers.peso(saleProfit)}',
                 );
               }),
@@ -513,6 +471,113 @@ extension _ReportsSales on _ReportsPageState {
       ),
     );
   }
+
+  Widget _timeframeHeaderRow() => Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Row(
+      children: const [
+        Expanded(
+          flex: 3,
+          child: Text('Range', style: TextStyle(color: kGrey, fontSize: 10)),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            'Revenue',
+            textAlign: TextAlign.right,
+            style: TextStyle(color: kGrey, fontSize: 10),
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Text(
+            'Sales',
+            textAlign: TextAlign.right,
+            style: TextStyle(color: kGrey, fontSize: 10),
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Text(
+            'Margin',
+            textAlign: TextAlign.right,
+            style: TextStyle(color: kGrey, fontSize: 10),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _timeframeDataRow(
+    String range,
+    String revenue,
+    String sales,
+    String margin,
+    Color marginColor,
+  ) => Row(
+    children: [
+      Expanded(
+        flex: 3,
+        child: Row(
+          children: [
+            Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: kRed,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                range,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: kDark,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      Expanded(
+        flex: 3,
+        child: Text(
+          revenue,
+          textAlign: TextAlign.right,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: kRed,
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+          ),
+        ),
+      ),
+      Expanded(
+        flex: 2,
+        child: Text(
+          sales,
+          textAlign: TextAlign.right,
+          style: const TextStyle(color: kDark, fontSize: 11),
+        ),
+      ),
+      Expanded(
+        flex: 2,
+        child: Text(
+          margin,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            color: marginColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 11,
+          ),
+        ),
+      ),
+    ],
+  );
 
   Widget _sectionHeader(IconData icon, String text) => Row(
     children: [

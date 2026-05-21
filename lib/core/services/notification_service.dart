@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import '../utils/session.dart';
 
 class NotificationService {
   NotificationService._();
@@ -10,7 +11,8 @@ class NotificationService {
   static bool _initialized = false;
 
   // ── INITIALIZE ────────────────────────────────────────────
-  static Future<void> init() async {
+  static Future<void> init({bool force = false}) async {
+    if (!force && !Session.notificationsEnabled) return;
     if (_initialized) return;
 
     tz_data.initializeTimeZones();
@@ -39,7 +41,9 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    if (!Session.notificationsEnabled) return;
     await init();
+    if (!_initialized) return;
 
     const android = AndroidNotificationDetails(
       'storepro_channel',
@@ -66,7 +70,9 @@ class NotificationService {
     required String body,
     required DateTime scheduledTime,
   }) async {
+    if (!Session.notificationsEnabled) return;
     await init();
+    if (!_initialized) return;
 
     const android = AndroidNotificationDetails(
       'storepro_scheduled',
@@ -101,13 +107,13 @@ class NotificationService {
 
   // ── CANCEL ────────────────────────────────────────────────
   static Future<void> cancel(int id) async {
-    await init();
+    await init(force: true);
     await _plugin.cancel(id: id);
   }
 
   // ── CANCEL ALL ────────────────────────────────────────────
   static Future<void> cancelAll() async {
-    await init();
+    await init(force: true);
     await _plugin.cancelAll();
   }
 }

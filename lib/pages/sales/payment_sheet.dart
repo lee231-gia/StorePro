@@ -30,6 +30,8 @@ void showPaymentSheet({
     cAddrCtrl.text = selectedCustomer.first.address;
   }
   double change = 0.0;
+  var submitting = false;
+  Map<String, Object?>? pendingPayment;
 
   final sheet = showModalBottomSheet(
     context: context,
@@ -195,41 +197,48 @@ void showPaymentSheet({
               const SizedBox(height: 16),
 
               PrimaryButton(
-                label: 'Confirm Payment',
-                onTap: () {
-                  final paid = payType == 'utang'
-                      ? 0.0
-                      : (double.tryParse(cashCtrl.text) ?? 0.0);
-                  if (payType == 'cash' && paid < total) {
-                    setP(() {
-                      paymentError =
-                          'Amount received must be at least the grand total.';
-                    });
-                    return;
-                  }
-                  if (payType == 'multi' && paid <= 0) {
-                    setP(() {
-                      paymentError = 'Enter the amount received.';
-                    });
-                    return;
-                  }
-                  if ((payType == 'utang' || payType == 'multi') &&
-                      customerCtrl.text.trim().isEmpty) {
-                    setP(() {
-                      paymentError = 'Customer name is required for utang.';
-                    });
-                    return;
-                  }
-                  Navigator.pop(ctx);
-                  onPay(
-                    paymentType: payType,
-                    amountPaid: paid,
-                    change: change < 0 ? 0 : change,
-                    customerId: '',
-                    customerPhone: cPhoneCtrl.text.trim(),
-                    customerAddress: cAddrCtrl.text.trim(),
-                  );
-                },
+                label: submitting ? 'Saving Payment...' : 'Confirm Payment',
+                isLoading: submitting,
+                onTap: submitting
+                    ? null
+                    : () {
+                        final paid = payType == 'utang'
+                            ? 0.0
+                            : (double.tryParse(cashCtrl.text) ?? 0.0);
+                        if (payType == 'cash' && paid < total) {
+                          setP(() {
+                            paymentError =
+                                'Amount received must be at least the grand total.';
+                          });
+                          return;
+                        }
+                        if (payType == 'multi' && paid <= 0) {
+                          setP(() {
+                            paymentError = 'Enter the amount received.';
+                          });
+                          return;
+                        }
+                        if ((payType == 'utang' || payType == 'multi') &&
+                            customerCtrl.text.trim().isEmpty) {
+                          setP(() {
+                            paymentError =
+                                'Customer name is required for utang.';
+                          });
+                          return;
+                        }
+                        final customerName = customerCtrl.text.trim();
+                        pendingPayment = {
+                          'paymentType': payType,
+                          'amountPaid': paid,
+                          'change': change < 0 ? 0.0 : change,
+                          'customerId': '',
+                          'customerName': customerName,
+                          'customerPhone': cPhoneCtrl.text.trim(),
+                          'customerAddress': cAddrCtrl.text.trim(),
+                        };
+                        setP(() => submitting = true);
+                        Navigator.pop(ctx);
+                      },
               ),
 
               const SizedBox(height: 8),
@@ -240,10 +249,24 @@ void showPaymentSheet({
     ),
   );
   sheet.whenComplete(() {
+    final payment = pendingPayment;
     cashCtrl.dispose();
     cPhoneCtrl.dispose();
     cAddrCtrl.dispose();
     customerFocus.dispose();
+    if (payment != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        customerCtrl.text = (payment['customerName'] as String?) ?? '';
+        onPay(
+          paymentType: payment['paymentType'] as String,
+          amountPaid: payment['amountPaid'] as double,
+          change: payment['change'] as double,
+          customerId: payment['customerId'] as String,
+          customerPhone: payment['customerPhone'] as String,
+          customerAddress: payment['customerAddress'] as String,
+        );
+      });
+    }
   });
 }
 

@@ -71,7 +71,7 @@ class ProductRepository {
       _table,
       updated.toSql(),
     );
-    _log(
+    await _log(
       product.id.isEmpty ? 'add_product' : 'edit_product',
       updated.id,
       updated.name,
@@ -86,7 +86,7 @@ class ProductRepository {
   static Future<void> delete(String id, String name) async {
     await SQLiteService.delete(_table, id);
     SyncService.deleteInBackground(_col, id);
-    _log('delete_product', id, name);
+    await _log('delete_product', id, name);
   }
 
   // ── DEDUCT FIFO ───────────────────────────────────────────
@@ -138,12 +138,18 @@ class ProductRepository {
     newVariants[variantIndex] = variant.copyWith(batches: updated);
 
     final newProduct = product.copyWith(variants: newVariants);
-    await save(newProduct);
+    await SyncService.write(
+      _col,
+      newProduct.id,
+      newProduct.toMap(),
+      _table,
+      newProduct.toSql(),
+    );
     return newProduct;
   }
 
   // Fire and forget — never blocks UI
-  static void _log(
+  static Future<void> _log(
     String action,
     String targetId,
     String name, {
@@ -162,7 +168,7 @@ class ProductRepository {
       timestamp: AppHelpers.nowStr(),
       details: details,
     );
-    SyncService.write(
+    await SyncService.write(
       'activity_logs',
       log.id,
       log.toMap(),

@@ -336,8 +336,11 @@ class _SalesPageState extends State<SalesPage> {
   }) async {
     if (_cart.isEmpty) return;
 
+    final cartSnapshot = _cart.toList();
+    final total = _cartTotal;
+    final discount = _discTotal;
     // Build sale items
-    final items = _cart
+    final items = cartSnapshot
         .map(
           (c) => SaleItemModel(
             productId: c.productId,
@@ -362,15 +365,15 @@ class _SalesPageState extends State<SalesPage> {
       employeeId: Session.safeEmployeeId,
       employeeName: Session.safeEmployeeName,
       items: items,
-      subtotal: _cartTotal + _discTotal,
-      totalDiscount: _discTotal,
-      total: _cartTotal,
+      subtotal: total + discount,
+      totalDiscount: discount,
+      total: total,
       amountPaid: amountPaid,
       change: change,
       paymentType: paymentType,
       status:
           paymentType == 'utang' ||
-              (paymentType == 'multi' && amountPaid < _cartTotal)
+              (paymentType == 'multi' && amountPaid < total)
           ? 'partial'
           : 'completed',
       notes: _notesCtrl.text.trim(),
@@ -379,97 +382,106 @@ class _SalesPageState extends State<SalesPage> {
       updatedAt: AppHelpers.nowStr(),
     );
 
-    // Save sale
-    final saved = await SaleRepository.save(sale);
+    late final SaleModel saved;
+    try {
+      // Save sale
+      saved = await SaleRepository.save(sale);
 
-    // Deduct stock (FIFO) for each item
-    for (final item in _cart) {
-      await ProductRepository.deductFifo(
-        item.productId,
-        item.variantId,
-        item.qty,
-      );
-    }
+      // Deduct stock (FIFO) for each item
+      for (final item in cartSnapshot) {
+        await ProductRepository.deductFifo(
+          item.productId,
+          item.variantId,
+          item.qty,
+        );
+      }
 
-    // If utang or multi — create debt record
-    if (paymentType == 'utang' ||
-        (paymentType == 'multi' && amountPaid < _cartTotal)) {
-      // Save/find customer
-      final custList = await CustomerRepository.getAll();
-      CustomerModel? customer =
-          custList.where((c) => c.name == customerName).isNotEmpty
-          ? custList.firstWhere((c) => c.name == customerName)
-          : null;
+      // If utang or multi — create debt record
+      if (paymentType == 'utang' ||
+          (paymentType == 'multi' && amountPaid < total)) {
+        // Save/find customer
+        final custList = await CustomerRepository.getAll();
+        CustomerModel? customer =
+            custList.where((c) => c.name == customerName).isNotEmpty
+            ? custList.firstWhere((c) => c.name == customerName)
+            : null;
 
-      customer ??= await CustomerRepository.save(
-        CustomerModel(
+        customer ??= await CustomerRepository.save(
+          CustomerModel(
+            id: '',
+            storeId: Session.storeId,
+            name: customerName,
+            phone: customerPhone,
+            address: customerAddress,
+            createdAt: AppHelpers.nowStr(),
+            updatedAt: AppHelpers.nowStr(),
+          ),
+        );
+
+        final paidSoFar = paymentType == 'multi' ? amountPaid : 0.0;
+        final utang = UtangModel(
           id: '',
           storeId: Session.storeId,
-          name: customerName,
-          phone: customerPhone,
-          address: customerAddress,
-          createdAt: AppHelpers.nowStr(),
+          customerId: customer.id,
+          customerName: customerName,
+          customerPhone: customerPhone,
+          saleId: saved.id,
+          items: cartSnapshot
+              .map(
+                (c) => {
+                  'productId': c.productId,
+                  'productName': c.productName,
+                  'variantId': c.variantId,
+                  'variantName': c.variantName,
+                  'conditionName': c.conditionName,
+                  'qty': c.qty,
+                  'price': c.price,
+                },
+              )
+              .toList(),
+          totalAmount: total,
+          amountPaid: paidSoFar,
+          startDate: AppHelpers.todayStr(),
+          status: paidSoFar >= total
+              ? 'paid'
+              : paidSoFar > 0
+              ? 'partial'
+              : 'pending',
           updatedAt: AppHelpers.nowStr(),
-        ),
-      );
+        );
+        await UtangRepository.save(utang);
 
-      final paidSoFar = paymentType == 'multi' ? amountPaid : 0.0;
-      final utang = UtangModel(
-        id: '',
-        storeId: Session.storeId,
-        customerId: customer.id,
-        customerName: customerName,
-        customerPhone: customerPhone,
-        saleId: saved.id,
-        items: _cart
-            .map(
-              (c) => {
-                'productId': c.productId,
-                'productName': c.productName,
-                'variantId': c.variantId,
-                'variantName': c.variantName,
-                'conditionName': c.conditionName,
-                'qty': c.qty,
-                'price': c.price,
-              },
-            )
-            .toList(),
-        totalAmount: _cartTotal,
-        amountPaid: paidSoFar,
-        startDate: AppHelpers.todayStr(),
-        status: paidSoFar >= _cartTotal
-            ? 'paid'
-            : paidSoFar > 0
-            ? 'partial'
-            : 'pending',
-        updatedAt: AppHelpers.nowStr(),
-      );
-      await UtangRepository.save(utang);
-
-      // Update customer total purchases
-      await CustomerRepository.addPurchase(customer.id, _cartTotal);
-    } else {
-      // Cash sale — update customer if named
-      if (customerName != 'Walk-in') {
-        final custList = await CustomerRepository.getAll();
-        final match = custList.where((c) => c.name == customerName).toList();
-        if (match.isNotEmpty) {
-          await CustomerRepository.addPurchase(match.first.id, _cartTotal);
+        // Update customer total purchases
+        await CustomerRepository.addPurchase(customer.id, total);
+      } else {
+        // Cash sale — update customer if named
+        if (customerName != 'Walk-in') {
+          final custList = await CustomerRepository.getAll();
+          final match = custList.where((c) => c.name == customerName).toList();
+          if (match.isNotEmpty) {
+            await CustomerRepository.addPurchase(match.first.id, total);
+          }
         }
       }
+    } catch (e) {
+      if (mounted) {
+        showSnack(context, 'Payment failed: $e', isError: true);
+      }
+      return;
     }
 
     if (!mounted) return;
 
     // Clear cart
     setState(() {
+      _sales = [saved, ..._sales.where((sale) => sale.id != saved.id)];
       _cart.clear();
       _customerCtrl.clear();
       _notesCtrl.clear();
     });
 
-    // Reload sales
-    await _load();
+    // Reload in the background so the receipt opens immediately.
+    _load().ignore();
 
     // Show receipt
     if (mounted) {

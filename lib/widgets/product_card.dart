@@ -112,7 +112,7 @@ class ProductImage extends StatelessWidget {
         child: Padding(
           padding: padding,
           child: CachedNetworkImage(
-            imageUrl: _optimizedImageUrl(item.imageUrl, cacheWidth),
+            imageUrl: ProductImage.optimizedUrl(item.imageUrl, cacheWidth),
             fit: BoxFit.cover,
             alignment: Alignment.center,
             fadeInDuration: Duration.zero,
@@ -129,12 +129,12 @@ class ProductImage extends StatelessWidget {
     );
   }
 
-  String _optimizedImageUrl(String url, int width) {
+  static String optimizedUrl(String url, int width) {
     if (!url.contains('/upload/') || url.contains('/upload/c_')) return url;
     final targetWidth = width.clamp(160, 900);
     return url.replaceFirst(
       '/upload/',
-      '/upload/c_fill,g_auto,w_$targetWidth,q_auto,f_auto/',
+      '/upload/c_fill,g_auto,w_$targetWidth,dpr_auto,q_auto:eco,f_auto/',
     );
   }
 
@@ -167,7 +167,7 @@ class ProductImage extends StatelessWidget {
                   minScale: 1,
                   maxScale: 4,
                   child: CachedNetworkImage(
-                    imageUrl: url,
+                    imageUrl: ProductImage.optimizedUrl(url, 1200),
                     fit: BoxFit.contain,
                     fadeInDuration: Duration.zero,
                     fadeOutDuration: Duration.zero,

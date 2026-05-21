@@ -14,6 +14,8 @@ extension _ReportsProfit on _ReportsPageState {
             ? ((v.price - v.costPrice) / v.costPrice) * 100
             : 0.0;
         items.add({
+          'product': p,
+          'variant': v,
           'productName': p.name,
           'variantName': v.name,
           'sku': v.sku,
@@ -115,6 +117,16 @@ extension _ReportsProfit on _ReportsPageState {
         children: [
           Row(
             children: [
+              ProductImage(
+                item: ProductDisplayItem(
+                  product: item['product'] as ProductModel,
+                  variant: item['variant'] as VariantModel,
+                ),
+                size: 44,
+                padding: EdgeInsets.zero,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

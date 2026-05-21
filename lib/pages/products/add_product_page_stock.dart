@@ -13,11 +13,25 @@ extension _AddProductPageStock on _AddProductPageState {
               if (v.imageUrl.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
-                  child: Image.network(
-                    v.imageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: ProductImage.optimizedUrl(v.imageUrl, 96),
                     width: 32,
                     height: 32,
                     fit: BoxFit.cover,
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    memCacheWidth: 96,
+                    memCacheHeight: 96,
+                    errorWidget: (_, _, _) => Container(
+                      width: 32,
+                      height: 32,
+                      color: kRedLight,
+                      child: const Icon(
+                        Icons.inventory_2,
+                        color: kRed,
+                        size: 16,
+                      ),
+                    ),
                   ),
                 )
               else

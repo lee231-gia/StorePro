@@ -59,7 +59,7 @@ class SaleRepository {
       _table,
       updated.toSql(),
     );
-    _log('new_sale', updated.id, updated.customerName, sale: updated);
+    await _log('new_sale', updated.id, updated.customerName, sale: updated);
     return updated;
   }
 
@@ -106,7 +106,7 @@ class SaleRepository {
     String action = 'edit_sale',
   }) async {
     await SyncService.write(_col, sale.id, sale.toMap(), _table, sale.toSql());
-    _log(action, sale.id, sale.customerName, sale: sale);
+    await _log(action, sale.id, sale.customerName, sale: sale);
     return sale;
   }
 
@@ -115,7 +115,7 @@ class SaleRepository {
     SyncService.deleteInBackground(_col, id);
   }
 
-  static void _log(
+  static Future<void> _log(
     String action,
     String targetId,
     String name, {
@@ -134,7 +134,7 @@ class SaleRepository {
       timestamp: AppHelpers.nowStr(),
       details: sale == null ? const {} : _saleDetails(sale),
     );
-    SyncService.write(
+    await SyncService.write(
       'activity_logs',
       log.id,
       log.toMap(),

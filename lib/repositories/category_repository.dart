@@ -50,7 +50,7 @@ class CategoryRepository {
       _table,
       updated.toSql(),
     );
-    _log(
+    await _log(
       cat.id.isEmpty ? 'add_category' : 'edit_category',
       updated.id,
       updated.name,
@@ -62,11 +62,11 @@ class CategoryRepository {
   static Future<void> delete(String id, String name) async {
     await SQLiteService.delete(_table, id);
     SyncService.deleteInBackground(_col, id);
-    _log('delete_category', id, name);
+    await _log('delete_category', id, name);
   }
 
   // ── ACTIVITY LOG ──────────────────────────────────────────
-  static void _log(String action, String targetId, String name) async {
+  static Future<void> _log(String action, String targetId, String name) async {
     if (!Session.trackActivity) return;
     final log = ActivityLogModel(
       id: AppHelpers.newId(),
@@ -79,7 +79,7 @@ class CategoryRepository {
       targetName: name,
       timestamp: AppHelpers.nowStr(),
     );
-    SyncService.write(
+    await SyncService.write(
       'activity_logs',
       log.id,
       log.toMap(),

@@ -68,12 +68,9 @@ extension _InventoryProductViews on _InventoryPageState {
       emptyText: 'No products found.',
       onTap: _showVariantAdjustSheet,
       trailingBuilder: _replenishTrailing,
+      detailTrailingBuilder: _replenishTrailing,
       gridFooterBuilder: (item) => _stockTrailing(item, alignRight: false),
-      actionBuilder: (item) => ProductActionPill(
-        icon: Icons.tune_outlined,
-        label: 'Adjust',
-        color: item.totalStock == 0 ? kRed : kGreen,
-      ),
+      actionBuilder: _replenishActionPair,
     );
   }
 
@@ -118,6 +115,34 @@ extension _InventoryProductViews on _InventoryPageState {
     );
   }
 
+  Widget _replenishActionPair(ProductDisplayItem item) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(9),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _iconAction(
+            Icons.add,
+            kGreen,
+            () => _showAdjustForItem(item, isAdding: true),
+          ),
+          Container(width: 1, height: 22, color: Colors.grey.shade200),
+          _iconAction(
+            Icons.remove,
+            kRed,
+            () => _showAdjustForItem(item, isAdding: false),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _iconAction(IconData icon, Color color, VoidCallback onTap) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -130,11 +155,15 @@ extension _InventoryProductViews on _InventoryPageState {
   }
 
   void _showVariantAdjustSheet(ProductDisplayItem item) {
+    _showAdjustForItem(item, isAdding: true);
+  }
+
+  void _showAdjustForItem(ProductDisplayItem item, {required bool isAdding}) {
     if (item.variant != null) {
       _showAdjustDialog(
         product: item.product,
         variant: item.variant!,
-        isAdding: true,
+        isAdding: isAdding,
       );
       return;
     }
@@ -143,7 +172,7 @@ extension _InventoryProductViews on _InventoryPageState {
       _showAdjustDialog(
         product: item.product,
         variant: variant,
-        isAdding: true,
+        isAdding: isAdding,
       );
       return;
     }

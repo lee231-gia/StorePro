@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/enums/product_browser_enums.dart';
@@ -84,6 +85,7 @@ class ProductBrowserView extends StatelessWidget {
             item: items[i],
             badges: badgeBuilder?.call(items[i]) ?? const [],
             trailing: detailTrailingBuilder?.call(items[i]),
+            enabled: enabledBuilder?.call(items[i]) ?? true,
             onTap: () => onTap(items[i]),
           ),
         );
@@ -126,107 +128,112 @@ class _ProductDetailTile extends StatelessWidget {
   final ProductDisplayItem item;
   final List<Widget> badges;
   final Widget? trailing;
+  final bool enabled;
   final VoidCallback onTap;
 
   const _ProductDetailTile({
     required this.item,
     required this.badges,
     this.trailing,
+    this.enabled = true,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: kCard,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ProductImage(
-                  item: item,
-                  size: 48,
-                  padding: EdgeInsets.zero,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        item.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                          color: kDark,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 3),
-                      ProductInlineInfo(
-                        entries: [
-                          ProductInlineEntry(
-                            Icons.inventory_2_outlined,
-                            '${item.totalStock} pcs',
-                            AppHelpers.stockColor(item.totalStock),
-                          ),
-                          ProductInlineEntry(
-                            Icons.event_outlined,
-                            item.nearestExpiry.isEmpty
-                                ? 'No expiry'
-                                : AppHelpers.formatDate(item.nearestExpiry),
-                            kGrey,
-                          ),
-                        ],
-                      ),
-                    ],
+    return Opacity(
+      opacity: enabled ? 1 : 0.62,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: enabled ? onTap : null,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: kCard,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ProductImage(
+                    item: item,
+                    size: 48,
+                    padding: EdgeInsets.zero,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 88,
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child:
-                        trailing ??
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          AppHelpers.peso(item.price),
-                          textAlign: TextAlign.right,
+                          item.name,
                           style: const TextStyle(
-                            color: kRed,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: kDark,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
+                        const SizedBox(height: 3),
+                        ProductInlineInfo(
+                          entries: [
+                            ProductInlineEntry(
+                              Icons.inventory_2_outlined,
+                              '${item.totalStock} pcs',
+                              AppHelpers.stockColor(item.totalStock),
+                            ),
+                            ProductInlineEntry(
+                              Icons.event_outlined,
+                              item.nearestExpiry.isEmpty
+                                  ? 'No expiry'
+                                  : AppHelpers.formatDate(item.nearestExpiry),
+                              kGrey,
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 88,
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child:
+                          trailing ??
+                          Text(
+                            AppHelpers.peso(item.price),
+                            textAlign: TextAlign.right,
+                            style: const TextStyle(
+                              color: kRed,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 13,
+                            ),
+                          ),
+                    ),
+                  ),
+                ],
+              ),
+              if (badges.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(spacing: 6, runSpacing: 4, children: badges),
+              ],
+              if (item.variant == null && item.variantCount > 1) ...[
+                const SizedBox(height: 10),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                ...item.product.variants.map(
+                  (variant) => _variantRow(context, variant),
                 ),
               ],
-            ),
-            if (badges.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Wrap(spacing: 6, runSpacing: 4, children: badges),
             ],
-            if (item.variant == null && item.variantCount > 1) ...[
-              const SizedBox(height: 10),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-              ...item.product.variants.map(
-                (variant) => _variantRow(context, variant),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -243,12 +250,17 @@ class _ProductDetailTile extends StatelessWidget {
               onTap: () => _previewVariantImage(context, variant.imageUrl),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(5),
-                child: Image.network(
-                  variant.imageUrl,
+                child: CachedNetworkImage(
+                  imageUrl: ProductImage.optimizedUrl(variant.imageUrl, 96),
                   width: 28,
                   height: 28,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) =>
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  memCacheWidth: 96,
+                  memCacheHeight: 96,
+                  placeholder: (_, _) => const SizedBox(width: 28, height: 28),
+                  errorWidget: (_, _, _) =>
                       const SizedBox(width: 28, height: 28),
                 ),
               ),
@@ -314,10 +326,12 @@ class _ProductDetailTile extends StatelessWidget {
                 child: InteractiveViewer(
                   minScale: 0.8,
                   maxScale: 4,
-                  child: Image.network(
-                    imageUrl,
+                  child: CachedNetworkImage(
+                    imageUrl: ProductImage.optimizedUrl(imageUrl, 1200),
                     fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(
+                    fadeInDuration: Duration.zero,
+                    fadeOutDuration: Duration.zero,
+                    errorWidget: (_, _, _) => const Icon(
                       Icons.broken_image_outlined,
                       color: Colors.white,
                       size: 42,

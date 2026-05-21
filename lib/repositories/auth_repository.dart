@@ -273,6 +273,7 @@ class AuthRepository {
     Session.ownerUsername = user.username;
     Session.ownerEmail = user.email;
     Session.trackActivity = user.trackActivity;
+    Session.notificationsEnabled = user.notificationsEnabled;
     Session.employeeFeature = false;
   }
 

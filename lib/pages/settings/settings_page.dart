@@ -12,6 +12,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
 import '../../core/utils/session.dart';
 import '../../core/services/firebase_service.dart';
+import '../../core/services/notification_service.dart';
 import '../../repositories/auth_repository.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -24,6 +25,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   bool _trackActivity = Session.trackActivity;
+  bool _notificationsEnabled = Session.notificationsEnabled;
   bool _saving = false;
 
   // ── SAVE SETTING ──────────────────────────────────────────
@@ -35,6 +37,20 @@ class _SettingsPageState extends State<SettingsPage> {
     } catch (_) {}
     FirebaseService.setGlobal('stores', Session.storeId, {
       'trackActivity': val,
+    }).timeout(FirebaseService.timeout, onTimeout: () {}).ignore();
+  }
+
+  Future<void> _saveNotificationsEnabled(bool val) async {
+    setState(() => _notificationsEnabled = val);
+    Session.notificationsEnabled = val;
+    if (!val) NotificationService.cancelAll().ignore();
+    try {
+      await AuthRepository.updateCachedSessionProfile({
+        'notificationsEnabled': val,
+      });
+    } catch (_) {}
+    FirebaseService.setGlobal('stores', Session.storeId, {
+      'notificationsEnabled': val,
     }).timeout(FirebaseService.timeout, onTimeout: () {}).ignore();
   }
 
@@ -435,6 +451,14 @@ class _SettingsPageState extends State<SettingsPage> {
                       subtitle: 'Keep an audit trail of app activity',
                       value: _trackActivity,
                       onChanged: _saveTrackActivity,
+                    ),
+                    const Divider(height: 1),
+                    _preferenceSwitch(
+                      icon: Icons.notifications_active_outlined,
+                      title: 'Notifications',
+                      subtitle: 'Show stock and expiry alerts on this device',
+                      value: _notificationsEnabled,
+                      onChanged: _saveNotificationsEnabled,
                     ),
                   ],
                 ),

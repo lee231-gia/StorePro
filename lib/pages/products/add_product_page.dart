@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
@@ -14,6 +15,7 @@ import '../../repositories/category_repository.dart';
 import '../../repositories/product_option_repository.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/employee_picker.dart';
+import '../../widgets/product_card.dart';
 
 part 'add_product_page_layout.dart';
 part 'add_product_page_variants.dart';
@@ -80,7 +82,17 @@ class _AddProductPageState extends State<AddProductPage> {
                   maxScale: 4,
                   child: file != null
                       ? Image.file(file, fit: BoxFit.contain)
-                      : Image.network(url, fit: BoxFit.contain),
+                      : CachedNetworkImage(
+                          imageUrl: ProductImage.optimizedUrl(url, 1200),
+                          fit: BoxFit.contain,
+                          fadeInDuration: Duration.zero,
+                          fadeOutDuration: Duration.zero,
+                          errorWidget: (_, _, _) => const Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.white70,
+                            size: 48,
+                          ),
+                        ),
                 ),
               ),
               Positioned(

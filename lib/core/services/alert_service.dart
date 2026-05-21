@@ -13,9 +13,10 @@ class AlertService {
   static const _lowStockBase = 10000;
   static const _expiringBase = 20000;
   static const _expiredBase = 30000;
+  static final Set<String> _shownAlertKeys = {};
 
   static Future<void> runAll() async {
-    if (Session.storeId.isEmpty) return;
+    if (Session.storeId.isEmpty || !Session.notificationsEnabled) return;
 
     try {
       final rows = await SQLiteService.query(
@@ -25,29 +26,36 @@ class AlertService {
       );
       final products = rows.map(ProductModel.fromSql).toList();
 
-      await _checkLowStock(products);
-      await _checkExpiry(products);
+      final activeKeys = <String>{};
+      await _checkLowStock(products, activeKeys);
+      await _checkExpiry(products, activeKeys);
+      _shownAlertKeys.removeWhere((key) => !activeKeys.contains(key));
     } catch (_) {
       // Alerts must never block the app from opening.
     }
   }
 
-  static Future<void> _checkLowStock(List<ProductModel> products) async {
+  static Future<void> _checkLowStock(
+    List<ProductModel> products,
+    Set<String> activeKeys,
+  ) async {
     int idx = 0;
     for (final product in products) {
       for (final variant in product.variants) {
         final stock = variant.totalStock;
         if (stock > 0 && stock <= 10) {
-          await NotificationService.show(
+          await _showOnce(
+            activeKeys,
+            key: 'low:${product.id}:${variant.id}',
             id: _lowStockBase + idx,
             title: 'Low Stock Alert',
-            body:
-                '${product.name} - ${variant.name}: '
-                'only $stock pcs left.',
+            body: '${product.name} - ${variant.name}: only $stock pcs left.',
           );
           idx++;
         } else if (stock == 0) {
-          await NotificationService.show(
+          await _showOnce(
+            activeKeys,
+            key: 'out:${product.id}:${variant.id}',
             id: _lowStockBase + idx,
             title: 'Out of Stock',
             body: '${product.name} - ${variant.name} is out of stock.',
@@ -58,7 +66,10 @@ class AlertService {
     }
   }
 
-  static Future<void> _checkExpiry(List<ProductModel> products) async {
+  static Future<void> _checkExpiry(
+    List<ProductModel> products,
+    Set<String> activeKeys,
+  ) async {
     int dueSoonIdx = 0;
     int pastDueIdx = 0;
 
@@ -72,7 +83,9 @@ class AlertService {
         final isHardExpiry = due.type == 'Expiry Date' || due.type == 'Use-By';
 
         if (status == 'expiring') {
-          await NotificationService.show(
+          await _showOnce(
+            activeKeys,
+            key: 'expiring:${product.id}:${variant.id}:${due.date}',
             id: _expiringBase + dueSoonIdx,
             title: isHardExpiry ? 'Expiring Soon' : 'Product Date Due Soon',
             body:
@@ -81,7 +94,9 @@ class AlertService {
           );
           dueSoonIdx++;
         } else if (status == 'expired') {
-          await NotificationService.show(
+          await _showOnce(
+            activeKeys,
+            key: 'expired:${product.id}:${variant.id}:${due.date}',
             id: _expiredBase + pastDueIdx,
             title: isHardExpiry ? 'Expired Product' : 'Product Date Passed',
             body:
@@ -92,5 +107,18 @@ class AlertService {
         }
       }
     }
+  }
+
+  static Future<void> _showOnce(
+    Set<String> activeKeys, {
+    required String key,
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    activeKeys.add(key);
+    if (_shownAlertKeys.contains(key)) return;
+    _shownAlertKeys.add(key);
+    await NotificationService.show(id: id, title: title, body: body);
   }
 }

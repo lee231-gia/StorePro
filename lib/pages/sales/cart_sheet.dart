@@ -13,6 +13,7 @@ void showCartSheet({
 }) {
   final discountCtrls = <String, TextEditingController>{};
   final customerFocus = FocusNode();
+  var proceedAfterClose = false;
   final sheet = showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -201,7 +202,7 @@ void showCartSheet({
                                 ),
                                 const SizedBox(width: 8),
                                 const Text(
-                                  'Seller discount',
+                                  'Discount',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: kDark,
@@ -363,8 +364,8 @@ void showCartSheet({
                             ),
                           ),
                           onPressed: () {
+                            proceedAfterClose = true;
                             Navigator.pop(ctx);
-                            onConfirm();
                           },
                           child: Text(
                             'Proceed  ${AppHelpers.peso(subtotal)}',
@@ -387,6 +388,9 @@ void showCartSheet({
       ctrl.dispose();
     }
     customerFocus.dispose();
+    if (proceedAfterClose) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => onConfirm());
+    }
   });
 }
 
@@ -445,12 +449,17 @@ Widget _cartThumb(CartItem item, {double size = 48}) {
   if (item.imageUrl.isNotEmpty) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(8),
-      child: Image.network(
-        item.imageUrl,
+      child: CachedNetworkImage(
+        imageUrl: ProductImage.optimizedUrl(item.imageUrl, 180),
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => _cartIcon(item, color, size),
+        fadeInDuration: Duration.zero,
+        fadeOutDuration: Duration.zero,
+        memCacheWidth: 180,
+        memCacheHeight: 180,
+        placeholder: (_, _) => _cartIcon(item, color, size),
+        errorWidget: (_, _, _) => _cartIcon(item, color, size),
       ),
     );
   }

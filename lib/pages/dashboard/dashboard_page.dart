@@ -42,6 +42,9 @@ class _DashboardPageState extends State<DashboardPage> {
   List<Map<String, dynamic>> _activityLogs = [];
   double _todayRevenue = 0.0;
   double _todayProfit = 0.0;
+  double _totalRevenue = 0.0;
+  int _salesCount = 0;
+  String _lastSynced = '';
   bool _loading = true;
   bool _loadingNow = false;
   bool _reloadAfterLoad = false;
@@ -116,6 +119,7 @@ class _DashboardPageState extends State<DashboardPage> {
     final todaySales = sales.where((s) => s.date == today).toList();
     final todayRev = todaySales.fold(0.0, (s, sale) => s + sale.total);
     final todayProfit = todaySales.fold(0.0, (s, sale) => s + sale.profit);
+    final totalRevenue = sales.fold(0.0, (s, sale) => s + sale.total);
 
     // Expiry alerts
     final expiry = <Map<String, dynamic>>[];
@@ -166,6 +170,9 @@ class _DashboardPageState extends State<DashboardPage> {
         _activityLogs = logs;
         _todayRevenue = todayRev;
         _todayProfit = todayProfit;
+        _totalRevenue = totalRevenue;
+        _salesCount = sales.length;
+        _lastSynced = AppHelpers.nowStr();
         _loading = false;
       });
     }
@@ -226,6 +233,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildWelcome(),
+                    const SizedBox(height: 12),
+                    _buildStoreAbout(),
                     const SizedBox(height: 20),
                     _buildTodaySales(),
                     const SizedBox(height: 20),
@@ -235,7 +244,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     const SizedBox(height: 20),
                     if (_expiryAlerts.isNotEmpty) _buildExpirySection(),
                     if (_lowStockList.isNotEmpty) _buildLowStockSection(),
-                    if (_activityLogs.isNotEmpty) _buildActivitySection(),
+                    _buildActivitySection(),
                   ],
                 ),
               ),
@@ -253,6 +262,68 @@ class _DashboardPageState extends State<DashboardPage> {
           ? Session.ownerName.split(' ').first
           : 'Owner',
       storeName: Session.storeName,
+    );
+  }
+
+  Widget _buildStoreAbout() {
+    final lastActivity = _activityLogs.isEmpty
+        ? 'No activity yet'
+        : _DashboardActivityRow.actionLabel(_activityLogs.first);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.storefront_outlined, color: kRed, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  Session.storeName.isEmpty
+                      ? 'Store Overview'
+                      : Session.storeName,
+                  style: const TextStyle(
+                    color: kDark,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            [
+              '${_products.length} products',
+              '$_salesCount sales',
+              '${AppHelpers.peso(_totalRevenue)} lifetime revenue',
+            ].join('  •  '),
+            style: const TextStyle(color: kGrey, fontSize: 11, height: 1.5),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Latest: $lastActivity',
+            style: const TextStyle(color: kDark, fontSize: 11),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          if (_lastSynced.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              'Synced from local app data: ${AppHelpers.formatDateTime(DateTime.tryParse(_lastSynced) ?? DateTime.now())}',
+              style: const TextStyle(color: kGrey, fontSize: 10),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
@@ -576,12 +647,20 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ],
           ),
-          child: Column(
-            children: _activityLogs
-                .take(5)
-                .map((log) => _DashboardActivityRow(log: log))
-                .toList(),
-          ),
+          child: _activityLogs.isEmpty
+              ? const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'No recent activity yet.',
+                    style: TextStyle(color: kGrey, fontSize: 12),
+                  ),
+                )
+              : Column(
+                  children: _activityLogs
+                      .take(5)
+                      .map((log) => _DashboardActivityRow(log: log))
+                      .toList(),
+                ),
         ),
 
         const SizedBox(height: 20),
@@ -606,7 +685,7 @@ class _DashboardActivityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final action = _actionName(log);
+    final action = actionLabel(log);
     final timestamp = (log['timestamp'] ?? '').toString();
     final total = _overviewTotal(log);
     final lower = action.toLowerCase();
@@ -659,7 +738,7 @@ class _DashboardActivityRow extends StatelessWidget {
     );
   }
 
-  String _actionName(Map<String, dynamic> log) {
+  static String actionLabel(Map<String, dynamic> log) {
     final action = (log['action'] as String? ?? '').toLowerCase();
     final details = log['details'];
     final productName = details is Map

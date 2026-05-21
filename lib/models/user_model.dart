@@ -15,6 +15,7 @@ class UserModel {
   final String otpCode; // current active OTP
   final String otpExpiresAt; // ISO datetime string
   final bool trackActivity;
+  final bool notificationsEnabled;
   final bool employeeFeature;
   final String createdAt;
 
@@ -31,6 +32,7 @@ class UserModel {
     this.otpCode = '',
     this.otpExpiresAt = '',
     this.trackActivity = true,
+    this.notificationsEnabled = true,
     this.employeeFeature = true,
     required this.createdAt,
   });
@@ -49,6 +51,7 @@ class UserModel {
     otpCode: m['otpCode'] ?? '',
     otpExpiresAt: m['otpExpiresAt'] ?? '',
     trackActivity: m['trackActivity'] ?? true,
+    notificationsEnabled: m['notificationsEnabled'] ?? true,
     employeeFeature: m['employeeFeature'] ?? true,
     createdAt: m['createdAt'] ?? '',
   );
@@ -67,6 +70,7 @@ class UserModel {
     'otpCode': otpCode,
     'otpExpiresAt': otpExpiresAt,
     'trackActivity': trackActivity,
+    'notificationsEnabled': notificationsEnabled,
     'employeeFeature': employeeFeature,
     'createdAt': createdAt,
   };
@@ -83,6 +87,7 @@ class UserModel {
     String? otpCode,
     String? otpExpiresAt,
     bool? trackActivity,
+    bool? notificationsEnabled,
     bool? employeeFeature,
   }) => UserModel(
     id: id,
@@ -97,6 +102,7 @@ class UserModel {
     otpCode: otpCode ?? this.otpCode,
     otpExpiresAt: otpExpiresAt ?? this.otpExpiresAt,
     trackActivity: trackActivity ?? this.trackActivity,
+    notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
     employeeFeature: employeeFeature ?? this.employeeFeature,
     createdAt: createdAt,
   );
