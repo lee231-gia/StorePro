@@ -420,7 +420,7 @@ extension _ReportsSales on _ReportsPageState {
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
           tilePadding: EdgeInsets.zero,
-          childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          childrenPadding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
           title: _timeframeDataRow(
             _rangeTitle(key),
             AppHelpers.peso(revenue),
@@ -454,16 +454,19 @@ extension _ReportsSales on _ReportsPageState {
                 final sale = Map<String, dynamic>.from(raw);
                 final total = (sale['total'] as num?)?.toDouble() ?? 0.0;
                 final saleProfit = (sale['profit'] as num?)?.toDouble() ?? 0.0;
+                final customer = (sale['customerName'] ?? 'Walk-in')
+                    .toString()
+                    .trim();
                 final time = DateTime.tryParse(
                   (sale['timestamp'] ?? '').toString(),
                 );
-                return _breakdownLine(
+                return _breakdownSaleLine(
                   time == null
                       ? sale['date'].toString()
                       : AppHelpers.formatDateTime(time),
-                  '${sale['customerName'] ?? 'Walk-in'} • '
-                  '${AppHelpers.peso(total)} • '
-                  'Profit ${AppHelpers.peso(saleProfit)}',
+                  customer.isEmpty ? 'Walk-in' : customer,
+                  AppHelpers.peso(total),
+                  AppHelpers.peso(saleProfit),
                 );
               }),
           ],
@@ -473,7 +476,7 @@ extension _ReportsSales on _ReportsPageState {
   }
 
   Widget _timeframeHeaderRow() => Padding(
-    padding: const EdgeInsets.only(bottom: 4),
+    padding: const EdgeInsets.only(right: 40, bottom: 4),
     child: Row(
       children: const [
         Expanded(
@@ -622,24 +625,38 @@ extension _ReportsSales on _ReportsPageState {
     ),
   );
 
-  Widget _breakdownLine(String label, String value) => Padding(
+  Widget _breakdownSaleLine(
+    String time,
+    String customer,
+    String total,
+    String profit,
+  ) => Padding(
     padding: const EdgeInsets.only(top: 6),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Text(
-            label,
-            style: const TextStyle(color: kGrey, fontSize: 10),
-          ),
+          flex: 4,
+          child: Text(time, style: const TextStyle(color: kGrey, fontSize: 10)),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Expanded(
-          flex: 2,
+          flex: 4,
           child: Text(
-            value,
+            customer,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,
             style: const TextStyle(color: kDark, fontSize: 10),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 3,
+          child: Text(
+            '$total\nProfit $profit',
+            textAlign: TextAlign.right,
+            style: const TextStyle(color: kDark, fontSize: 10, height: 1.25),
           ),
         ),
       ],

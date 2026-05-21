@@ -295,6 +295,7 @@ class _SalesPageState extends State<SalesPage> {
 
   // ── PAYMENT FLOW ──────────────────────────────────────────
   void _openPayment() {
+    if (!mounted || _cart.isEmpty) return;
     showPaymentSheet(
       context: context,
       total: _cartTotal,

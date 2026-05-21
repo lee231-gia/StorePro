@@ -237,7 +237,10 @@ void showPaymentSheet({
                           'customerAddress': cAddrCtrl.text.trim(),
                         };
                         setP(() => submitting = true);
-                        Navigator.pop(ctx);
+                        FocusManager.instance.primaryFocus?.unfocus();
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (ctx.mounted) Navigator.pop(ctx);
+                        });
                       },
               ),
 

@@ -365,7 +365,10 @@ void showCartSheet({
                           ),
                           onPressed: () {
                             proceedAfterClose = true;
-                            Navigator.pop(ctx);
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (ctx.mounted) Navigator.pop(ctx);
+                            });
                           },
                           child: Text(
                             'Proceed  ${AppHelpers.peso(subtotal)}',

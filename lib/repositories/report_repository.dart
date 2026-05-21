@@ -191,7 +191,10 @@ class ReportRepository {
     final logs = rows
         .map((row) => ActivityLogModel.fromMap(row).toMap())
         .toList();
-    final synthetic = await _legacyActivityLogs(employeeId: employeeId);
+    final synthetic = await _legacyActivityLogs(
+      employeeId: employeeId,
+      limit: limit,
+    );
     final explicitKeys = logs
         .map(
           (log) =>
@@ -215,12 +218,21 @@ class ReportRepository {
 
   static Future<List<Map<String, dynamic>>> _legacyActivityLogs({
     String? employeeId,
+    int limit = 100,
   }) async {
     final logs = <ActivityLogModel>[];
     bool includeEmployee(String id) => employeeId == null || employeeId == id;
+    final queryLimit = (limit <= 0 ? 100 : limit) * 3;
 
     try {
-      final sales = await getSalesInRange('2020-01-01', '2099-12-31');
+      final saleRows = await SQLiteService.query(
+        'sales',
+        where: 'storeId = ?',
+        whereArgs: [Session.storeId],
+        orderBy: 'date DESC',
+        limit: queryLimit,
+      );
+      final sales = saleRows.map(SaleModel.fromSql);
       for (final sale in sales) {
         final empId = sale.employeeId.isEmpty ? 'owner' : sale.employeeId;
         if (!includeEmployee(empId)) continue;
@@ -251,6 +263,7 @@ class ReportRepository {
         where: 'storeId = ?',
         whereArgs: [Session.storeId],
         orderBy: 'updatedAt DESC',
+        limit: queryLimit,
       );
       for (final row in inventoryRows) {
         final entry = InventoryLogModel.fromMap(row);
@@ -288,6 +301,8 @@ class ReportRepository {
         'products',
         where: 'storeId = ?',
         whereArgs: [Session.storeId],
+        orderBy: 'updatedAt DESC',
+        limit: queryLimit,
       );
       for (final row in productRows) {
         final product = ProductModel.fromSql(row);
@@ -360,6 +375,7 @@ class ReportRepository {
           where: 'storeId = ?',
           whereArgs: [Session.storeId],
           orderBy: '${spec.timestampColumn} DESC',
+          limit: queryLimit,
         );
         for (final row in rows) {
           if (!includeEmployee('owner')) continue;
