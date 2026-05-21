@@ -11,7 +11,10 @@ import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../repositories/report_repository.dart';
 import '../../repositories/product_repository.dart';
+import '../../repositories/utang_repository.dart';
 import '../../models/product_model.dart';
+import '../../models/utang_model.dart';
+import '../../models/inventory_model.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
@@ -53,6 +56,7 @@ class _ReportsPageState extends State<ReportsPage>
   Map<String, dynamic>? _summary;
   Map<String, Map<String, dynamic>> _rangeSummaries = {};
   List<ProductModel> _products = [];
+  List<UtangModel> _utang = [];
   List<Map<String, dynamic>> _activityLogs = [];
   bool _loading = false;
   bool _exporting = false;
@@ -124,21 +128,26 @@ class _ReportsPageState extends State<ReportsPage>
     Map<String, dynamic>? summary;
     Map<String, Map<String, dynamic>> rangeSummaries = {};
     var products = <ProductModel>[];
+    var utang = <UtangModel>[];
     var activityLogs = <Map<String, dynamic>>[];
     try {
       final results = await Future.wait([
         ReportRepository.getSummary(_fmt(_from), _fmt(_to)),
         ProductRepository.getAll(),
+        UtangRepository.getAll(),
         ReportRepository.getPresetSummaries(),
         ReportRepository.getActivityLogs(limit: 500),
       ]).timeout(const Duration(seconds: 3));
       summary = results[0] as Map<String, dynamic>;
       products = results[1] as List<ProductModel>;
-      rangeSummaries = results[2] as Map<String, Map<String, dynamic>>;
-      activityLogs = results[3] as List<Map<String, dynamic>>;
+      utang = results[2] as List<UtangModel>;
+      rangeSummaries = results[3] as Map<String, Map<String, dynamic>>;
+      activityLogs = results[4] as List<Map<String, dynamic>>;
     } catch (_) {
       summary = _summary;
       rangeSummaries = _rangeSummaries;
+      products = _products;
+      utang = _utang;
       activityLogs = _activityLogs;
     }
     if (mounted) {
@@ -146,6 +155,7 @@ class _ReportsPageState extends State<ReportsPage>
         _summary = summary;
         _rangeSummaries = rangeSummaries;
         _products = products;
+        _utang = utang;
         _activityLogs = activityLogs;
         _loading = false;
       });
@@ -184,12 +194,12 @@ class _ReportsPageState extends State<ReportsPage>
               IconButton(
                 icon: const Icon(Icons.image_outlined),
                 tooltip: 'Save Image',
-                onPressed: _exportImage,
+                onPressed: () => _showExportOptions(preferredPdf: false),
               ),
               IconButton(
                 icon: const Icon(Icons.picture_as_pdf),
                 tooltip: 'Save PDF',
-                onPressed: _exportPdf,
+                onPressed: () => _showExportOptions(preferredPdf: true),
               ),
             ],
           ],

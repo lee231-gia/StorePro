@@ -217,9 +217,18 @@ class _MainNavPageState extends State<MainNavPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _buildPageStack(),
-      bottomNavigationBar: _buildNavBar(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_index != 0) {
+          _changeTab(0);
+        }
+      },
+      child: Scaffold(
+        body: _buildPageStack(),
+        bottomNavigationBar: _buildNavBar(),
+      ),
     );
   }
 

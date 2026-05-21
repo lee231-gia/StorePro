@@ -129,7 +129,8 @@ class SQLiteService {
       CREATE TABLE IF NOT EXISTS activity_logs (
         id TEXT PRIMARY KEY, storeId TEXT, employeeId TEXT,
         employeeName TEXT, action TEXT, targetType TEXT,
-        targetId TEXT, targetName TEXT, timestamp TEXT
+        targetId TEXT, targetName TEXT, timestamp TEXT,
+        detailsJson TEXT
       )
     ''');
 
@@ -284,6 +285,7 @@ class SQLiteService {
       'targetId': 'TEXT',
       'targetName': 'TEXT',
       'timestamp': 'TEXT',
+      'detailsJson': 'TEXT',
     });
     await _ensureTableColumns(db, 'sync_queue', const {
       'collection': 'TEXT',

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 // Records every employee action in the system.
 // Only saved when Session.trackActivity == true.
 
@@ -11,6 +13,7 @@ class ActivityLogModel {
   final String targetId;
   final String targetName;
   final String timestamp;
+  final Map<String, dynamic> details;
 
   const ActivityLogModel({
     required this.id,
@@ -22,6 +25,7 @@ class ActivityLogModel {
     this.targetId = '',
     this.targetName = '',
     required this.timestamp,
+    this.details = const {},
   });
 
   factory ActivityLogModel.fromMap(Map<String, dynamic> m) => ActivityLogModel(
@@ -34,6 +38,7 @@ class ActivityLogModel {
     targetId: m['targetId'] ?? '',
     targetName: m['targetName'] ?? '',
     timestamp: m['timestamp'] ?? '',
+    details: _detailsFrom(m),
   );
 
   Map<String, dynamic> toMap() => {
@@ -46,7 +51,22 @@ class ActivityLogModel {
     'targetId': targetId,
     'targetName': targetName,
     'timestamp': timestamp,
+    'details': details,
+    'detailsJson': jsonEncode(details),
   };
 
   Map<String, dynamic> toSql() => toMap();
+
+  static Map<String, dynamic> _detailsFrom(Map<String, dynamic> m) {
+    final rawDetails = m['details'];
+    if (rawDetails is Map) return Map<String, dynamic>.from(rawDetails);
+    final rawJson = m['detailsJson'];
+    if (rawJson is String && rawJson.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawJson);
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+      } catch (_) {}
+    }
+    return const {};
+  }
 }

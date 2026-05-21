@@ -69,7 +69,11 @@ class AppDrawer extends StatelessWidget {
             onTap: () async {
               await AuthRepository.logout();
               if (context.mounted) {
-                Navigator.pushReplacementNamed(context, AppRoutes.welcome);
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.welcome,
+                  (route) => false,
+                );
               }
             },
           ),

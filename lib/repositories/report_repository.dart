@@ -2,6 +2,7 @@ import '../core/services/sqlite_service.dart';
 import '../core/utils/session.dart';
 import '../models/sale_model.dart';
 import '../models/inventory_model.dart';
+import '../models/activity_log_model.dart';
 
 // Reports always read from SQLite — fastest possible
 class ReportRepository {
@@ -30,22 +31,42 @@ class ReportRepository {
     String to,
   ) {
     double totalRevenue = 0;
+    double grossRevenue = 0;
     double totalProfit = 0;
     double totalDiscount = 0;
+    double cogs = 0;
+    double cashCollected = 0;
+    double utangTotal = 0;
     int totalTx = sales.length;
     final Map<String, Map<String, dynamic>> productQty = {};
 
     for (final sale in sales) {
       totalRevenue += sale.total;
+      grossRevenue += sale.subtotal;
       totalProfit += sale.profit;
       totalDiscount += sale.totalDiscount;
+      if (sale.paymentType == 'utang') {
+        final cash = sale.amountPaid.clamp(0, sale.total).toDouble();
+        cashCollected += cash;
+        utangTotal += (sale.total - cash).clamp(0, sale.total).toDouble();
+      } else {
+        cashCollected += sale.total;
+      }
       for (final item in sale.items) {
-        final key = '${item.productName}||${item.variantName}';
+        final key = '${item.productId}||${item.variantId}';
         final current = productQty[key];
+        final itemCogs = item.costPrice * item.qty;
+        cogs += itemCogs;
         productQty[key] = {
+          'productId': item.productId,
+          'variantId': item.variantId,
           'name': item.productName,
           'variantName': item.variantName,
           'qty': ((current?['qty'] as int?) ?? 0) + item.qty,
+          'revenue':
+              ((current?['revenue'] as num?)?.toDouble() ?? 0) + item.subtotal,
+          'profit':
+              ((current?['profit'] as num?)?.toDouble() ?? 0) + item.profit,
         };
       }
     }
@@ -56,19 +77,44 @@ class ReportRepository {
             .take(10)
             .map(
               (e) => {
+                'productId': e['productId'],
+                'variantId': e['variantId'],
                 'name': e['name'],
                 'variantName': e['variantName'],
                 'qty': e['qty'],
+                'revenue': e['revenue'],
+                'profit': e['profit'],
               },
             )
             .toList();
 
     return {
+      'grossRevenue': grossRevenue,
       'totalRevenue': totalRevenue,
+      'netRevenue': totalRevenue,
       'totalProfit': totalProfit,
       'totalDiscount': totalDiscount,
+      'cogs': cogs,
+      'cashCollected': cashCollected,
+      'utangTotal': utangTotal,
       'totalTx': totalTx,
       'topProducts': topProducts,
+      'sales': sales
+          .map(
+            (sale) => {
+              'id': sale.id,
+              'date': sale.date,
+              'timestamp': sale.timestamp,
+              'customerName': sale.customerName,
+              'paymentType': sale.paymentType,
+              'subtotal': sale.subtotal,
+              'discount': sale.totalDiscount,
+              'total': sale.total,
+              'profit': sale.profit,
+              'items': sale.items.map((item) => item.toMap()).toList(),
+            },
+          )
+          .toList(),
       'from': from,
       'to': to,
     };
@@ -134,12 +180,13 @@ class ReportRepository {
         ? [Session.storeId, employeeId]
         : [Session.storeId];
 
-    return SQLiteService.query(
+    final rows = await SQLiteService.query(
       'activity_logs',
       where: where,
       whereArgs: args,
       orderBy: 'timestamp DESC',
       limit: limit,
     );
+    return rows.map((row) => ActivityLogModel.fromMap(row).toMap()).toList();
   }
 }

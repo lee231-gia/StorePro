@@ -59,7 +59,7 @@ class SaleRepository {
       _table,
       updated.toSql(),
     );
-    _log('new_sale', updated.id, updated.customerName);
+    _log('new_sale', updated.id, updated.customerName, sale: updated);
     return updated;
   }
 
@@ -106,7 +106,7 @@ class SaleRepository {
     String action = 'edit_sale',
   }) async {
     await SyncService.write(_col, sale.id, sale.toMap(), _table, sale.toSql());
-    _log(action, sale.id, sale.customerName);
+    _log(action, sale.id, sale.customerName, sale: sale);
     return sale;
   }
 
@@ -115,7 +115,12 @@ class SaleRepository {
     SyncService.deleteInBackground(_col, id);
   }
 
-  static void _log(String action, String targetId, String name) async {
+  static void _log(
+    String action,
+    String targetId,
+    String name, {
+    SaleModel? sale,
+  }) async {
     if (!Session.trackActivity) return;
     final log = ActivityLogModel(
       id: AppHelpers.newId(),
@@ -127,6 +132,7 @@ class SaleRepository {
       targetId: targetId,
       targetName: name,
       timestamp: AppHelpers.nowStr(),
+      details: sale == null ? const {} : _saleDetails(sale),
     );
     SyncService.write(
       'activity_logs',
@@ -135,5 +141,44 @@ class SaleRepository {
       'activity_logs',
       log.toSql(),
     );
+  }
+
+  static Map<String, dynamic> _saleDetails(SaleModel sale) {
+    final cashPaid = sale.paymentType == 'utang'
+        ? sale.amountPaid.clamp(0, sale.total).toDouble()
+        : sale.total;
+    final utangBalance = sale.paymentType == 'utang'
+        ? (sale.total - cashPaid).clamp(0, sale.total).toDouble()
+        : 0.0;
+    final cogs = sale.items.fold(
+      0.0,
+      (sum, item) => sum + (item.costPrice * item.qty),
+    );
+
+    return {
+      'customerName': sale.customerName,
+      'grandTotal': sale.total,
+      'cash': cashPaid,
+      'utang': utangBalance,
+      'subtotal': sale.subtotal,
+      'discount': sale.totalDiscount,
+      'cogs': cogs,
+      'profit': sale.profit,
+      'paymentType': sale.paymentType,
+      'items': sale.items
+          .map(
+            (item) => {
+              'productName': item.productName,
+              'variantName': item.variantName,
+              'conditionName': item.conditionName,
+              'qty': item.qty,
+              'price': item.price,
+              'costPrice': item.costPrice,
+              'discount': item.discount,
+              'subtotal': item.subtotal,
+            },
+          )
+          .toList(),
+    };
   }
 }

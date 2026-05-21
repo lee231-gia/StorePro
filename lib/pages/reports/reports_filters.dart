@@ -78,10 +78,13 @@ extension _ReportsFilters on _ReportsPageState {
       color: kCard,
       child: TabBar(
         controller: _tabCtrl,
+        isScrollable: true,
+        tabAlignment: TabAlignment.start,
         labelColor: kRed,
         unselectedLabelColor: kGrey,
         indicatorColor: kRed,
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        labelPadding: const EdgeInsets.symmetric(horizontal: 14),
         tabs: const [
           Tab(text: 'Sales & Revenue'),
           Tab(text: 'Inventory'),

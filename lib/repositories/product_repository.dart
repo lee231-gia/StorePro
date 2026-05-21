@@ -45,6 +45,7 @@ class ProductRepository {
   // ── SAVE: SQLite → background Firebase ───────────────────
   static Future<ProductModel> save(ProductModel product) async {
     final now = AppHelpers.nowStr();
+    final existing = product.id.isEmpty ? null : await getOne(product.id);
     final updated = ProductModel(
       id: product.id.isEmpty ? AppHelpers.newId() : product.id,
       storeId: Session.storeId,
@@ -74,6 +75,9 @@ class ProductRepository {
       product.id.isEmpty ? 'add_product' : 'edit_product',
       updated.id,
       updated.name,
+      details: product.id.isEmpty
+          ? _addedProductDetails(updated)
+          : _editedProductDetails(existing, updated),
     );
     return updated;
   }
@@ -139,7 +143,12 @@ class ProductRepository {
   }
 
   // Fire and forget — never blocks UI
-  static void _log(String action, String targetId, String name) async {
+  static void _log(
+    String action,
+    String targetId,
+    String name, {
+    Map<String, dynamic> details = const {},
+  }) async {
     if (!Session.trackActivity) return;
     final log = ActivityLogModel(
       id: AppHelpers.newId(),
@@ -151,6 +160,7 @@ class ProductRepository {
       targetId: targetId,
       targetName: name,
       timestamp: AppHelpers.nowStr(),
+      details: details,
     );
     SyncService.write(
       'activity_logs',
@@ -159,5 +169,67 @@ class ProductRepository {
       'activity_logs',
       log.toSql(),
     );
+  }
+
+  static Map<String, dynamic> _addedProductDetails(ProductModel product) => {
+    'productName': product.name,
+    'variantCount': product.variants.length,
+    'variants': product.variants
+        .map(
+          (v) => {
+            'name': v.name,
+            'stock': v.totalStock,
+            'price': v.price,
+            'costPrice': v.costPrice,
+          },
+        )
+        .toList(),
+  };
+
+  static Map<String, dynamic> _editedProductDetails(
+    ProductModel? before,
+    ProductModel after,
+  ) {
+    if (before == null) return _addedProductDetails(after);
+    final changes = <Map<String, dynamic>>[];
+    void addChange(String field, Object? oldValue, Object? newValue) {
+      if (oldValue == newValue) return;
+      changes.add({'field': field, 'old': oldValue, 'new': newValue});
+    }
+
+    addChange('Product Name', before.name, after.name);
+    addChange('Category', before.categoryName, after.categoryName);
+    addChange('Description', before.description, after.description);
+
+    final beforeVariants = {for (final v in before.variants) v.id: v};
+    for (final variant in after.variants) {
+      final old = beforeVariants[variant.id];
+      if (old == null) {
+        changes.add({
+          'field': 'Variant Added',
+          'old': '',
+          'new': '${variant.name} (${variant.totalStock} units)',
+        });
+        continue;
+      }
+      addChange('${variant.name} Name', old.name, variant.name);
+      addChange(
+        '${variant.name} Wholesale Cost',
+        old.costPrice,
+        variant.costPrice,
+      );
+      addChange('${variant.name} Retail Price', old.price, variant.price);
+      addChange('${variant.name} Stock', old.totalStock, variant.totalStock);
+    }
+    final afterIds = after.variants.map((v) => v.id).toSet();
+    for (final old in before.variants.where((v) => !afterIds.contains(v.id))) {
+      changes.add({
+        'field': 'Variant Removed',
+        'old': '${old.name} (${old.totalStock} units)',
+        'new': '',
+      });
+    }
+
+    return {'productName': after.name, 'changes': changes};
   }
 }

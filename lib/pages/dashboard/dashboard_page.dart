@@ -429,7 +429,7 @@ class _DashboardPageState extends State<DashboardPage> {
             DashboardActionBtn(
               icon: Icons.bar_chart_outlined,
               label: 'Reports',
-              onTap: () => widget.changeTab(10),
+              onTap: () => widget.changeTab(9),
             ),
             const SizedBox(width: 8),
             DashboardActionBtn(
@@ -566,7 +566,7 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             children: _activityLogs
                 .take(5)
-                .map((log) => DashboardActivityRow(log: log))
+                .map((log) => _DashboardActivityRow(log: log))
                 .toList(),
           ),
         ),
@@ -583,5 +583,98 @@ class _DashboardPageState extends State<DashboardPage> {
         builder: (_) => ProductDetailPage(productId: productId),
       ),
     ).then((_) => _load());
+  }
+}
+
+class _DashboardActivityRow extends StatelessWidget {
+  final Map<String, dynamic> log;
+
+  const _DashboardActivityRow({required this.log});
+
+  @override
+  Widget build(BuildContext context) {
+    final action = _actionName(log);
+    final timestamp = (log['timestamp'] ?? '').toString();
+    final total = _overviewTotal(log);
+    final lower = action.toLowerCase();
+    var color = kGrey;
+    if (lower.contains('add') || lower.contains('new')) color = kGreen;
+    if (lower.contains('delete')) color = kRed;
+    if (lower.contains('sale')) color = kOrange;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              ),
+              Container(width: 1, height: 28, color: Colors.grey.shade200),
+            ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$action$total',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Text(
+                  AppHelpers.formatDateTime(
+                    DateTime.tryParse(timestamp) ?? DateTime.now(),
+                  ),
+                  style: const TextStyle(color: kGrey, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _actionName(Map<String, dynamic> log) {
+    final action = (log['action'] as String? ?? '').toLowerCase();
+    final details = log['details'];
+    final productName = details is Map
+        ? (details['productName'] ?? log['targetName'] ?? '').toString()
+        : (log['targetName'] ?? '').toString();
+    if (action == 'new_sale') return 'New Sale Completed';
+    if (action == 'add_product') {
+      return productName.isEmpty
+          ? 'Added New Product'
+          : 'Added New Product: "$productName"';
+    }
+    if (action == 'edit_product') {
+      return productName.isEmpty
+          ? 'Edited Existing Product'
+          : 'Edited Product: "$productName"';
+    }
+    if (action == 'delete_product') return 'Deleted Product';
+    final text = action.replaceAll('_', ' ');
+    return text.isEmpty
+        ? 'Activity'
+        : '${text[0].toUpperCase()}${text.substring(1)}';
+  }
+
+  String _overviewTotal(Map<String, dynamic> log) {
+    if ((log['action'] as String? ?? '').toLowerCase() != 'new_sale') return '';
+    final details = log['details'];
+    if (details is! Map) return '';
+    final total = (details['grandTotal'] as num?)?.toDouble();
+    return total == null ? '' : ' (Grand Total: ${AppHelpers.peso(total)})';
   }
 }
