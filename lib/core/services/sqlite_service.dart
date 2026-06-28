@@ -27,6 +27,13 @@ class SQLiteService {
     await db;
   }
 
+  static void reset() {
+    _db = null;
+    _dbFuture = null;
+    _columnCache.clear();
+    _tableInfoCache.clear();
+  }
+
   static void warmUp() {
     db.ignore();
   }
@@ -529,21 +536,15 @@ class SQLiteService {
     Iterable<Map<String, dynamic>> rows,
   ) async {
     final d = await db.timeout(timeout);
-    final prepared = <Map<String, dynamic>>[];
+    final batch = d.batch();
     for (final row in rows) {
-      prepared.add(await _prepareRow(d, table, row));
+      batch.insert(
+        table,
+        await _prepareRow(d, table, row),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     }
-    await d
-        .transaction((txn) async {
-          for (final row in prepared) {
-            await txn.insert(
-              table,
-              row,
-              conflictAlgorithm: ConflictAlgorithm.replace,
-            );
-          }
-        })
-        .timeout(timeout);
+    await batch.commit(noResult: true).timeout(timeout);
   }
 
   static Future<List<Map<String, dynamic>>> query(
