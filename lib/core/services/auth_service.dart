@@ -33,11 +33,6 @@ class AuthService {
     }
   }
 
-  //   } on FirebaseAuthException catch (e) {
-  //     throw _authError(e.code);
-  //   }
-  // }
-
   // ── LOGIN ─────────────────────────────────────────────────
   static Future<UserCredential?> login(String email, String password) async {
     try {
@@ -56,11 +51,6 @@ class AuthService {
       throw 'Authentication timed out. Check your connection and try again.';
     }
   }
-  //   on FirebaseAuthException catch (e) {
-  //     throw _authError(e.code);
-  //   }
-  // }
-
   // ── LOGOUT ────────────────────────────────────────────────
   static Future<void> logout() async {
     await FirebaseService.ensureInitialized().timeout(_timeout);
