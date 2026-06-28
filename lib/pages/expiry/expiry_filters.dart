@@ -10,7 +10,10 @@ extension _ExpiryFilters on _ExpiryPageState {
           // Search
           TextField(
             controller: _searchCtrl,
-            onChanged: (v) => _update(() => _search = v),
+            onChanged: (v) {
+              _search = v;
+              _searchDebouncer.call(() => _update(() {}));
+            },
             decoration: AppInput.field(
               'Search products...',
               icon: Icons.search,

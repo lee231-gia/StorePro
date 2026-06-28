@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_helpers.dart';
+import '../../core/utils/debouncer.dart';
 import '../../models/product_model.dart';
 import '../../repositories/product_repository.dart';
 import '../../widgets/shared_widgets.dart';
@@ -45,8 +48,15 @@ class _ExpiryPageState extends State<ExpiryPage> {
   // all | today | week | month | year | custom
 
   final _searchCtrl = TextEditingController();
+  final _searchDebouncer = Debouncer(delay: const Duration(milliseconds: 300));
 
-  void _update(VoidCallback fn) => setState(fn);
+  List<Map<String, dynamic>>? _entriesCache;
+  int _entriesVersion = 0;
+
+  void _update(VoidCallback fn) {
+    _entriesVersion++;
+    setState(fn);
+  }
 
   @override
   void initState() {
@@ -56,6 +66,7 @@ class _ExpiryPageState extends State<ExpiryPage> {
 
   @override
   void dispose() {
+    _searchDebouncer.dispose();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -147,8 +158,15 @@ class _ExpiryPageState extends State<ExpiryPage> {
     }
   }
 
-  // ── ENTRIES BUILDER ───────────────────────────────────────
+  // ── ENTRIES BUILDER (memoized) ────────────────────────────
   List<Map<String, dynamic>> get _entries {
+    _memoized ??= _buildEntries();
+    return _memoized!;
+  }
+
+  List<Map<String, dynamic>>? _memoized;
+
+  List<Map<String, dynamic>> _buildEntries() {
     final list = <Map<String, dynamic>>[];
 
     for (final product in _products) {
@@ -275,6 +293,11 @@ class _ExpiryPageState extends State<ExpiryPage> {
       grouped.putIfAbsent(product.id, () => entry);
     }
     return grouped.values.toList();
+  }
+
+  void _invalidateEntries() {
+    _memoized = null;
+    _entriesVersion++;
   }
 
   // ── TIER COUNTS ───────────────────────────────────────────
