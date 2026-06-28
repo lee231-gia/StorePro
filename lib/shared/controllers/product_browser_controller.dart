@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../core/enums/product_browser_enums.dart';
@@ -32,10 +34,13 @@ class ProductBrowserController extends ChangeNotifier {
   String get statusFilter => _statusFilter;
   bool get groupVariants => _groupVariants;
 
+  Timer? _searchDebounce;
+
   set search(String value) {
     if (_search == value) return;
     _search = value;
-    notifyListeners();
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), notifyListeners);
   }
 
   set viewMode(ProductViewMode value) {
@@ -160,5 +165,11 @@ class ProductBrowserController extends ChangeNotifier {
     if (a.nearestExpiry.isEmpty) return 1;
     if (b.nearestExpiry.isEmpty) return -1;
     return a.nearestExpiry.compareTo(b.nearestExpiry);
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    super.dispose();
   }
 }
