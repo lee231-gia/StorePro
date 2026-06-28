@@ -73,19 +73,22 @@ class _ProductsPageState extends State<ProductsPage> {
   Future<void> _load() async {
     setState(() => _loading = true);
 
-    List<ProductModel> products = [];
-    List<String> categories = ['All'];
-    try {
-      final results = await Future.wait([
-        ProductRepository.getAll(),
-        CategoryRepository.getAll(),
-      ]).timeout(const Duration(seconds: 3));
-      products = results[0] as List<ProductModel>;
-      categories = [
-        'All',
-        ...(results[1] as List).map((category) => category.name as String),
-      ];
-    } catch (_) {}
+    var products = _products;
+    var categories = _categories;
+    Future<T> safe<T>(Future<T> future, T fallback) async {
+      try {
+        return await future.timeout(const Duration(seconds: 5));
+      } catch (_) {
+        return fallback;
+      }
+    }
+    final allProducts = await safe(ProductRepository.getAll(), <ProductModel>[]);
+    final allCategories = await safe(CategoryRepository.getAll(), <CategoryModel>[]);
+    products = allProducts;
+    categories = [
+      'All',
+      ...allCategories.map((category) => category.name as String),
+    ];
 
     if (mounted) {
       setState(() {

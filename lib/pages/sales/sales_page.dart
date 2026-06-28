@@ -93,21 +93,16 @@ class _SalesPageState extends State<SalesPage> {
   Future<void> _load() async {
     setState(() => _loading = true);
 
-    List<ProductModel> products = [];
-    List<SaleModel> sales = [];
-    List<CustomerModel> customers = [];
-
-    try {
-      final results = await Future.wait([
-        ProductRepository.getAll(),
-        SaleRepository.getAll(),
-        CustomerRepository.getAll(),
-      ]).timeout(const Duration(seconds: 3));
-
-      products = results[0] as List<ProductModel>;
-      sales = results[1] as List<SaleModel>;
-      customers = results[2] as List<CustomerModel>;
-    } catch (_) {}
+    Future<T> safe<T>(Future<T> future, T fallback) async {
+      try {
+        return await future.timeout(const Duration(seconds: 5));
+      } catch (_) {
+        return fallback;
+      }
+    }
+    final products = await safe(ProductRepository.getAll(), <ProductModel>[]);
+    final sales = await safe(SaleRepository.getAll(), <SaleModel>[]);
+    final customers = await safe(CustomerRepository.getAll(), <CustomerModel>[]);
 
     if (mounted) {
       setState(() {

@@ -67,16 +67,15 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     setState(() => _loading = true);
 
     // Instant SQLite
-    var all = <ProductModel>[];
-    var cats = <CategoryModel>[];
-    try {
-      final results = await Future.wait([
-        ProductRepository.getAll(),
-        CategoryRepository.getAll(),
-      ]).timeout(const Duration(seconds: 3));
-      all = results[0] as List<ProductModel>;
-      cats = results[1] as List<CategoryModel>;
-    } catch (_) {}
+    Future<T> safe<T>(Future<T> future, T fallback) async {
+      try {
+        return await future.timeout(const Duration(seconds: 5));
+      } catch (_) {
+        return fallback;
+      }
+    }
+    final all = await safe(ProductRepository.getAll(), <ProductModel>[]);
+    final cats = await safe(CategoryRepository.getAll(), <CategoryModel>[]);
 
     final products = all
         .where((p) => p.categoryId == widget.categoryId)

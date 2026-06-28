@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/category_model.dart';
+import '../../models/product_model.dart';
 import '../../repositories/category_repository.dart';
 import '../../repositories/product_repository.dart';
 import '../../core/services/sync_service.dart';
@@ -52,16 +53,15 @@ class _CategoriesPageState extends State<CategoriesPage> {
     setState(() => _loading = true);
 
     // Instant SQLite
-    List<CategoryModel> cats = [];
-    var products = [];
-    try {
-      final results = await Future.wait([
-        CategoryRepository.getAll(),
-        ProductRepository.getAll(),
-      ]).timeout(const Duration(seconds: 3));
-      cats = results[0] as List<CategoryModel>;
-      products = results[1] as List;
-    } catch (_) {}
+    Future<T> safe<T>(Future<T> future, T fallback) async {
+      try {
+        return await future.timeout(const Duration(seconds: 5));
+      } catch (_) {
+        return fallback;
+      }
+    }
+    final cats = await safe(CategoryRepository.getAll(), <CategoryModel>[]);
+    final products = await safe(ProductRepository.getAll(), <ProductModel>[]);
 
     final counts = <String, int>{};
     for (final c in cats) {

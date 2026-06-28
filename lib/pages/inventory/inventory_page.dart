@@ -89,18 +89,15 @@ class _InventoryPageState extends State<InventoryPage>
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    List<ProductModel> products = [];
-    List<InventoryLogModel> logs = [];
-
-    try {
-      final results = await Future.wait([
-        ProductRepository.getAll(),
-        InventoryRepository.getAll(),
-      ]).timeout(const Duration(seconds: 3));
-
-      products = results[0] as List<ProductModel>;
-      logs = results[1] as List<InventoryLogModel>;
-    } catch (_) {}
+    Future<T> safe<T>(Future<T> future, T fallback) async {
+      try {
+        return await future.timeout(const Duration(seconds: 5));
+      } catch (_) {
+        return fallback;
+      }
+    }
+    final products = await safe(ProductRepository.getAll(), <ProductModel>[]);
+    final logs = await safe(InventoryRepository.getAll(), <InventoryLogModel>[]);
 
     final cats = <String>{'All'};
     for (final p in products) {
