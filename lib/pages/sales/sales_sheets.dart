@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:storepro/widgets/sale_widgets.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icons.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/customer_model.dart';
 import '../../models/product_model.dart';
@@ -13,14 +14,14 @@ part 'cart_sheet.dart';
 part 'payment_sheet.dart';
 
 // ── DRAG HANDLE ───────────────────────────────────────────────
-Widget _handle() => Column(
+Widget _handle(BuildContext context) => Column(
   children: [
     const SizedBox(height: 12),
     Container(
       width: 40,
       height: 4,
       decoration: BoxDecoration(
-        color: Colors.grey.shade300,
+        color: Theme.of(context).colorScheme.outlineVariant,
         borderRadius: BorderRadius.circular(2),
       ),
     ),
@@ -53,7 +54,7 @@ void showVariantPickerSheet({
       maxChildSize: 0.9,
       builder: (_, ctrl) => Column(
         children: [
-          _handle(),
+          _handle(context),
 
           // Product header
           Padding(
@@ -105,15 +106,16 @@ void showVariantPickerSheet({
               controller: ctrl,
               padding: const EdgeInsets.all(14),
               children: variants.map<Widget>((v) {
+                final cs = Theme.of(context).colorScheme;
                 final stock = v.totalStock;
                 final conditions = v.conditions;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   decoration: BoxDecoration(
-                    color: kCard,
+                    color: cs.surface,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: cs.outlineVariant),
                   ),
                   child: Column(
                     children: [
@@ -136,16 +138,16 @@ void showVariantPickerSheet({
                                   Text(
                                     '${v.unit} · '
                                     '${v.pcsPerUnit} pcs/unit',
-                                    style: const TextStyle(
-                                      color: kGrey,
+                                    style: TextStyle(
+                                      color: cs.onSurfaceVariant,
                                       fontSize: 11,
                                     ),
                                   ),
                                   Text(
                                     AppHelpers.peso(v.price),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 11,
-                                      color: kRed,
+                                      color: cs.primary,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -190,9 +192,9 @@ void showVariantPickerSheet({
                             ),
                             trailing: Text(
                               AppHelpers.peso(c.price),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: kDark,
+                                color: cs.onSurface,
                               ),
                             ),
                             onTap: stock > 0
@@ -221,15 +223,15 @@ void showVariantPickerSheet({
                       else
                         ListTile(
                           dense: true,
-                          title: const Text(
+                          title: Text(
                             'Add to Cart',
-                            style: TextStyle(fontSize: 13, color: kRed),
+                            style: TextStyle(fontSize: 13, color: cs.primary),
                           ),
                           trailing: Text(
                             AppHelpers.peso(v.price),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: kDark,
+                              color: cs.onSurface,
                             ),
                           ),
                           onTap: stock > 0

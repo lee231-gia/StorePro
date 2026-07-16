@@ -12,6 +12,7 @@ extension _AddProductPageOptions on _AddProductPageState {
   }
 
   void _showQuickCategoryDialog() {
+    final cs = Theme.of(context).colorScheme;
     final nameCtrl = TextEditingController();
     int selIcon = _iconIndex;
     int selColor = _colorIndex;
@@ -27,9 +28,9 @@ extension _AddProductPageOptions on _AddProductPageState {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
+          title: Text(
             'Add Category',
-            style: TextStyle(fontWeight: FontWeight.bold, color: kRed),
+            style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
           ),
           content: ConstrainedBox(
             constraints: BoxConstraints(
@@ -44,7 +45,7 @@ extension _AddProductPageOptions on _AddProductPageState {
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: AppInput.dialog('Category name'),
+                  decoration: AppInput.dialog(context, 'Category name'),
                 ),
                 const SizedBox(height: 12),
                 fieldLabel('Icon'),
@@ -63,12 +64,12 @@ extension _AddProductPageOptions on _AddProductPageState {
                       onTap: () => setD(() => selIcon = i),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: selIcon == i ? kRed : kInputFill,
+                          color: selIcon == i ? cs.primary : cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
                           AppIcons.icons[i],
-                          color: selIcon == i ? Colors.white : kGrey,
+                          color: selIcon == i ? cs.onPrimary : cs.onSurfaceVariant,
                           size: 20,
                         ),
                       ),
@@ -90,11 +91,11 @@ extension _AddProductPageOptions on _AddProductPageState {
                           color: kCategoryColors[i],
                           shape: BoxShape.circle,
                           border: selColor == i
-                              ? Border.all(color: kDark, width: 2)
+                              ? Border.all(color: cs.onSurface, width: 2)
                               : null,
                         ),
                         child: selColor == i
-                            ? const Icon(
+                            ? Icon(
                                 Icons.check,
                                 size: 15,
                                 color: Colors.white,
@@ -115,8 +116,8 @@ extension _AddProductPageOptions on _AddProductPageState {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: kRed,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
               ),
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;
@@ -148,6 +149,7 @@ extension _AddProductPageOptions on _AddProductPageState {
   }
 
   void _showOptionManager({required String type, required String title}) {
+    final cs = Theme.of(context).colorScheme;
     final valueCtrl = TextEditingController();
     final pcsCtrl = TextEditingController(text: '1');
     var options = List<ProductOptionModel>.from(
@@ -176,7 +178,7 @@ extension _AddProductPageOptions on _AddProductPageState {
           ),
           title: Text(
             'Manage $title',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: kRed),
+            style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -190,7 +192,7 @@ extension _AddProductPageOptions on _AddProductPageState {
                         flex: 2,
                         child: TextField(
                           controller: valueCtrl,
-                          decoration: AppInput.dialog('$title name'),
+                          decoration: AppInput.dialog(context, '$title name'),
                         ),
                       ),
                       if (type == ProductOptionRepository.uom) ...[
@@ -199,13 +201,13 @@ extension _AddProductPageOptions on _AddProductPageState {
                           child: TextField(
                             controller: pcsCtrl,
                             keyboardType: TextInputType.number,
-                            decoration: AppInput.dialog('Pcs'),
+                            decoration: AppInput.dialog(context, 'Pcs'),
                           ),
                         ),
                       ],
                       const SizedBox(width: 8),
                       IconButton.filled(
-                        style: IconButton.styleFrom(backgroundColor: kRed),
+                        style: IconButton.styleFrom(backgroundColor: cs.primary),
                         onPressed: () async {
                           if (valueCtrl.text.trim().isEmpty) return;
                           await ProductOptionRepository.save(
@@ -257,9 +259,9 @@ extension _AddProductPageOptions on _AddProductPageState {
                                   },
                                 ),
                                 IconButton(
-                                  icon: const Icon(
+                                  icon: Icon(
                                     Icons.delete_outline,
-                                    color: kRed,
+                                    color: cs.primary,
                                     size: 18,
                                   ),
                                   onPressed: () async {

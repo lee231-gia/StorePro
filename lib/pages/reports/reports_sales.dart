@@ -2,10 +2,16 @@ part of 'reports_page.dart';
 
 extension _ReportsSales on _ReportsPageState {
   Widget _buildSalesTab() {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final success = isDark ? PaletteDark.success : PaletteLight.success;
+    final warning = isDark ? PaletteDark.warning : PaletteLight.warning;
+
     final s = _summary;
     if (s == null) {
-      return const Center(
-        child: Text('No data.', style: TextStyle(color: kGrey)),
+      return const AppEmptyState(
+        icon: Icons.bar_chart_outlined,
+        title: 'No data.',
       );
     }
 
@@ -27,7 +33,7 @@ extension _ReportsSales on _ReportsPageState {
     return RepaintBoundary(
       key: _reportKey,
       child: RefreshIndicator(
-        color: kRed,
+        color: cs.primary,
         onRefresh: _generate,
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -37,19 +43,19 @@ extension _ReportsSales on _ReportsPageState {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Timeframe Summary',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       '${AppHelpers.formatDate(_fmt(_from))} to '
                       '${AppHelpers.formatDate(_fmt(_to))}',
-                      style: const TextStyle(color: kGrey, fontSize: 11),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                     ),
                     const SizedBox(height: 10),
                     Row(
@@ -95,18 +101,18 @@ extension _ReportsSales on _ReportsPageState {
                 _statCard2(
                   'Gross Revenue',
                   AppHelpers.peso(grossRevenue),
-                  kDark,
+                  cs.onSurface,
                 ),
                 const SizedBox(width: 10),
-                _statCard2('Discounts', AppHelpers.peso(discount), kRed),
+                _statCard2('Discounts', AppHelpers.peso(discount), cs.primary),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
-                _statCard2('COGS', AppHelpers.peso(cogs), kOrange),
+                _statCard2('COGS', AppHelpers.peso(cogs), warning),
                 const SizedBox(width: 10),
-                _statCard2('Net Profit', AppHelpers.peso(profit), kGreen),
+                _statCard2('Net Profit', AppHelpers.peso(profit), success),
               ],
             ),
             const SizedBox(height: 10),
@@ -115,10 +121,10 @@ extension _ReportsSales on _ReportsPageState {
                 _statCard2(
                   'Net Profit Margin',
                   '${margin.toStringAsFixed(1)}%',
-                  margin >= 20 ? kGreen : kOrange,
+                  margin >= 20 ? success : warning,
                 ),
                 const SizedBox(width: 10),
-                _statCard2('Sales Count', '$txCount', kDark),
+                _statCard2('Sales Count', '$txCount', cs.onSurface),
               ],
             ),
             const SizedBox(height: 12),
@@ -133,12 +139,16 @@ extension _ReportsSales on _ReportsPageState {
   }
 
   Widget _heroRevenueCard(double revenue, int txCount, double avgSale) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [kRed, kRedDark],
+        gradient: LinearGradient(
+          colors: [
+            cs.primary,
+            Color.lerp(cs.primary, Colors.black, 0.15)!,
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -147,17 +157,17 @@ extension _ReportsSales on _ReportsPageState {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Net Revenue',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
+            style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.7), fontSize: 13),
           ),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               AppHelpers.peso(revenue),
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: cs.onPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 28,
               ),
@@ -170,11 +180,11 @@ extension _ReportsSales on _ReportsPageState {
             children: [
               Text(
                 '$txCount sale${txCount != 1 ? 's' : ''}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.7), fontSize: 12),
               ),
               Text(
                 'Avg: ${AppHelpers.peso(avgSale)}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.7), fontSize: 12),
               ),
             ],
           ),
@@ -184,6 +194,10 @@ extension _ReportsSales on _ReportsPageState {
   }
 
   Widget _collectionSummary(double cashCollected, double utangSales) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final success = isDark ? PaletteDark.success : PaletteLight.success;
+    final warning = isDark ? PaletteDark.warning : PaletteLight.warning;
     final openUtang = _utang.where((u) => u.balance > 0).toList()
       ..sort((a, b) => b.balance.compareTo(a.balance));
     final openBalance = openUtang.fold(0.0, (sum, u) => sum + u.balance);
@@ -199,25 +213,25 @@ extension _ReportsSales on _ReportsPageState {
           const Divider(height: 12),
           Row(
             children: [
-              _miniMetric('Cash', AppHelpers.peso(cashCollected), kGreen),
+              _miniMetric('Cash', AppHelpers.peso(cashCollected), success),
               const SizedBox(width: 8),
-              _miniMetric('Utang', AppHelpers.peso(utangSales), kOrange),
+              _miniMetric('Utang', AppHelpers.peso(utangSales), warning),
             ],
           ),
           const SizedBox(height: 10),
           Text(
             'Open utang to be paid: ${AppHelpers.peso(openBalance)}',
-            style: const TextStyle(
-              color: kDark,
+            style: TextStyle(
+              color: cs.onSurface,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
           ),
           const SizedBox(height: 6),
           if (openUtang.isEmpty)
-            const Text(
+            Text(
               'No open utang balances.',
-              style: TextStyle(color: kGrey, fontSize: 11),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
             )
           else
             ...openUtang
@@ -234,17 +248,17 @@ extension _ReportsSales on _ReportsPageState {
                               if (u.customerPhone.isNotEmpty) u.customerPhone,
                               if (u.dueDate.isNotEmpty)
                                 'Due ${AppHelpers.formatDate(u.dueDate)}',
-                            ].join(' • '),
+                            ].join(' \u2022 '),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 11, color: kGrey),
+                            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           AppHelpers.peso(u.balance),
-                          style: const TextStyle(
-                            color: kOrange,
+                          style: TextStyle(
+                            color: warning,
                             fontWeight: FontWeight.bold,
                             fontSize: 12,
                           ),
@@ -252,11 +266,12 @@ extension _ReportsSales on _ReportsPageState {
                       ],
                     ),
                   ),
-                ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
   }
+
 
   Widget _calculationCard() {
     return appCard(
@@ -277,30 +292,31 @@ extension _ReportsSales on _ReportsPageState {
   }
 
   Widget _topProductsSection(List<Map<String, dynamic>> topProds) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
                 'Top Products by Units Sold',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: kDark,
+                  color: cs.onSurface,
                 ),
               ),
             ),
             Text(
               '${topProds.length} products',
-              style: const TextStyle(color: kGrey, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
           ],
         ),
         const SizedBox(height: 10),
         if (topProds.isEmpty)
-          const Text('No sales in this period.', style: TextStyle(color: kGrey))
+          Text('No sales in this period.', style: TextStyle(color: cs.onSurfaceVariant))
         else
           ...topProds.asMap().entries.map((e) {
             final rank = e.key + 1;
@@ -316,7 +332,7 @@ extension _ReportsSales on _ReportsPageState {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: kCard,
+                color: cs.surface,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -346,14 +362,18 @@ extension _ReportsSales on _ReportsPageState {
                           width: 21,
                           height: 21,
                           decoration: BoxDecoration(
-                            color: rank <= 3 ? kRed : kRedLight,
+                            color: rank <= 3
+                                ? cs.primary
+                                : cs.primaryContainer,
                             shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: Text(
                               '$rank',
                               style: TextStyle(
-                                color: rank <= 3 ? Colors.white : kRed,
+                                color: rank <= 3
+                                    ? cs.onPrimary
+                                    : cs.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 10,
                               ),
@@ -370,9 +390,9 @@ extension _ReportsSales on _ReportsPageState {
                       children: [
                         Text(
                           name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: kDark,
+                            color: cs.onSurface,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
@@ -381,19 +401,19 @@ extension _ReportsSales on _ReportsPageState {
                         if (variantName.isNotEmpty)
                           Text(
                             variantName,
-                            style: const TextStyle(fontSize: 11, color: kGrey),
+                            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(
                           'Profit: ${AppHelpers.peso(itemProfit)}',
-                          style: const TextStyle(fontSize: 11, color: kGrey),
+                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(width: 8),
-                  statusBadge('$qty sold', kRed),
+                  statusBadge('$qty sold', cs.primary),
                 ],
               ),
             );
@@ -403,6 +423,10 @@ extension _ReportsSales on _ReportsPageState {
   }
 
   Widget _rangeSummaryRow(String key, Map<String, dynamic>? summary) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final success = isDark ? PaletteDark.success : PaletteLight.success;
+    final warning = isDark ? PaletteDark.warning : PaletteLight.warning;
     final revenue =
         (summary?['netRevenue'] as num?)?.toDouble() ??
         (summary?['totalRevenue'] as num?)?.toDouble() ??
@@ -414,7 +438,7 @@ extension _ReportsSales on _ReportsPageState {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey.shade200)),
+        border: Border(top: BorderSide(color: cs.surfaceContainerHighest)),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -426,7 +450,7 @@ extension _ReportsSales on _ReportsPageState {
             AppHelpers.peso(revenue),
             '$tx',
             '${margin.toStringAsFixed(1)}%',
-            margin >= 20 ? kGreen : kOrange,
+            margin >= 20 ? success : warning,
           ),
           children: [
             Align(
@@ -434,7 +458,7 @@ extension _ReportsSales on _ReportsPageState {
               child: Text(
                 'View Breakdown',
                 style: TextStyle(
-                  color: kRed.withValues(alpha: 0.85),
+                  color: cs.primary.withValues(alpha: 0.85),
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
@@ -442,11 +466,11 @@ extension _ReportsSales on _ReportsPageState {
             ),
             const SizedBox(height: 6),
             if (sales.isEmpty)
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   'No sales entries for this timeframe.',
-                  style: TextStyle(color: kGrey, fontSize: 11),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                 ),
               )
             else
@@ -475,41 +499,44 @@ extension _ReportsSales on _ReportsPageState {
     );
   }
 
-  Widget _timeframeHeaderRow() => Padding(
-    padding: const EdgeInsets.only(right: 40, bottom: 4),
-    child: Row(
-      children: const [
-        Expanded(
-          flex: 3,
-          child: Text('Range', style: TextStyle(color: kGrey, fontSize: 10)),
-        ),
-        Expanded(
-          flex: 3,
-          child: Text(
-            'Revenue',
-            textAlign: TextAlign.right,
-            style: TextStyle(color: kGrey, fontSize: 10),
+  Widget _timeframeHeaderRow() {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(right: 40, bottom: 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text('Range', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10)),
           ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Text(
-            'Sales',
-            textAlign: TextAlign.right,
-            style: TextStyle(color: kGrey, fontSize: 10),
+          Expanded(
+            flex: 3,
+            child: Text(
+              'Revenue',
+              textAlign: TextAlign.right,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
+            ),
           ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Text(
-            'Margin',
-            textAlign: TextAlign.right,
-            style: TextStyle(color: kGrey, fontSize: 10),
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Sales',
+              textAlign: TextAlign.right,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+          Expanded(
+            flex: 2,
+            child: Text(
+              'Margin',
+              textAlign: TextAlign.right,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _timeframeDataRow(
     String range,
@@ -517,89 +544,97 @@ extension _ReportsSales on _ReportsPageState {
     String sales,
     String margin,
     Color marginColor,
-  ) => Row(
-    children: [
-      Expanded(
-        flex: 3,
-        child: Row(
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: const BoxDecoration(
-                color: kRed,
-                shape: BoxShape.circle,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                range,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: kDark,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12,
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Row(
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  shape: BoxShape.circle,
                 ),
               ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  range,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          flex: 3,
+          child: Text(
+            revenue,
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: cs.primary,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
             ),
-          ],
-        ),
-      ),
-      Expanded(
-        flex: 3,
-        child: Text(
-          revenue,
-          textAlign: TextAlign.right,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            color: kRed,
-            fontWeight: FontWeight.w700,
-            fontSize: 11,
           ),
         ),
-      ),
-      Expanded(
-        flex: 2,
-        child: Text(
-          sales,
-          textAlign: TextAlign.right,
-          style: const TextStyle(color: kDark, fontSize: 11),
-        ),
-      ),
-      Expanded(
-        flex: 2,
-        child: Text(
-          margin,
-          textAlign: TextAlign.right,
-          style: TextStyle(
-            color: marginColor,
-            fontWeight: FontWeight.w700,
-            fontSize: 11,
+        Expanded(
+          flex: 2,
+          child: Text(
+            sales,
+            textAlign: TextAlign.right,
+            style: TextStyle(color: cs.onSurface, fontSize: 11),
           ),
         ),
-      ),
-    ],
-  );
+        Expanded(
+          flex: 2,
+          child: Text(
+            margin,
+            textAlign: TextAlign.right,
+            style: TextStyle(
+              color: marginColor,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
-  Widget _sectionHeader(IconData icon, String text) => Row(
-    children: [
-      Icon(icon, color: kRed, size: 16),
-      const SizedBox(width: 6),
-      Expanded(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: kRed,
-            fontSize: 13,
+  Widget _sectionHeader(IconData icon, String text) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        Icon(icon, color: cs.primary, size: 16),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: cs.primary,
+              fontSize: 13,
+            ),
           ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 
-  Widget _miniMetric(String label, String value, Color color) => Expanded(
+  Widget _miniMetric(String label, String value, Color color) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -619,49 +654,53 @@ extension _ReportsSales on _ReportsPageState {
               fontSize: 13,
             ),
           ),
-          Text(label, style: const TextStyle(color: kGrey, fontSize: 10)),
+          Text(label, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10)),
         ],
       ),
     ),
   );
+  }
 
   Widget _breakdownSaleLine(
     String time,
     String customer,
     String total,
     String profit,
-  ) => Padding(
-    padding: const EdgeInsets.only(top: 6),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          flex: 4,
-          child: Text(time, style: const TextStyle(color: kGrey, fontSize: 10)),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 4,
-          child: Text(
-            customer,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.right,
-            style: const TextStyle(color: kDark, fontSize: 10),
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(time, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10)),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          flex: 3,
-          child: Text(
-            '$total\nProfit $profit',
-            textAlign: TextAlign.right,
-            style: const TextStyle(color: kDark, fontSize: 10, height: 1.25),
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 4,
+            child: Text(
+              customer,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.right,
+              style: TextStyle(color: cs.onSurface, fontSize: 10),
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+          const SizedBox(width: 8),
+          Expanded(
+            flex: 3,
+            child: Text(
+              '$total\nProfit $profit',
+              textAlign: TextAlign.right,
+              style: TextStyle(color: cs.onSurface, fontSize: 10, height: 1.25),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   List<Map<String, dynamic>> _topProductsFrom(Map<String, dynamic> s) =>
       (s['topProducts'] as List? ?? const [])

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../../core/constants/app_colors.dart';
 import '../../core/enums/product_browser_enums.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/product_model.dart';
@@ -43,11 +42,12 @@ class ProductBrowserView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (items.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
-          child: Text(emptyText, style: const TextStyle(color: kGrey)),
+          child: Text(emptyText, style: TextStyle(color: cs.onSurfaceVariant)),
         ),
       );
     }
@@ -141,6 +141,7 @@ class _ProductDetailTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Opacity(
       opacity: enabled ? 1 : 0.62,
       child: InkWell(
@@ -149,9 +150,9 @@ class _ProductDetailTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: kCard,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: cs.surfaceContainerHighest),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -172,10 +173,10 @@ class _ProductDetailTile extends StatelessWidget {
                       children: [
                         Text(
                           item.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 14,
-                            color: kDark,
+                            color: cs.onSurface,
                           ),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -193,7 +194,7 @@ class _ProductDetailTile extends StatelessWidget {
                               item.nearestExpiry.isEmpty
                                   ? 'No expiry'
                                   : AppHelpers.formatDate(item.nearestExpiry),
-                              kGrey,
+                              cs.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -210,8 +211,8 @@ class _ProductDetailTile extends StatelessWidget {
                           Text(
                             AppHelpers.peso(item.price),
                             textAlign: TextAlign.right,
-                            style: const TextStyle(
-                              color: kRed,
+                            style: TextStyle(
+                              color: cs.primary,
                               fontWeight: FontWeight.w800,
                               fontSize: 13,
                             ),
@@ -240,6 +241,7 @@ class _ProductDetailTile extends StatelessWidget {
   }
 
   Widget _variantRow(BuildContext context, VariantModel variant) {
+    final cs = Theme.of(context).colorScheme;
     final expiry = variant.nearestExpiry;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
@@ -270,7 +272,7 @@ class _ProductDetailTile extends StatelessWidget {
           Expanded(
             child: Text(
               _variantDisplayName(variant),
-              style: const TextStyle(fontSize: 12, color: kDark),
+              style: TextStyle(fontSize: 12, color: cs.onSurface),
               overflow: TextOverflow.ellipsis,
             ),
           ),
@@ -282,9 +284,9 @@ class _ProductDetailTile extends StatelessWidget {
               children: [
                 Text(
                   AppHelpers.peso(variant.price),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: kRed,
+                    color: cs.primary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -376,6 +378,7 @@ class _ProductCompactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Opacity(
       opacity: enabled ? 1 : 0.62,
       child: InkWell(
@@ -386,9 +389,9 @@ class _ProductCompactTile extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           decoration: BoxDecoration(
-            color: kCard,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade200),
+            border: Border.all(color: cs.surfaceContainerHighest),
           ),
           child: Row(
             children: [
@@ -408,8 +411,8 @@ class _ProductCompactTile extends StatelessWidget {
                       item.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: kDark,
+                      style: TextStyle(
+                        color: cs.onSurface,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),

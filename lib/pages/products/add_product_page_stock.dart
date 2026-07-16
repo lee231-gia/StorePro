@@ -2,6 +2,8 @@ part of 'add_product_page.dart';
 
 extension _AddProductPageStock on _AddProductPageState {
   Widget _stockSection(VariantModel v) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final idx = _variants.indexWhere((x) => x.id == v.id);
     return appCard(
       child: Column(
@@ -25,10 +27,10 @@ extension _AddProductPageStock on _AddProductPageState {
                     errorWidget: (_, _, _) => Container(
                       width: 32,
                       height: 32,
-                      color: kRedLight,
-                      child: const Icon(
+                      color: cs.primaryContainer,
+                      child: Icon(
                         Icons.inventory_2,
-                        color: kRed,
+                        color: cs.primary,
                         size: 16,
                       ),
                     ),
@@ -39,10 +41,10 @@ extension _AddProductPageStock on _AddProductPageState {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: kRedLight,
+                    color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Icon(Icons.inventory_2, color: kRed, size: 16),
+                  child: Icon(Icons.inventory_2, color: cs.primary, size: 16),
                 ),
               const SizedBox(width: 8),
               Expanded(
@@ -58,7 +60,7 @@ extension _AddProductPageStock on _AddProductPageState {
                     ),
                     Text(
                       '${v.unit} · ₱${v.price.toStringAsFixed(2)}',
-                      style: const TextStyle(color: kGrey, fontSize: 11),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                     ),
                   ],
                 ),
@@ -81,8 +83,8 @@ extension _AddProductPageStock on _AddProductPageState {
           // Add stock button
           OutlinedButton.icon(
             style: OutlinedButton.styleFrom(
-              foregroundColor: kGreen,
-              side: const BorderSide(color: kGreen),
+              foregroundColor: isDark ? PaletteDark.success : PaletteLight.success,
+              side: BorderSide(color: isDark ? PaletteDark.success : PaletteLight.success),
               minimumSize: const Size(double.infinity, 38),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -101,14 +103,15 @@ extension _AddProductPageStock on _AddProductPageState {
   }
 
   Widget _batchRow(BatchModel b, VariantModel v, int varIdx) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: kBg,
+          color: cs.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: cs.outlineVariant),
         ),
         child: Row(
           children: [
@@ -129,7 +132,7 @@ extension _AddProductPageStock on _AddProductPageState {
                         const SizedBox(width: 8),
                         Text(
                           'Batch: ${b.batchNumber}',
-                          style: const TextStyle(color: kGrey, fontSize: 11),
+                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                         ),
                       ],
                     ],
@@ -137,7 +140,7 @@ extension _AddProductPageStock on _AddProductPageState {
                   if (b.costPrice > 0)
                     Text(
                       'Cost: ₱${b.costPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(color: kGrey, fontSize: 11),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                     ),
                   // Show all life indicators
                   ...b.indicators
@@ -174,10 +177,10 @@ extension _AddProductPageStock on _AddProductPageState {
                     existing: b,
                     batchIndex: _variants[varIdx].batches.indexOf(b),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.edit_outlined,
                     size: 16,
-                    color: kGrey,
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -190,7 +193,7 @@ extension _AddProductPageStock on _AddProductPageState {
                       _variants[varIdx] = v.copyWith(batches: batches);
                     });
                   },
-                  child: const Icon(Icons.close, size: 16, color: kGrey),
+                  child: Icon(Icons.close, size: 16, color: cs.onSurfaceVariant),
                 ),
               ],
             ),
@@ -206,6 +209,8 @@ extension _AddProductPageStock on _AddProductPageState {
     BatchModel? existing,
     int? batchIndex,
   }) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final qtyCtrl = TextEditingController(
       text: existing == null ? '' : existing.qty.toString(),
     );
@@ -230,7 +235,7 @@ extension _AddProductPageStock on _AddProductPageState {
           ),
           title: Text(
             existing == null ? 'Add Stock Batch' : 'Edit Stock Batch',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: kGreen),
+            style: TextStyle(fontWeight: FontWeight.bold, color: isDark ? PaletteDark.success : PaletteLight.success),
           ),
           content: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 430),
@@ -244,7 +249,7 @@ extension _AddProductPageStock on _AddProductPageState {
                   fieldLabel('Batch Number (optional)'),
                   TextField(
                     controller: batchCtrl,
-                    decoration: AppInput.dialog('e.g. BATCH-001'),
+                    decoration: AppInput.dialog(context, 'e.g. BATCH-001'),
                   ),
                   const SizedBox(height: 10),
 
@@ -253,7 +258,7 @@ extension _AddProductPageStock on _AddProductPageState {
                   TextField(
                     controller: qtyCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: AppInput.dialog('Enter quantity'),
+                    decoration: AppInput.dialog(context, 'Enter quantity'),
                   ),
                   const SizedBox(height: 10),
 
@@ -262,7 +267,7 @@ extension _AddProductPageStock on _AddProductPageState {
                   TextField(
                     controller: costCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: AppInput.dialog('0.00'),
+                    decoration: AppInput.dialog(context, '0.00'),
                   ),
                   const SizedBox(height: 12),
 
@@ -286,10 +291,10 @@ extension _AddProductPageStock on _AddProductPageState {
                             LifeIndicator(type: 'Expiry Date', date: ''),
                           ),
                         ),
-                        icon: const Icon(Icons.add, size: 14, color: kGreen),
-                        label: const Text(
+                        icon: Icon(Icons.add, size: 14, color: isDark ? PaletteDark.success : PaletteLight.success),
+                        label: Text(
                           'Add',
-                          style: TextStyle(color: kGreen, fontSize: 12),
+                          style: TextStyle(color: isDark ? PaletteDark.success : PaletteLight.success, fontSize: 12),
                         ),
                       ),
                     ],
@@ -307,7 +312,7 @@ extension _AddProductPageStock on _AddProductPageState {
                             child: DropdownButtonFormField<String>(
                               initialValue: ind.type,
                               isExpanded: true,
-                              decoration: AppInput.dialog('Type').copyWith(
+                              decoration: AppInput.dialog(context, 'Type').copyWith(
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 8,
@@ -379,7 +384,7 @@ extension _AddProductPageStock on _AddProductPageState {
                                   vertical: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: kInputFill,
+                                  color: cs.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -389,7 +394,7 @@ extension _AddProductPageStock on _AddProductPageState {
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: TextStyle(
-                                    color: ind.date.isEmpty ? kGrey : kDark,
+                                    color: ind.date.isEmpty ? cs.onSurfaceVariant : cs.onSurface,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -399,10 +404,10 @@ extension _AddProductPageStock on _AddProductPageState {
                           const SizedBox(width: 4),
                           GestureDetector(
                             onTap: () => setD(() => indicators.removeAt(i)),
-                            child: const Icon(
+                            child: Icon(
                               Icons.close,
                               size: 16,
-                              color: kGrey,
+                              color: cs.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -421,26 +426,26 @@ extension _AddProductPageStock on _AddProductPageState {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: kBg,
+                          color: cs.surfaceContainerLowest,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: Colors.grey.shade300,
+                            color: cs.outlineVariant,
                             style: BorderStyle.solid,
                           ),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.add_circle_outline,
-                              color: kGrey,
+                              color: cs.onSurfaceVariant,
                               size: 16,
                             ),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text(
                               'Add life indicator '
                               '(expiry, MFG, etc.)',
-                              style: TextStyle(color: kGrey, fontSize: 12),
+                              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                             ),
                           ],
                         ),
@@ -457,8 +462,8 @@ extension _AddProductPageStock on _AddProductPageState {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: kGreen,
-                foregroundColor: Colors.white,
+                backgroundColor: isDark ? PaletteDark.success : PaletteLight.success,
+                foregroundColor: cs.onPrimary,
               ),
               onPressed: () {
                 final qty = int.tryParse(qtyCtrl.text) ?? 0;
@@ -502,7 +507,7 @@ extension _AddProductPageStock on _AddProductPageState {
   }
 
   Color _lifeIndicatorColor(LifeIndicator indicator) {
-    if (!indicator.affectsExpiry) return kGrey;
+    if (!indicator.affectsExpiry) return Theme.of(context).colorScheme.onSurfaceVariant;
     return AppHelpers.statusColor(AppHelpers.expiryStatus(indicator.date));
   }
 

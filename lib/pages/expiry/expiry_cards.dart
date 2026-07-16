@@ -2,13 +2,14 @@ part of 'expiry_page.dart';
 
 extension _ExpiryCards on _ExpiryPageState {
   Widget _listCard(Map<String, dynamic> entry) {
+    final cs = Theme.of(context).colorScheme;
     final product = entry['product'] as ProductModel;
     final variant = entry['variant'] as VariantModel;
     final expiry = entry['expiry'] as String;
     final tier = entry['tier'] as String;
     final days = entry['days'] as int;
     final indicators = entry['indicators'] as List<LifeIndicator>;
-    final tierColor = _ExpiryPageState._tierColor(tier);
+    final tierColor = _tierColor(tier);
 
     return ProductCard(
       product: product,
@@ -19,7 +20,7 @@ extension _ExpiryCards on _ExpiryPageState {
         if (indicators.where(_hasDate).isNotEmpty)
           ProductBadge(
             label: '${indicators.where(_hasDate).length} dates',
-            color: kGrey,
+            color: cs.onSurfaceVariant,
           ),
       ],
       trailing: _expiryTrailing(expiry, tier, tierColor),
@@ -32,7 +33,7 @@ extension _ExpiryCards on _ExpiryPageState {
     final expiry = entry['expiry'] as String;
     final tier = entry['tier'] as String;
     final days = entry['days'] as int;
-    final tierColor = _ExpiryPageState._tierColor(tier);
+    final tierColor = _tierColor(tier);
 
     return ProductCard(
       product: product,
@@ -57,7 +58,7 @@ extension _ExpiryCards on _ExpiryPageState {
     final expiry = entry['expiry'] as String;
     final tier = entry['tier'] as String;
     final days = entry['days'] as int;
-    final tierColor = _ExpiryPageState._tierColor(tier);
+    final tierColor = _tierColor(tier);
 
     return ProductGridCard(
       product: product,
@@ -78,7 +79,7 @@ extension _ExpiryCards on _ExpiryPageState {
           ),
           Text(
             '${variant.totalStock} pcs \u2022 ${_ExpiryPageState._tierLabel(tier)}',
-            style: const TextStyle(color: kGrey, fontSize: 10),
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -87,12 +88,13 @@ extension _ExpiryCards on _ExpiryPageState {
   }
 
   Widget _detailCard(Map<String, dynamic> entry) {
+    final cs = Theme.of(context).colorScheme;
     final product = entry['product'] as ProductModel;
     final variant = entry['variant'] as VariantModel;
     final tier = entry['tier'] as String;
     final days = entry['days'] as int;
     final indicators = entry['indicators'] as List<LifeIndicator>;
-    final tierColor = _ExpiryPageState._tierColor(tier);
+    final tierColor = _tierColor(tier);
 
     return appCard(
       child: Column(
@@ -111,15 +113,15 @@ extension _ExpiryCards on _ExpiryPageState {
                   children: [
                     Text(
                       '${product.name} - ${variant.name}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                     ),
                     Text(
                       product.categoryName,
-                      style: const TextStyle(color: kGrey, fontSize: 11),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                     ),
                   ],
                 ),
@@ -147,12 +149,12 @@ extension _ExpiryCards on _ExpiryPageState {
           ),
           if (indicators.where(_hasDate).isNotEmpty) ...[
             const Divider(height: 12),
-            const Text(
+            Text(
               'Product Life Indicators',
               style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 11,
-                color: kGrey,
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -197,9 +199,10 @@ extension _ExpiryCards on _ExpiryPageState {
   }
 
   Widget _indicatorRow(LifeIndicator indicator) {
+    final cs = Theme.of(context).colorScheme;
     final color = indicator.affectsExpiry
         ? AppHelpers.statusColor(AppHelpers.expiryStatus(indicator.date))
-        : kGrey;
+        : cs.onSurfaceVariant;
     return Padding(
       padding: const EdgeInsets.only(bottom: 3),
       child: Row(
@@ -209,7 +212,7 @@ extension _ExpiryCards on _ExpiryPageState {
           Expanded(
             child: Text(
               indicator.type,
-              style: const TextStyle(color: kGrey, fontSize: 11),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
               overflow: TextOverflow.ellipsis,
             ),
           ),

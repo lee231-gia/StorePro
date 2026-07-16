@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_colors.dart';
 import '../core/constants/app_routes.dart';
 import '../core/utils/session.dart';
 
@@ -18,7 +17,7 @@ class AppDrawer extends StatelessWidget {
     return Drawer(
       child: Column(
         children: [
-          _buildHeader(),
+          _buildHeader(context),
           const SizedBox(height: 6),
           Expanded(
             child: ListView(
@@ -48,9 +47,9 @@ class AppDrawer extends StatelessWidget {
                     horizontal: 20,
                     vertical: 2,
                   ),
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.settings_outlined,
-                    color: kDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                     size: 22,
                   ),
                   title: const Text('Settings', style: TextStyle(fontSize: 14)),
@@ -67,11 +66,12 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 42, 18, 16),
-      color: kRed,
+      color: colorScheme.primary,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -116,21 +116,22 @@ class AppDrawer extends StatelessWidget {
 
   Widget _navItem(BuildContext ctx, IconData icon, String title, int tabIndex) {
     final active = currentIndex == tabIndex;
+    final colorScheme = Theme.of(ctx).colorScheme;
     return ListTile(
       minLeadingWidth: 30,
       horizontalTitleGap: 12,
       minVerticalPadding: 10,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
-      leading: Icon(icon, color: active ? kRed : kDark, size: 20),
+      leading: Icon(icon, color: active ? colorScheme.primary : colorScheme.onSurface, size: 20),
       title: Text(
         title,
         style: TextStyle(
           fontSize: 13,
           fontWeight: active ? FontWeight.bold : FontWeight.normal,
-          color: active ? kRed : kDark,
+          color: active ? colorScheme.primary : colorScheme.onSurface,
         ),
       ),
-      tileColor: active ? kRedLight : null,
+      tileColor: active ? colorScheme.primaryContainer : null,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       onTap: () {
         Navigator.pop(ctx);

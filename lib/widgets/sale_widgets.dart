@@ -22,6 +22,7 @@ class SalesTabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
@@ -30,7 +31,7 @@ class SalesTabButton extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: isActive ? Colors.white : Colors.transparent,
+                color: isActive ? cs.onPrimary : Colors.transparent,
                 width: 2,
               ),
             ),
@@ -39,7 +40,7 @@ class SalesTabButton extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: isActive ? Colors.white : Colors.white60,
+              color: isActive ? cs.onPrimary : cs.onPrimary.withValues(alpha: 0.6),
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
               fontSize: 13,
             ),
@@ -128,6 +129,8 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     // Today's stats
     final today = AppHelpers.todayStr();
     final todaySales = _sales.where((s) => s.date == today).toList();
@@ -147,7 +150,7 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
             .toList();
 
     return RefreshIndicator(
-      color: kRed,
+      color: cs.primary,
       onRefresh: () async => _load(),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -160,8 +163,8 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
               width: double.infinity,
               padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [kRed, kRedDark],
+                gradient: LinearGradient(
+                  colors: [cs.primary, cs.primary.withValues(alpha: 0.8)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -170,15 +173,15 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     "Today's Sales",
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.7), fontSize: 13),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     AppHelpers.peso(todayRev),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: cs.onPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 28,
                     ),
@@ -188,16 +191,16 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
                       Text(
                         '${todaySales.length} transaction'
                         '${todaySales.length != 1 ? 's' : ''}',
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: cs.onPrimary.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                       ),
                       const SizedBox(width: 16),
                       Text(
                         'Profit: ${AppHelpers.peso(todayProfit)}',
-                        style: const TextStyle(
-                          color: Colors.white70,
+                        style: TextStyle(
+                          color: cs.onPrimary.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                       ),
@@ -209,12 +212,12 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
 
             const SizedBox(height: 20),
 
-            const Text(
+            Text(
               'Top Selling',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: kDark,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 10),
@@ -223,13 +226,13 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: kCard,
+                  color: cs.surface,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Center(
+                child: Center(
                   child: Text(
                     'No sales data yet.',
-                    style: TextStyle(color: kGrey),
+                    style: TextStyle(color: cs.onSurfaceVariant),
                   ),
                 ),
               )
@@ -258,7 +261,7 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
                     vertical: 12,
                   ),
                   decoration: BoxDecoration(
-                    color: kCard,
+                    color: cs.surface,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(
@@ -274,14 +277,14 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
                         width: 28,
                         height: 28,
                         decoration: BoxDecoration(
-                          color: rank == 1 ? kRed : kRedLight,
+                          color: rank == 1 ? cs.primary : cs.primaryContainer,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: Text(
                             '$rank',
                             style: TextStyle(
-                              color: rank == 1 ? Colors.white : kRed,
+                              color: rank == 1 ? cs.onPrimary : cs.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 12,
                             ),
@@ -302,9 +305,9 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
                       Expanded(
                         child: Text(
                           name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
-                            color: kDark,
+                            color: cs.onSurface,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -315,12 +318,12 @@ class _SalesSummaryViewState extends State<SalesSummaryView> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: kRedLight,
+                          color: cs.primaryContainer,
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
                           '$qty sold',
-                          style: const TextStyle(color: kRed, fontSize: 12),
+                          style: TextStyle(color: cs.primary, fontSize: 12),
                         ),
                       ),
                     ],
@@ -353,19 +356,21 @@ class SalesHistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     // Status color
     final statusColor = sale.status == 'refunded'
-        ? kOrange
+        ? const Color(0xFFE65100)
         : sale.status == 'partial'
-        ? kOrange
-        : kGreen;
+        ? const Color(0xFFE65100)
+        : const Color(0xFF2E7D32);
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: kCard,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
@@ -396,8 +401,8 @@ class SalesHistoryCard extends StatelessWidget {
                           children: [
                             Text(
                               AppHelpers.formatDate(sale.date),
-                              style: const TextStyle(
-                                color: kGrey,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
                                 fontSize: 12,
                               ),
                             ),
@@ -413,9 +418,9 @@ class SalesHistoryCard extends StatelessWidget {
                     children: [
                       Text(
                         AppHelpers.peso(sale.total),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: kRed,
+                          color: cs.primary,
                           fontSize: 15,
                         ),
                       ),
@@ -442,7 +447,7 @@ class SalesHistoryCard extends StatelessWidget {
 
                   const SizedBox(width: 8),
                   PopupMenuButton<String>(
-                    icon: const Icon(Icons.more_vert, color: kGrey, size: 20),
+                    icon: Icon(Icons.more_vert, color: cs.onSurfaceVariant, size: 20),
                     onSelected: (value) {
                       if (value == 'edit') onEdit?.call();
                       if (value == 'refund') onRefund?.call();
@@ -486,9 +491,9 @@ class SalesHistoryCard extends StatelessWidget {
                               children: [
                                 Text(
                                   item.productName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
-                                    color: kDark,
+                                    color: cs.onSurface,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -496,9 +501,9 @@ class SalesHistoryCard extends StatelessWidget {
                                   '${item.variantName}'
                                   '${item.conditionName.isNotEmpty ? ' / ${item.conditionName}' : ''}'
                                   ' x ${item.qty} @ ${AppHelpers.peso(item.price)}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 11,
-                                    color: kGrey,
+                                    color: cs.onSurfaceVariant,
                                   ),
                                 ),
                                 if (item.discount > 0)
@@ -506,7 +511,7 @@ class SalesHistoryCard extends StatelessWidget {
                                     'Discount -${AppHelpers.peso(item.discount)}',
                                     style: const TextStyle(
                                       fontSize: 10,
-                                      color: kOrange,
+                                      color: Color(0xFFE65100),
                                     ),
                                   ),
                               ],
@@ -515,9 +520,9 @@ class SalesHistoryCard extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             AppHelpers.peso(item.subtotal),
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: kDark,
+                              color: cs.onSurface,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -535,7 +540,7 @@ class SalesHistoryCard extends StatelessWidget {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: kOrange.withValues(alpha: 0.12),
+                          color: const Color(0xFFE65100).withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -543,7 +548,7 @@ class SalesHistoryCard extends StatelessWidget {
                           '${sale.editHistory.length == 1 ? '' : 's'}',
                           style: const TextStyle(
                             fontSize: 10,
-                            color: kOrange,
+                            color: Color(0xFFE65100),
                             fontWeight: FontWeight.w600,
                           ),
                         ),

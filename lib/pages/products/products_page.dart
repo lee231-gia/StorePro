@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_colors.dart';
 import '../../core/enums/product_browser_enums.dart';
 import '../../core/services/sync_service.dart';
 import '../../core/utils/app_helpers.dart';
@@ -110,8 +109,9 @@ class _ProductsPageState extends State<ProductsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(title: 'Products', context: context),
       drawer: AppDrawer(
         changeTab: widget.changeTab,
@@ -119,14 +119,14 @@ class _ProductsPageState extends State<ProductsPage> {
       ),
       floatingActionButton: FloatingActionButton.small(
         heroTag: 'products_add_fab',
-        backgroundColor: kRed,
-        foregroundColor: Colors.white,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
         onPressed: _goAdd,
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          if (_loading) LinearProgressIndicator(color: cs.primary),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
             child: ProductBrowserToolbar(
@@ -152,7 +152,7 @@ class _ProductsPageState extends State<ProductsPage> {
           ),
           Expanded(
             child: RefreshIndicator(
-              color: kRed,
+              color: cs.primary,
               onRefresh: _load,
               child: ProductBrowserView(
                 items: _items,
@@ -161,16 +161,16 @@ class _ProductsPageState extends State<ProductsPage> {
                 onTap: (item) => _goDetail(item.productId),
                 trailingBuilder: (item) => Text(
                   AppHelpers.peso(item.price),
-                  style: const TextStyle(
-                    color: kRed,
+                  style: TextStyle(
+                    color: cs.primary,
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                   ),
                 ),
                 detailTrailingBuilder: (item) => Text(
                   AppHelpers.peso(item.price),
-                  style: const TextStyle(
-                    color: kRed,
+                  style: TextStyle(
+                    color: cs.primary,
                     fontWeight: FontWeight.w800,
                     fontSize: 13,
                   ),

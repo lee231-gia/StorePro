@@ -29,134 +29,160 @@ Future<bool> showCartSheet({
           initialChildSize: 0.78,
           minChildSize: 0.48,
           maxChildSize: 0.95,
-          builder: (_, ctrl) => SingleChildScrollView(
-            controller: ctrl,
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).padding.bottom),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _handle(),
+          builder: (_, ctrl) {
+            final cs = Theme.of(context).colorScheme;
+            final isDark = Theme.of(context).brightness == Brightness.dark;
+            return SingleChildScrollView(
+              controller: ctrl,
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).padding.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _handle(context),
 
-                // Cart header
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.shopping_cart_outlined, color: kRed),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'Cart',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  // Cart header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Icon(Icons.shopping_cart_outlined, color: cs.primary),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Cart',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '${cart.length} item'
-                        '${cart.length != 1 ? 's' : ''}',
-                        style: const TextStyle(color: kGrey, fontSize: 13),
-                      ),
-                    ],
+                        const Spacer(),
+                        Text(
+                          '${cart.length} item'
+                          '${cart.length != 1 ? 's' : ''}',
+                          style: TextStyle(
+                            color: cs.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
 
-                const Divider(),
+                  const Divider(),
 
-                // Cart items
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
-                  itemCount: cart.length,
-                  itemBuilder: (_, i) {
-                    final item = cart[i];
-                    final discountCtrl = discountCtrls.putIfAbsent(
-                      item.key,
-                      () => TextEditingController(
-                        text: item.itemDiscount > 0
-                            ? item.itemDiscount.toStringAsFixed(2)
-                            : '',
-                      ),
-                    );
-                    return Container(
-                      margin: EdgeInsets.zero,
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                      decoration: BoxDecoration(
-                        color: kCard,
-                        border: Border(
-                          bottom: BorderSide(color: Colors.grey.shade100),
+                  // Cart items
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: cart.length,
+                    itemBuilder: (_, i) {
+                      final item = cart[i];
+                      final discountCtrl = discountCtrls.putIfAbsent(
+                        item.key,
+                        () => TextEditingController(
+                          text: item.itemDiscount > 0
+                              ? item.itemDiscount.toStringAsFixed(2)
+                              : '',
                         ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _cartThumb(item, size: 78),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.variantName.trim().isEmpty
-                                          ? item.productName
-                                          : '${item.productName} - ${item.variantName}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 14,
-                                        color: kDark,
-                                      ),
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      [
-                                        if (item.conditionName.isNotEmpty)
-                                          item.conditionName,
-                                        '${item.qty} x ${AppHelpers.peso(item.price)}',
-                                      ].join('  '),
-                                      style: const TextStyle(
-                                        color: kGrey,
-                                        fontSize: 12,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      AppHelpers.peso(item.subtotal),
-                                      style: const TextStyle(
-                                        color: kRed,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              SizedBox(
-                                height: 78,
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    SizedBox(
-                                      width: 28,
-                                      height: 24,
-                                      child: IconButton(
-                                        padding: EdgeInsets.zero,
-                                        tooltip: 'Remove',
-                                        icon: const Icon(
-                                          Icons.close,
-                                          color: kGrey,
-                                          size: 18,
+                      );
+                      return Container(
+                        margin: EdgeInsets.zero,
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                        decoration: BoxDecoration(
+                          color: cs.surface,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: cs.surfaceContainerHighest,
+                            ),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _cartThumb(item, size: 78),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.variantName.trim().isEmpty
+                                            ? item.productName
+                                            : '${item.productName} - ${item.variantName}',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                          color: cs.onSurface,
                                         ),
-                                        onPressed: () {
-                                          onRemove(i);
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        [
+                                          if (item.conditionName.isNotEmpty)
+                                            item.conditionName,
+                                          '${item.qty} x ${AppHelpers.peso(item.price)}',
+                                        ].join('  '),
+                                        style: TextStyle(
+                                          color: cs.onSurfaceVariant,
+                                          fontSize: 12,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        AppHelpers.peso(item.subtotal),
+                                        style: TextStyle(
+                                          color: cs.primary,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                SizedBox(
+                                  height: 78,
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      SizedBox(
+                                        width: 28,
+                                        height: 24,
+                                        child: IconButton(
+                                          padding: EdgeInsets.zero,
+                                          tooltip: 'Remove',
+                                          icon: Icon(
+                                            Icons.close,
+                                            color: cs.onSurfaceVariant,
+                                            size: 18,
+                                          ),
+                                          onPressed: () {
+                                            onRemove(i);
+                                            setS(() {});
+                                            if (cart.isEmpty) {
+                                              FocusManager.instance.primaryFocus
+                                                  ?.unfocus();
+                                              Navigator.pop(ctx, false);
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      _cartQtyStepper(
+                                        context,
+                                        qty: item.qty,
+                                        onDecrease: () {
+                                          onChangeQty(i, -1);
                                           setS(() {});
                                           if (cart.isEmpty) {
                                             FocusManager.instance.primaryFocus
@@ -164,226 +190,230 @@ Future<bool> showCartSheet({
                                             Navigator.pop(ctx, false);
                                           }
                                         },
+                                        onIncrease: () {
+                                          onChangeQty(i, 1);
+                                          setS(() {});
+                                        },
                                       ),
-                                    ),
-                                    const Spacer(),
-                                    _cartQtyStepper(
-                                      qty: item.qty,
-                                      onDecrease: () {
-                                        onChangeQty(i, -1);
-                                        setS(() {});
-                                        if (cart.isEmpty) {
-                                          FocusManager.instance.primaryFocus
-                                              ?.unfocus();
-                                          Navigator.pop(ctx, false);
-                                        }
-                                      },
-                                      onIncrease: () {
-                                        onChangeQty(i, 1);
-                                        setS(() {});
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.only(
-                              left: 2,
-                              top: 2,
-                              bottom: 2,
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.confirmation_num_outlined,
-                                  color: kRed,
-                                  size: 18,
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Discount',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: kDark,
-                                    fontWeight: FontWeight.w500,
+                                    ],
                                   ),
-                                ),
-                                const Spacer(),
-                                SizedBox(
-                                  width: 104,
-                                  child: TextField(
-                                    controller: discountCtrl,
-                                    keyboardType: TextInputType.number,
-                                    style: const TextStyle(fontSize: 12),
-                                    textAlign: TextAlign.right,
-                                    decoration: InputDecoration(
-                                      isDense: true,
-                                      hintText: '0.00',
-                                      prefixText: '\u20B1 ',
-                                      filled: true,
-                                      fillColor: kRedLight,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                      contentPadding:
-                                          const EdgeInsets.symmetric(
-                                            horizontal: 8,
-                                            vertical: 8,
-                                          ),
-                                    ),
-                                    onChanged: (v) {
-                                      final maxDiscount = item.price * item.qty;
-                                      final d = (double.tryParse(v) ?? 0.0)
-                                          .clamp(0, maxDiscount)
-                                          .toDouble();
-                                      onItemDiscount(i, d);
-                                      setS(() {});
-                                    },
-                                    onEditingComplete: () {
-                                      FocusScope.of(ctx).nextFocus();
-                                      setS(() {});
-                                    },
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.chevron_right,
-                                  color: kGrey,
-                                  size: 18,
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-
-                // ── TOTAL + CUSTOMER + CONFIRM ────────────────
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    16,
-                    8,
-                    16,
-                    MediaQuery.of(ctx).viewInsets.bottom + 16,
-                  ),
-                  child: Column(
-                    children: [
-                      // Summary
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: kRedLight,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Column(
-                          children: [
-                            if (discTotal > 0) ...[
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
+                            const SizedBox(height: 12),
+                            Container(
+                              padding: const EdgeInsets.only(
+                                left: 2,
+                                top: 2,
+                                bottom: 2,
+                              ),
+                              child: Row(
                                 children: [
-                                  const Text('Subtotal'),
-                                  Text(AppHelpers.peso(subtotal + discTotal)),
+                                  Icon(
+                                    Icons.confirmation_num_outlined,
+                                    color: cs.primary,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Discount',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: cs.onSurface,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const Spacer(),
+                                  SizedBox(
+                                    width: 104,
+                                    child: TextField(
+                                      controller: discountCtrl,
+                                      keyboardType: TextInputType.number,
+                                      style: const TextStyle(fontSize: 12),
+                                      textAlign: TextAlign.right,
+                                      decoration: InputDecoration(
+                                        isDense: true,
+                                        hintText: '0.00',
+                                        prefixText: '\u20B1 ',
+                                        filled: true,
+                                        fillColor: cs.primaryContainer,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                          borderSide: BorderSide.none,
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 8,
+                                            ),
+                                      ),
+                                      onChanged: (v) {
+                                        final maxDiscount =
+                                            item.price * item.qty;
+                                        final d = (double.tryParse(v) ?? 0.0)
+                                            .clamp(0, maxDiscount)
+                                            .toDouble();
+                                        onItemDiscount(i, d);
+                                        setS(() {});
+                                      },
+                                      onEditingComplete: () {
+                                        FocusScope.of(ctx).nextFocus();
+                                        setS(() {});
+                                      },
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    color: cs.onSurfaceVariant,
+                                    size: 18,
+                                  ),
                                 ],
                               ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+
+                  // ── TOTAL + CUSTOMER + CONFIRM ────────────────
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      8,
+                      16,
+                      MediaQuery.of(ctx).viewInsets.bottom + 16,
+                    ),
+                    child: Column(
+                      children: [
+                        // Summary
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cs.primaryContainer,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            children: [
+                              if (discTotal > 0) ...[
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    const Text('Subtotal'),
+                                    Text(AppHelpers.peso(subtotal + discTotal)),
+                                  ],
+                                ),
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Discount',
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? PaletteDark.warning
+                                            : PaletteLight.warning,
+                                      ),
+                                    ),
+                                    Text(
+                                      '- ${AppHelpers.peso(discTotal)}',
+                                      style: TextStyle(
+                                        color: isDark
+                                            ? PaletteDark.warning
+                                            : PaletteLight.warning,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 8),
+                              ],
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
-                                    'Discount',
-                                    style: TextStyle(color: kOrange),
+                                    'TOTAL',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                   Text(
-                                    '- ${AppHelpers.peso(discTotal)}',
-                                    style: const TextStyle(color: kOrange),
+                                    AppHelpers.peso(subtotal),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: cs.primary,
+                                      fontSize: 18,
+                                    ),
                                   ),
                                 ],
                               ),
-                              const Divider(height: 8),
                             ],
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'TOTAL',
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  AppHelpers.peso(subtotal),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: kRed,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      _customerSelector(
-                        controller: customerCtrl,
-                        focusNode: customerFocus,
-                        customers: customers,
-                        hint: 'Customer name (optional)',
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      // Notes
-                      TextField(
-                        controller: notesCtrl,
-                        decoration: AppInput.field(
-                          'Notes (optional)',
-                          icon: Icons.note_outlined,
-                        ),
-                      ),
-
-                      const SizedBox(height: 10),
-
-                      // Confirm
-                      SizedBox(
-                        width: double.infinity,
-                        height: 48,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kRed,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          onPressed: () async {
-                            FocusManager.instance.primaryFocus?.unfocus();
-                            await Future<void>.delayed(
-                              const Duration(milliseconds: 100),
-                            );
-                            if (ctx.mounted) Navigator.pop(ctx, true);
-                          },
-                          child: Text(
-                            'Proceed  ${AppHelpers.peso(subtotal)}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
-                      ),
-                    ],
+
+                        const SizedBox(height: 10),
+
+                        _customerSelector(
+                          controller: customerCtrl,
+                          focusNode: customerFocus,
+                          customers: customers,
+                          hint: 'Customer name (optional)',
+                        ),
+
+                        const SizedBox(height: 8),
+
+                        // Notes
+                        TextField(
+                          controller: notesCtrl,
+                          decoration: AppInput.field(
+                            context,
+                            'Notes (optional)',
+                            icon: Icons.note_outlined,
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        // Confirm
+                        SizedBox(
+                          width: double.infinity,
+                          height: 48,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: cs.primary,
+                              foregroundColor: cs.onPrimary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            onPressed: () async {
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              await Future<void>.delayed(
+                                const Duration(milliseconds: 100),
+                              );
+                              if (ctx.mounted) Navigator.pop(ctx, true);
+                            },
+                            child: Text(
+                              'Proceed  ${AppHelpers.peso(subtotal)}',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
+                ],
+              ),
+            );
+          },
         );
       },
     ),
@@ -413,15 +443,17 @@ void _disposeCheckoutInputs({
   });
 }
 
-Widget _cartQtyStepper({
+Widget _cartQtyStepper(
+  BuildContext context, {
   required int qty,
   required VoidCallback onDecrease,
   required VoidCallback onIncrease,
 }) {
+  final cs = Theme.of(context).colorScheme;
   return Container(
     height: 36,
     decoration: BoxDecoration(
-      color: kInputFill,
+      color: cs.surfaceContainerHighest,
       borderRadius: BorderRadius.circular(8),
     ),
     child: Row(
@@ -433,11 +465,11 @@ Widget _cartQtyStepper({
           child: IconButton(
             padding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.remove, color: kGrey, size: 18),
+            icon: Icon(Icons.remove, color: cs.onSurfaceVariant, size: 18),
             onPressed: onDecrease,
           ),
         ),
-        Container(width: 1, height: 18, color: Colors.white),
+        Container(width: 1, height: 18, color: cs.outlineVariant),
         SizedBox(
           width: 34,
           child: Text(
@@ -446,14 +478,14 @@ Widget _cartQtyStepper({
             style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
           ),
         ),
-        Container(width: 1, height: 18, color: Colors.white),
+        Container(width: 1, height: 18, color: cs.outlineVariant),
         SizedBox(
           width: 34,
           height: 36,
           child: IconButton(
             padding: EdgeInsets.zero,
             visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.add, color: kDark, size: 19),
+            icon: Icon(Icons.add, color: cs.onSurface, size: 19),
             onPressed: onIncrease,
           ),
         ),
@@ -523,6 +555,8 @@ Widget _customerSelector({
 
   return StatefulBuilder(
     builder: (context, setLocal) {
+      final cs = Theme.of(context).colorScheme;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       final query = controller.text.trim().toLowerCase();
       final matches = customers
           .where(
@@ -540,7 +574,11 @@ Widget _customerSelector({
             controller: controller,
             focusNode: focusNode,
             textInputAction: TextInputAction.next,
-            decoration: AppInput.field(hint, icon: Icons.person_outline),
+            decoration: AppInput.field(
+              context,
+              hint,
+              icon: Icons.person_outline,
+            ),
             onChanged: (value) {
               fillExact(value);
               setLocal(() {});
@@ -566,7 +604,11 @@ Widget _customerSelector({
                     visualDensity: VisualDensity.compact,
                     avatar: Icon(
                       selected ? Icons.check_circle : Icons.person_outline,
-                      color: selected ? kGreen : kRed,
+                      color: selected
+                          ? (isDark
+                                ? PaletteDark.success
+                                : PaletteLight.success)
+                          : cs.primary,
                       size: 16,
                     ),
                     label: Text(customer.name, overflow: TextOverflow.ellipsis),

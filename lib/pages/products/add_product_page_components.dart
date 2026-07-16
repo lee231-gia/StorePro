@@ -23,7 +23,7 @@ extension _AddProductPageImagePicker on _AddProductPageState {
               ),
               const SizedBox(height: 16),
               ListTile(
-                leading: const Icon(Icons.photo_camera_outlined, color: kRed),
+                leading: Icon(Icons.photo_camera_outlined, color: Theme.of(context).colorScheme.primary),
                 title: const Text('Take Photo'),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -35,7 +35,7 @@ extension _AddProductPageImagePicker on _AddProductPageState {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library_outlined, color: kRed),
+                leading: Icon(Icons.photo_library_outlined, color: Theme.of(context).colorScheme.primary),
                 title: const Text('Choose from Gallery'),
                 onTap: () async {
                   Navigator.pop(ctx);
@@ -78,6 +78,7 @@ class _ExpandableVariantCardState extends State<_ExpandableVariantCard> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final variant = widget.variant;
     final title = variant.name.isEmpty ? widget.productName : variant.name;
 
@@ -91,11 +92,11 @@ class _ExpandableVariantCardState extends State<_ExpandableVariantCard> {
               children: [
                 CircleAvatar(
                   radius: 18,
-                  backgroundColor: kRedLight,
+                  backgroundColor: cs.primaryContainer,
                   child: Text(
                     '${widget.index + 1}',
-                    style: const TextStyle(
-                      color: kRed,
+                    style: TextStyle(
+                      color: cs.primary,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -107,14 +108,14 @@ class _ExpandableVariantCardState extends State<_ExpandableVariantCard> {
                     children: [
                       Text(
                         title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: kDark,
+                          color: cs.onSurface,
                         ),
                       ),
                       Text(
                         '${variant.unit} • ${variant.totalStock} in stock',
-                        style: const TextStyle(color: kGrey, fontSize: 12),
+                        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                       ),
                     ],
                   ),
@@ -124,14 +125,14 @@ class _ExpandableVariantCardState extends State<_ExpandableVariantCard> {
                   onPressed: widget.onEdit,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline, color: kRed, size: 20),
+                  icon: Icon(Icons.delete_outline, color: cs.primary, size: 20),
                   onPressed: widget.onDelete,
                 ),
                 Icon(
                   _expanded
                       ? Icons.keyboard_arrow_up
                       : Icons.keyboard_arrow_down,
-                  color: kGrey,
+                  color: cs.onSurfaceVariant,
                 ),
               ],
             ),
@@ -155,29 +156,32 @@ class _ExpandableVariantCardState extends State<_ExpandableVariantCard> {
     );
   }
 
-  Widget _row(String label, String value) => Padding(
-    padding: const EdgeInsets.only(bottom: 8),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 110,
-          child: Text(
-            label,
-            style: const TextStyle(color: kGrey, fontSize: 12),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: const TextStyle(
-              color: kDark,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
+  Widget _row(String label, String value) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
           ),
-        ),
-      ],
-    ),
-  );
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: cs.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

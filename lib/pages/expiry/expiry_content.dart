@@ -2,12 +2,13 @@ part of 'expiry_page.dart';
 
 extension _ExpiryContent on _ExpiryPageState {
   Widget _buildContent() {
+    final cs = Theme.of(context).colorScheme;
     final entries = _entries;
     if (entries.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
           'No items match the filter.',
-          style: TextStyle(color: kGrey),
+          style: TextStyle(color: cs.onSurfaceVariant),
         ),
       );
     }
@@ -44,7 +45,7 @@ extension _ExpiryContent on _ExpiryPageState {
 
     // Default: list
     return RefreshIndicator(
-      color: kRed,
+      color: Theme.of(context).colorScheme.primary,
       onRefresh: _load,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

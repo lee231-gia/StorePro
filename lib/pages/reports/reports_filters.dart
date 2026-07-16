@@ -1,8 +1,8 @@
 part of 'reports_page.dart';
 
 extension _ReportsFilters on _ReportsPageState {
-  // ignore: unused_element
   Widget _buildRangeSelector() {
+    final cs = Theme.of(context).colorScheme;
     final ranges = {
       'hour': 'Hour',
       'today': 'Today',
@@ -35,19 +35,23 @@ extension _ReportsFilters on _ReportsPageState {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: _range == e.key ? kRed : kCard,
+                            color: _range == e.key
+                                ? cs.primary
+                                : cs.surface,
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: _range == e.key
-                                  ? kRed
-                                  : Colors.grey.shade300,
+                                  ? cs.primary
+                                  : cs.outlineVariant,
                             ),
                           ),
                           child: Text(
                             e.value,
                             style: TextStyle(
                               fontSize: 12,
-                              color: _range == e.key ? Colors.white : kGrey,
+                              color: _range == e.key
+                                  ? cs.onPrimary
+                                  : cs.onSurfaceVariant,
                               fontWeight: _range == e.key
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -64,9 +68,9 @@ extension _ReportsFilters on _ReportsPageState {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Text(
-            '${AppHelpers.formatDate(_fmt(_from))}  →  '
+            '${AppHelpers.formatDate(_fmt(_from))}  \u2192  '
             '${AppHelpers.formatDate(_fmt(_to))}',
-            style: const TextStyle(color: kGrey, fontSize: 11),
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
           ),
         ),
       ],
@@ -74,15 +78,16 @@ extension _ReportsFilters on _ReportsPageState {
   }
 
   Widget _buildTabBar() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      color: kCard,
+      color: cs.surface,
       child: TabBar(
         controller: _tabCtrl,
         isScrollable: true,
         tabAlignment: TabAlignment.start,
-        labelColor: kRed,
-        unselectedLabelColor: kGrey,
-        indicatorColor: kRed,
+        labelColor: cs.primary,
+        unselectedLabelColor: cs.onSurfaceVariant,
+        indicatorColor: cs.primary,
         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
         labelPadding: const EdgeInsets.symmetric(horizontal: 14),
         tabs: const [
@@ -96,15 +101,16 @@ extension _ReportsFilters on _ReportsPageState {
   }
 
   Future<void> _pickCustom() async {
+    final cs = Theme.of(context).colorScheme;
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
       initialDateRange: DateTimeRange(start: _from, end: _to),
       builder: (ctx, child) => Theme(
-        data: Theme.of(
-          ctx,
-        ).copyWith(colorScheme: const ColorScheme.light(primary: kRed)),
+        data: Theme.of(ctx).copyWith(
+          colorScheme: Theme.of(ctx).colorScheme.copyWith(primary: cs.primary),
+        ),
         child: child!,
       ),
     );
@@ -117,8 +123,4 @@ extension _ReportsFilters on _ReportsPageState {
       _generate();
     }
   }
-
-  // ══════════════════════════════════════════════════════════
-  // TAB 0 — SALES & REVENUE
-  // ══════════════════════════════════════════════════════════
 }

@@ -2,9 +2,11 @@ part of 'add_product_page.dart';
 
 extension _AddProductPageLayout on _AddProductPageState {
   Widget _buildStepBar() {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final steps = ['Basic Info', 'Variants', 'Stocks'];
     return Container(
-      color: kCard,
+      color: cs.surface,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: steps.asMap().entries.map((e) {
@@ -19,7 +21,7 @@ extension _AddProductPageLayout on _AddProductPageState {
                   Container(
                     height: 2,
                     width: 16,
-                    color: done || active ? kRed : Colors.grey.shade300,
+                    color: done || active ? cs.primary : cs.outlineVariant,
                   ),
                 Expanded(
                   child: GestureDetector(
@@ -31,23 +33,23 @@ extension _AddProductPageLayout on _AddProductPageState {
                           height: 28,
                           decoration: BoxDecoration(
                             color: active
-                                ? kRed
+                                ? cs.primary
                                 : done
-                                ? kGreen
-                                : Colors.grey.shade200,
+                                ? (isDark ? PaletteDark.success : PaletteLight.success)
+                                : cs.surfaceContainerHighest,
                             shape: BoxShape.circle,
                           ),
                           child: Center(
                             child: done
-                                ? const Icon(
+                                ? Icon(
                                     Icons.check,
-                                    color: Colors.white,
+                                    color: cs.onPrimary,
                                     size: 14,
                                   )
                                 : Text(
                                     '${i + 1}',
                                     style: TextStyle(
-                                      color: active ? Colors.white : kGrey,
+                                      color: active ? cs.onPrimary : cs.onSurfaceVariant,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -60,10 +62,10 @@ extension _AddProductPageLayout on _AddProductPageState {
                           style: TextStyle(
                             fontSize: 9,
                             color: active
-                                ? kRed
+                                ? cs.primary
                                 : done
-                                ? kGreen
-                                : kGrey,
+                                ? (isDark ? PaletteDark.success : PaletteLight.success)
+                                : cs.onSurfaceVariant,
                             fontWeight: active
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -83,17 +85,19 @@ extension _AddProductPageLayout on _AddProductPageState {
 
   // ── BOTTOM NAVIGATION BAR ─────────────────────────────────
   Widget _buildBottomBar() {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.all(16),
-      color: kCard,
+      color: cs.surface,
       child: Row(
         children: [
           if (_step > 0)
             Expanded(
               child: OutlinedButton(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: kRed,
-                  side: const BorderSide(color: kRed),
+                  foregroundColor: cs.primary,
+                  side: BorderSide(color: cs.primary),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -108,8 +112,8 @@ extension _AddProductPageLayout on _AddProductPageState {
             flex: 2,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: _step < 2 ? kRed : kGreen,
-                foregroundColor: Colors.white,
+                backgroundColor: _step < 2 ? cs.primary : (isDark ? PaletteDark.success : PaletteLight.success),
+                foregroundColor: cs.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -144,11 +148,11 @@ extension _AddProductPageLayout on _AddProductPageState {
                       }
                     },
               child: _saving
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: cs.onPrimary,
                         strokeWidth: 2,
                       ),
                     )
@@ -173,6 +177,7 @@ extension _AddProductPageLayout on _AddProductPageState {
   // STEP 1 — BASIC INFO
   // ══════════════════════════════════════════════════════════
   Widget _buildStep1() {
+    final cs = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -189,7 +194,7 @@ extension _AddProductPageLayout on _AddProductPageState {
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: kInputFill,
+                  color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16),
                   image: _imageFile != null
                       ? DecorationImage(
@@ -206,16 +211,16 @@ extension _AddProductPageLayout on _AddProductPageState {
                 child: (_imageFile == null && _imageUrl.isEmpty)
                     ? Column(
                         mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
+                        children: [
                           Icon(
                             Icons.add_photo_alternate,
-                            color: kGrey,
+                            color: cs.onSurfaceVariant,
                             size: 36,
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             'Add Photo',
-                            style: TextStyle(color: kGrey, fontSize: 11),
+                            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                           ),
                         ],
                       )
@@ -229,7 +234,7 @@ extension _AddProductPageLayout on _AddProductPageState {
           fieldLabel('Product Name *'),
           TextField(
             controller: _nameCtrl,
-            decoration: AppInput.field(
+            decoration: AppInput.field(context, 
               'e.g. Coca-Cola',
               icon: Icons.inventory_2_outlined,
             ),
@@ -241,7 +246,7 @@ extension _AddProductPageLayout on _AddProductPageState {
           TextField(
             controller: _descCtrl,
             maxLines: 2,
-            decoration: AppInput.field('Brief description'),
+            decoration: AppInput.field(context, 'Brief description'),
           ),
 
           const SizedBox(height: 12),
@@ -252,7 +257,7 @@ extension _AddProductPageLayout on _AddProductPageState {
               Expanded(
                 child: DropdownButtonFormField<String>(
                   initialValue: _catId.isEmpty ? null : _catId,
-                  decoration: AppInput.field(
+                  decoration: AppInput.field(context, 
                     'Select category',
                     icon: Icons.category_outlined,
                   ),
@@ -278,8 +283,8 @@ extension _AddProductPageLayout on _AddProductPageState {
               const SizedBox(width: 8),
               IconButton.filledTonal(
                 style: IconButton.styleFrom(
-                  backgroundColor: kRedLight,
-                  foregroundColor: kRed,
+                  backgroundColor: cs.primaryContainer,
+                  foregroundColor: cs.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -299,12 +304,12 @@ extension _AddProductPageLayout on _AddProductPageState {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Product Type',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    color: kDark,
+                    color: cs.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -355,12 +360,12 @@ extension _AddProductPageLayout on _AddProductPageState {
                       onTap: () => _update(() => _iconIndex = i),
                       child: Container(
                         decoration: BoxDecoration(
-                          color: active ? kRed : kInputFill,
+                          color: active ? cs.primary : cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(7),
                         ),
                         child: Icon(
                           AppIcons.icons[i],
-                          color: active ? Colors.white : kGrey,
+                          color: active ? cs.onPrimary : cs.onSurfaceVariant,
                           size: 16,
                         ),
                       ),
@@ -382,21 +387,22 @@ extension _AddProductPageLayout on _AddProductPageState {
     required bool selected,
     required VoidCallback onTap,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: selected ? kRedLight : kBg,
+          color: selected ? cs.primaryContainer : cs.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: selected ? kRed : Colors.grey.shade300,
+            color: selected ? cs.primary : cs.outlineVariant,
             width: selected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(icon, color: selected ? kRed : kGrey, size: 22),
+            Icon(icon, color: selected ? cs.primary : cs.onSurfaceVariant, size: 22),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -407,17 +413,17 @@ extension _AddProductPageLayout on _AddProductPageState {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: selected ? kRed : kDark,
+                      color: selected ? cs.primary : cs.onSurface,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(color: kGrey, fontSize: 11),
+                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                   ),
                 ],
               ),
             ),
-            if (selected) const Icon(Icons.check_circle, color: kRed, size: 20),
+            if (selected) Icon(Icons.check_circle, color: cs.primary, size: 20),
           ],
         ),
       ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/constants/app_colors.dart';
+import '../core/theme/app_palette.dart';
 import '../core/utils/app_helpers.dart';
 
 // ── WELCOME CARD ──────────────────────────────────────────────
@@ -15,12 +15,18 @@ class DashboardWelcomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primary = isDark ? PaletteDark.primary : PaletteLight.primary;
+    final darker = isDark
+        ? Color.lerp(PaletteDark.primary, Colors.black, 0.15)!
+        : Color.lerp(PaletteLight.primary, Colors.black, 0.15)!;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [kRed, kRedDark],
+        gradient: LinearGradient(
+          colors: [primary, darker],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -28,7 +34,6 @@ class DashboardWelcomeCard extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Decorative divider row
           Row(
             children: [
               Expanded(
@@ -64,9 +69,7 @@ class DashboardWelcomeCard extends StatelessWidget {
               ),
             ],
           ),
-
           const SizedBox(height: 10),
-
           const Text(
             '~WELCOME~',
             style: TextStyle(
@@ -76,9 +79,7 @@ class DashboardWelcomeCard extends StatelessWidget {
               letterSpacing: 5,
             ),
           ),
-
           const SizedBox(height: 4),
-
           Text(
             'Hello, $firstName',
             style: const TextStyle(
@@ -87,9 +88,7 @@ class DashboardWelcomeCard extends StatelessWidget {
               fontWeight: FontWeight.w500,
             ),
           ),
-
           const SizedBox(height: 2),
-
           Text(
             storeName,
             style: TextStyle(
@@ -122,13 +121,14 @@ class DashboardOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: kCard,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
@@ -143,10 +143,10 @@ class DashboardOverviewCard extends StatelessWidget {
                 width: 38,
                 height: 38,
                 decoration: BoxDecoration(
-                  color: kRedLight,
+                  color: cs.primary.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(icon, color: kRed, size: 19),
+                child: Icon(icon, color: cs.primary, size: 19),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -158,12 +158,15 @@ class DashboardOverviewCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.bold,
-                        color: valueColor ?? kDark,
+                        color: valueColor ?? cs.onSurface,
                       ),
                     ),
                     Text(
                       label,
-                      style: const TextStyle(fontSize: 10, color: kGrey),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: cs.onSurfaceVariant,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -195,14 +198,15 @@ class DashboardActionBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? kRed;
+    final cs = Theme.of(context).colorScheme;
+    final c = color ?? cs.primary;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: kCard,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
               BoxShadow(
@@ -219,7 +223,7 @@ class DashboardActionBtn extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontSize: 10,
-                  color: kDark,
+                  color: cs.onSurface,
                   fontWeight: FontWeight.w500,
                 ),
                 textAlign: TextAlign.center,
@@ -246,6 +250,7 @@ class DashboardExpiryRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final productName = item['productName'] as String;
     final variantName = item['variantName'] as String;
     final expiry = item['expiry'] as String;
@@ -259,30 +264,28 @@ class DashboardExpiryRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: kCard,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: sColor.withValues(alpha: 0.3)),
         ),
         child: Row(
           children: [
-            // Status dot
             Container(
               width: 10,
               height: 10,
               decoration: BoxDecoration(color: sColor, shape: BoxShape.circle),
             ),
             const SizedBox(width: 10),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     productName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: kDark,
+                      color: cs.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -290,15 +293,12 @@ class DashboardExpiryRow extends StatelessWidget {
                   Text(
                     '$variantName  ·  '
                     '${AppHelpers.formatDate(expiry)}',
-                    style: const TextStyle(fontSize: 11, color: kGrey),
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
             ),
-
             const SizedBox(width: 10),
-
-            // Days badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
@@ -334,6 +334,7 @@ class DashboardLowStockRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final productName = item['productName'] as String;
     final variantName = item['variantName'] as String;
     final stock = item['stock'] as int;
@@ -345,7 +346,7 @@ class DashboardLowStockRow extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: kCard,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -363,15 +364,15 @@ class DashboardLowStockRow extends StatelessWidget {
                 children: [
                   Text(
                     productName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: kDark,
+                      color: cs.onSurface,
                     ),
                   ),
                   Text(
                     variantName,
-                    style: const TextStyle(fontSize: 11, color: kGrey),
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -406,22 +407,34 @@ class DashboardActivityRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final action = (log['action'] as String? ?? '').replaceAll('_', ' ');
     final empName = log['employeeName'] as String? ?? '';
     final targetName = log['targetName'] as String? ?? '';
     final timestamp = log['timestamp'] as String? ?? '';
 
-    Color dotColor = kGrey;
-    if (action.contains('add')) dotColor = kGreen;
-    if (action.contains('delete')) dotColor = kRed;
-    if (action.contains('sale')) dotColor = kOrange;
+    Color dotColor = cs.onSurfaceVariant;
+    if (action.contains('add')) {
+      dotColor = Theme.of(context).brightness == Brightness.dark
+          ? PaletteDark.success
+          : PaletteLight.success;
+    }
+    if (action.contains('delete')) {
+      dotColor = Theme.of(context).brightness == Brightness.dark
+          ? PaletteDark.error
+          : PaletteLight.error;
+    }
+    if (action.contains('sale')) {
+      dotColor = Theme.of(context).brightness == Brightness.dark
+          ? PaletteDark.warning
+          : PaletteLight.warning;
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Timeline dot + line
           Column(
             children: [
               Container(
@@ -432,18 +445,21 @@ class DashboardActivityRow extends StatelessWidget {
                   shape: BoxShape.circle,
                 ),
               ),
-              Container(width: 1, height: 28, color: Colors.grey.shade200),
+              Container(
+                width: 1,
+                height: 28,
+                color: cs.outlineVariant,
+              ),
             ],
           ),
           const SizedBox(width: 10),
-
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(fontSize: 12, color: kDark),
+                    style: TextStyle(fontSize: 12, color: cs.onSurface),
                     children: [
                       TextSpan(
                         text: empName.isNotEmpty ? empName : 'System',
@@ -455,13 +471,13 @@ class DashboardActivityRow extends StatelessWidget {
                         style: TextStyle(color: dotColor),
                       ),
                       if (targetName.isNotEmpty) ...[
-                        const TextSpan(
+                        TextSpan(
                           text: '  →  ',
-                          style: TextStyle(color: kGrey),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         ),
                         TextSpan(
                           text: targetName,
-                          style: const TextStyle(color: kGrey),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         ),
                       ],
                     ],
@@ -471,7 +487,7 @@ class DashboardActivityRow extends StatelessWidget {
                   AppHelpers.formatDateTime(
                     DateTime.tryParse(timestamp) ?? DateTime.now(),
                   ),
-                  style: const TextStyle(color: kGrey, fontSize: 10),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
                 ),
               ],
             ),

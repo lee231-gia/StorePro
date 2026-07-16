@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/constants/app_icons.dart';
 import '../../core/enums/product_browser_enums.dart';
 import '../../models/product_model.dart';
@@ -127,18 +128,19 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final color = _category != null
         ? kCategoryColors[_category!.colorIndex.clamp(
             0,
             kCategoryColors.length - 1,
           )]
-        : kRed;
+        : cs.primary;
     final icon = _category != null
         ? AppIcons.get(_category!.iconIndex)
         : Icons.category_outlined;
 
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: widget.categoryName,
         context: context,
@@ -183,7 +185,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       ),
       body: Column(
         children: [
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          if (_loading) LinearProgressIndicator(color: Theme.of(context).colorScheme.primary),
           // ── HEADER CARD ──────────────────────────
           Padding(
             padding: const EdgeInsets.all(16),
@@ -206,16 +208,16 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                       children: [
                         Text(
                           widget.categoryName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            color: kDark,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         if (_category?.details.isNotEmpty == true)
                           Text(
                             _category!.details,
-                            style: const TextStyle(color: kGrey, fontSize: 12),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12),
                           ),
                         const SizedBox(height: 2),
                         Text(
@@ -272,21 +274,21 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
           if (_showLegacyCategoryList)
             Expanded(
               child: _products.isEmpty
-                  ? Center(
+                  ?                     Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(icon, color: Colors.grey.shade300, size: 60),
+                          Icon(icon, color: Theme.of(context).colorScheme.outlineVariant, size: 60),
                           const SizedBox(height: 12),
-                          const Text(
+                          Text(
                             'No products here yet.',
-                            style: TextStyle(color: kGrey),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           ),
                           const SizedBox(height: 16),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: kRed,
-                              foregroundColor: Colors.white,
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             ),
                             onPressed: () => Navigator.push(
                               context,

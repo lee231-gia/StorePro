@@ -1,14 +1,4 @@
-// import 'package:flutter/material.dart';
-
-// class LoginPage extends StatelessWidget {
-//   const LoginPage({super.key});
-//   @override
-//   Widget build(BuildContext context) =>
-//       const Scaffold(body: Center(child: Text('Login')));
-// }
-
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
 import '../../repositories/auth_repository.dart';
 import '../../widgets/shared_widgets.dart';
@@ -59,8 +49,9 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -69,8 +60,7 @@ class _LoginPageState extends State<LoginPage> {
             children: [
               const SizedBox(height: 60),
 
-              // ── TITLE ────────────────────────────────────
-              const Center(
+              Center(
                 child: Column(
                   children: [
                     Text(
@@ -79,13 +69,13 @@ class _LoginPageState extends State<LoginPage> {
                         fontSize: 30,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 3,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                     ),
-                    SizedBox(height: 6),
+                    const SizedBox(height: 6),
                     Text(
                       'Sign in to your StorePro account',
-                      style: TextStyle(color: kGrey, fontSize: 13),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
                     ),
                   ],
                 ),
@@ -93,12 +83,11 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 36),
 
-              // ── EMAIL ─────────────────────────────────────
               fieldLabel('Email'),
               TextField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
-                decoration: AppInput.field(
+                decoration: AppInput.field(context, 
                   'Enter your email',
                   icon: Icons.email_outlined,
                 ),
@@ -106,18 +95,17 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 18),
 
-              // ── PASSWORD ──────────────────────────────────
               fieldLabel('Password'),
               TextField(
                 controller: _passCtrl,
                 obscureText: !_showPass,
-                decoration: AppInput.field(
+                decoration: AppInput.field(context, 
                   'Enter your password',
                   icon: Icons.lock_outline,
                   suffix: IconButton(
                     icon: Icon(
                       _showPass ? Icons.visibility : Icons.visibility_off,
-                      color: kGrey,
+                      color: cs.onSurfaceVariant,
                       size: 20,
                     ),
                     onPressed: () => setState(() => _showPass = !_showPass),
@@ -125,44 +113,41 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
 
-              // ── FORGOT PASSWORD ───────────────────────────
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () =>
                       Navigator.pushNamed(context, AppRoutes.forgotPassword),
-                  child: const Text(
+                  child: Text(
                     'Forgot Password?',
-                    style: TextStyle(color: kRed, fontSize: 12),
+                    style: TextStyle(color: cs.primary, fontSize: 12),
                   ),
                 ),
               ),
 
               const SizedBox(height: 8),
 
-              // ── LOGIN BUTTON ──────────────────────────────
               PrimaryButton(label: 'Login', onTap: _login, isLoading: _loading),
 
               const SizedBox(height: 16),
 
-              // ── SIGN UP LINK ──────────────────────────────
               Center(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       "Don't have an account? ",
-                      style: TextStyle(color: kGrey, fontSize: 13),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.pushReplacementNamed(
                         context,
                         AppRoutes.signup,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Sign Up',
                         style: TextStyle(
-                          color: kRed,
+                          color: cs.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),

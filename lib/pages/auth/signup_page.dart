@@ -1,14 +1,4 @@
-// import 'package:flutter/material.dart';
-
-// class SignupPage extends StatelessWidget {
-//   const SignupPage({super.key});
-//   @override
-//   Widget build(BuildContext context) =>
-//       const Scaffold(body: Center(child: Text('Sign Up')));
-// }
-
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
 import '../../repositories/auth_repository.dart';
 import '../../widgets/shared_widgets.dart';
@@ -64,7 +54,6 @@ class _SignupPageState extends State<SignupPage> {
     final confirm = _confirmCtrl.text.trim();
     final answer = _answerCtrl.text.trim();
 
-    // ── VALIDATION ────────────────────────────────────────
     if (first.isEmpty ||
         last.isEmpty ||
         email.isEmpty ||
@@ -114,8 +103,9 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 28),
@@ -124,8 +114,7 @@ class _SignupPageState extends State<SignupPage> {
             children: [
               const SizedBox(height: 50),
 
-              // ── TITLE ─────────────────────────────────────
-              const Center(
+              Center(
                 child: Column(
                   children: [
                     Text(
@@ -134,13 +123,13 @@ class _SignupPageState extends State<SignupPage> {
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                         letterSpacing: 2,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                     ),
                     SizedBox(height: 4),
                     Text(
                       'Join StorePro today',
-                      style: TextStyle(color: kGrey, fontSize: 13),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
                     ),
                   ],
                 ),
@@ -148,7 +137,6 @@ class _SignupPageState extends State<SignupPage> {
 
               const SizedBox(height: 24),
 
-              // ── FIRST + LAST NAME ─────────────────────────
               Row(
                 children: [
                   Expanded(
@@ -158,7 +146,7 @@ class _SignupPageState extends State<SignupPage> {
                         fieldLabel('First Name'),
                         TextField(
                           controller: _firstCtrl,
-                          decoration: AppInput.field('First name'),
+                          decoration: AppInput.field(context, 'First name'),
                         ),
                       ],
                     ),
@@ -171,7 +159,7 @@ class _SignupPageState extends State<SignupPage> {
                         fieldLabel('Last Name'),
                         TextField(
                           controller: _lastCtrl,
-                          decoration: AppInput.field('Last name'),
+                          decoration: AppInput.field(context, 'Last name'),
                         ),
                       ],
                     ),
@@ -184,7 +172,7 @@ class _SignupPageState extends State<SignupPage> {
               fieldLabel('Store Name (optional)'),
               TextField(
                 controller: _storeCtrl,
-                decoration: AppInput.field(
+                decoration: AppInput.field(context, 
                   'Enter store name',
                   icon: Icons.storefront_outlined,
                 ),
@@ -196,7 +184,7 @@ class _SignupPageState extends State<SignupPage> {
               TextField(
                 controller: _emailCtrl,
                 keyboardType: TextInputType.emailAddress,
-                decoration: AppInput.field(
+                decoration: AppInput.field(context, 
                   'Enter email',
                   icon: Icons.email_outlined,
                 ),
@@ -207,7 +195,7 @@ class _SignupPageState extends State<SignupPage> {
               fieldLabel('Username'),
               TextField(
                 controller: _usernameCtrl,
-                decoration: AppInput.field(
+                decoration: AppInput.field(context, 
                   'Choose a username',
                   icon: Icons.alternate_email,
                 ),
@@ -215,18 +203,17 @@ class _SignupPageState extends State<SignupPage> {
 
               const SizedBox(height: 14),
 
-              // ── PASSWORD ──────────────────────────────────
               fieldLabel('Password'),
               TextField(
                 controller: _passCtrl,
                 obscureText: !_showPass,
-                decoration: AppInput.field(
+                decoration: AppInput.field(context, 
                   'Min. 6 characters',
                   icon: Icons.lock_outline,
                   suffix: IconButton(
                     icon: Icon(
                       _showPass ? Icons.visibility : Icons.visibility_off,
-                      color: kGrey,
+                      color: cs.onSurfaceVariant,
                       size: 20,
                     ),
                     onPressed: () => setState(() => _showPass = !_showPass),
@@ -240,13 +227,13 @@ class _SignupPageState extends State<SignupPage> {
               TextField(
                 controller: _confirmCtrl,
                 obscureText: !_showConfirm,
-                decoration: AppInput.field(
+                decoration: AppInput.field(context, 
                   'Re-enter password',
                   icon: Icons.lock_outline,
                   suffix: IconButton(
                     icon: Icon(
                       _showConfirm ? Icons.visibility : Icons.visibility_off,
-                      color: kGrey,
+                      color: cs.onSurfaceVariant,
                       size: 20,
                     ),
                     onPressed: () =>
@@ -257,11 +244,10 @@ class _SignupPageState extends State<SignupPage> {
 
               const SizedBox(height: 20),
 
-              // ── SECURITY QUESTION ─────────────────────────
               sectionLabel('Security Question (for password recovery)'),
               DropdownButtonFormField<String>(
                 initialValue: _selectedQuestion,
-                decoration: AppInput.field('Select a question'),
+                decoration: AppInput.field(context, 'Select a question'),
                 items: _questions
                     .map(
                       (q) => DropdownMenuItem(
@@ -280,7 +266,7 @@ class _SignupPageState extends State<SignupPage> {
               fieldLabel('Your Answer'),
               TextField(
                 controller: _answerCtrl,
-                decoration: AppInput.field(
+                decoration: AppInput.field(context, 
                   'Enter your answer',
                   icon: Icons.security_outlined,
                 ),
@@ -300,19 +286,19 @@ class _SignupPageState extends State<SignupPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Already have an account? ',
-                      style: TextStyle(color: kGrey, fontSize: 13),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
                     ),
                     GestureDetector(
                       onTap: () => Navigator.pushReplacementNamed(
                         context,
                         AppRoutes.login,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Login',
                         style: TextStyle(
-                          color: kRed,
+                          color: cs.primary,
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
                         ),

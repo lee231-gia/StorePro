@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../core/constants/app_colors.dart';
+import '../core/theme/app_palette.dart';
 import '../core/constants/app_icons.dart';
 import '../core/utils/app_helpers.dart';
 import '../models/product_model.dart';
@@ -99,30 +100,33 @@ class ProductImage extends StatelessWidget {
     final cacheWidth = (w * dpr).clamp(96, 720).round();
     final cacheHeight = (h * dpr).clamp(96, 720).round();
 
-    return GestureDetector(
-      onTap: () => _showImagePreview(context, item.imageUrl),
-      child: Container(
-        width: w,
-        height: h,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: borderRadius,
-        ),
-        child: Padding(
-          padding: padding,
-          child: CachedNetworkImage(
-            imageUrl: ProductImage.optimizedUrl(item.imageUrl, cacheWidth),
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-            fadeInDuration: Duration.zero,
-            fadeOutDuration: Duration.zero,
-            memCacheWidth: cacheWidth,
-            memCacheHeight: cacheHeight,
-            maxWidthDiskCache: cacheWidth,
-            maxHeightDiskCache: cacheHeight,
-            placeholder: (_, _) => _iconBox(w, h, color),
-            errorWidget: (_, _, _) => _iconBox(w, h, color),
+    return Hero(
+      tag: 'product_image_${item.id}',
+      child: GestureDetector(
+        onTap: () => _showImagePreview(context, item.imageUrl),
+        child: Container(
+          width: w,
+          height: h,
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: borderRadius,
+          ),
+          child: Padding(
+            padding: padding,
+            child: CachedNetworkImage(
+              imageUrl: ProductImage.optimizedUrl(item.imageUrl, cacheWidth),
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
+              fadeInDuration: Duration.zero,
+              fadeOutDuration: Duration.zero,
+              memCacheWidth: cacheWidth,
+              memCacheHeight: cacheHeight,
+              maxWidthDiskCache: cacheWidth,
+              maxHeightDiskCache: cacheHeight,
+              placeholder: (_, _) => _iconBox(w, h, color),
+              errorWidget: (_, _, _) => _iconBox(w, h, color),
+            ),
           ),
         ),
       ),
@@ -209,7 +213,7 @@ class ProductBadge extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Text('•', style: TextStyle(fontSize: 10, color: color)),
+      Text('\u2022', style: TextStyle(fontSize: 10, color: color)),
       const SizedBox(width: 4),
       Text(
         label,
@@ -241,7 +245,7 @@ class VariantToggleButton extends StatelessWidget {
       size: 18,
     ),
     label: Text(grouped ? 'Grouped' : 'Ungrouped'),
-    style: TextButton.styleFrom(foregroundColor: kRed),
+    style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.primary),
   );
 }
 
@@ -269,6 +273,7 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final item = ProductDisplayItem(product: product, variant: variant);
     final expiry = item.nearestExpiry;
     final status = AppHelpers.expiryStatus(expiry);
@@ -281,11 +286,12 @@ class ProductCard extends StatelessWidget {
       opacity: enabled ? 1 : 0.62,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           margin: const EdgeInsets.only(bottom: 10),
           padding: EdgeInsets.all(compact ? 10 : 12),
           decoration: BoxDecoration(
-            color: kCard,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
@@ -312,7 +318,7 @@ class ProductCard extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: compact ? 13 : 14,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -326,10 +332,13 @@ class ProductCard extends StatelessWidget {
                           if (status == 'expiring')
                             ProductBadge(
                               label: '${AppHelpers.daysLeft(expiry)}d',
-                              color: kOrange,
+                              color: PaletteLight.warning,
                             ),
                           if (status == 'expired')
-                            const ProductBadge(label: 'EXPIRED', color: kRed),
+                            ProductBadge(
+                              label: 'EXPIRED',
+                              color: PaletteLight.error,
+                            ),
                           ...extraBadges,
                         ],
                       ),
@@ -345,7 +354,7 @@ class ProductCard extends StatelessWidget {
                           ProductInlineEntry(
                             Icons.event_outlined,
                             dateText,
-                            kGrey,
+                            cs.onSurfaceVariant,
                           ),
                         ],
                       ),
@@ -371,17 +380,17 @@ class ProductCard extends StatelessWidget {
                   children: [
                     Text(
                       AppHelpers.peso(item.price),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                     ),
                   ],
                 ),
               if (trailing == null) ...[
                 const SizedBox(width: 4),
-                const Icon(Icons.chevron_right, color: kGrey, size: 18),
+                Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 18),
               ],
             ],
           ),
@@ -413,16 +422,18 @@ class ProductGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final item = ProductDisplayItem(product: product, variant: variant);
 
     return Opacity(
       opacity: enabled ? 1 : 0.62,
       child: GestureDetector(
         onTap: enabled ? onTap : null,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
           clipBehavior: Clip.antiAlias,
           decoration: BoxDecoration(
-            color: kCard,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(14),
             boxShadow: [
               BoxShadow(
@@ -464,10 +475,10 @@ class ProductGridCard extends StatelessWidget {
                     children: [
                       Text(
                         item.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
-                          color: kDark,
+                          color: cs.onSurface,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -497,6 +508,7 @@ class _DefaultProductGridFooter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final stock = item.totalStock;
     final expiry = item.nearestExpiry;
     return Column(
@@ -520,10 +532,10 @@ class _DefaultProductGridFooter extends StatelessWidget {
             Text(
               AppHelpers.peso(item.price),
               textAlign: TextAlign.right,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
-                color: kRed,
+                color: cs.primary,
               ),
             ),
           ],
@@ -534,7 +546,7 @@ class _DefaultProductGridFooter extends StatelessWidget {
           textAlign: TextAlign.right,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 10, color: kGrey),
+          style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
         ),
       ],
     );
@@ -589,37 +601,40 @@ class BrowserFilterChip extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
-    this.activeColor = kRed,
+    this.activeColor = PaletteLight.primary,
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 140),
-      height: 32,
-      constraints: const BoxConstraints(minWidth: 58),
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: isSelected ? activeColor : kCard,
-        border: Border.all(
-          color: isSelected ? activeColor : Colors.grey.shade300,
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        height: 32,
+        constraints: const BoxConstraints(minWidth: 58),
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? activeColor : cs.surface,
+          border: Border.all(
+            color: isSelected ? activeColor : cs.outlineVariant,
+          ),
+          borderRadius: BorderRadius.circular(8),
         ),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        label,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 12,
-          color: isSelected ? Colors.white : kGrey,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12,
+            color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class ProductDetailInfoChip extends StatelessWidget {
@@ -633,21 +648,24 @@ class ProductDetailInfoChip extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const Text('•', style: TextStyle(fontSize: 12, color: kGrey)),
-      const SizedBox(width: 5),
-      Flexible(
-        child: Text(
-          label,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontSize: 11, color: kGrey),
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text('\u2022', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class ProductInlineEntry {
@@ -669,30 +687,33 @@ class ProductInlineInfo extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: 7,
-    runSpacing: 2,
-    children: [
-      for (var i = 0; i < entries.length; i++)
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (i > 0) ...[
-              const Text('•', style: TextStyle(fontSize: 10, color: kGrey)),
-              const SizedBox(width: 5),
-            ],
-            Text(
-              entries[i].text,
-              style: TextStyle(
-                fontSize: fontSize,
-                color: entries[i].color,
-                fontWeight: FontWeight.w600,
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Wrap(
+      spacing: 7,
+      runSpacing: 2,
+      children: [
+        for (var i = 0; i < entries.length; i++)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (i > 0) ...[
+                Text('\u2022', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                entries[i].text,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: entries[i].color,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-          ],
-        ),
-    ],
-  );
+            ],
+          ),
+      ],
+    );
+  }
 }
 
 class FilterChip extends StatelessWidget {
@@ -715,7 +736,7 @@ class FilterChip extends StatelessWidget {
       label: label,
       isSelected: isSelected,
       onTap: onTap,
-      activeColor: activeColor ?? kRed,
+      activeColor: activeColor ?? PaletteLight.primary,
     );
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/constants/app_icons.dart';
 import '../../core/enums/product_browser_enums.dart';
 import '../../core/utils/app_helpers.dart';
@@ -125,16 +126,17 @@ class _InventoryPageState extends State<InventoryPage>
   // ── BUILD ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: 'Inventory',
         context: context,
         bottom: TabBar(
           controller: _tabCtrl,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
+          indicatorColor: cs.onPrimary,
+          labelColor: cs.onPrimary,
+          unselectedLabelColor: cs.onPrimary.withValues(alpha: 0.6),
           labelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 13,
@@ -152,7 +154,7 @@ class _InventoryPageState extends State<InventoryPage>
       ),
       body: Column(
         children: [
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          if (_loading) LinearProgressIndicator(color: cs.primary),
           Expanded(
             child: TabBarView(
               controller: _tabCtrl,

@@ -2,27 +2,29 @@ part of 'reports_page.dart';
 
 extension _ReportsActivity on _ReportsPageState {
   Widget _buildActivityTab() {
+    final cs = Theme.of(context).colorScheme;
     final logs = _activityLogs;
     if (logs.isEmpty) {
-      return const Center(
-        child: Text('No activity logged yet.', style: TextStyle(color: kGrey)),
+      return AppEmptyState(
+        icon: Icons.history,
+        title: 'No activity logged yet.',
       );
     }
 
     return RefreshIndicator(
-      color: kRed,
+      color: cs.primary,
       onRefresh: _generate,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'System Activity Logs',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: kDark,
+                    color: cs.onSurface,
                     fontSize: 16,
                   ),
                 ),
@@ -52,6 +54,7 @@ extension _ReportsActivity on _ReportsPageState {
   }
 
   Widget _activityCard(Map<String, dynamic> log, {required bool detailed}) {
+    final cs = Theme.of(context).colorScheme;
     final action = _actionName(log);
     final timestamp = log['timestamp'] as String? ?? '';
     final color = _activityColor(action);
@@ -62,9 +65,9 @@ extension _ReportsActivity on _ReportsPageState {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: kCard,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: cs.surfaceContainerHighest),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,8 +93,8 @@ extension _ReportsActivity on _ReportsPageState {
                       padding: const EdgeInsets.only(bottom: 3),
                       child: Text(
                         line,
-                        style: const TextStyle(
-                          color: kDark,
+                        style: TextStyle(
+                          color: cs.onSurface,
                           fontSize: 11,
                           height: 1.25,
                         ),
@@ -241,10 +244,14 @@ extension _ReportsActivity on _ReportsPageState {
 
   Color _activityColor(String action) {
     final lower = action.toLowerCase();
-    if (lower.contains('delete') || lower.contains('refund')) return kRed;
-    if (lower.contains('add') || lower.contains('new')) return kGreen;
-    if (lower.contains('sale')) return kOrange;
-    return kGrey;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final error = isDark ? PaletteDark.error : PaletteLight.error;
+    final success = isDark ? PaletteDark.success : PaletteLight.success;
+    final warning = isDark ? PaletteDark.warning : PaletteLight.warning;
+    if (lower.contains('delete') || lower.contains('refund')) return error;
+    if (lower.contains('add') || lower.contains('new')) return success;
+    if (lower.contains('sale')) return warning;
+    return Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
   IconData _activityIcon(String action) {

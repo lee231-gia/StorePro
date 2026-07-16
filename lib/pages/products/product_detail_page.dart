@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/product_model.dart';
 import '../../repositories/product_repository.dart';
@@ -63,8 +63,8 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: kRed,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
@@ -82,6 +82,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     if (_product == null) {
       return Scaffold(
         appBar: buildAppBar(
@@ -92,7 +93,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
         ),
         body: Column(
           children: [
-            if (_loading) const LinearProgressIndicator(color: kRed),
+            if (_loading) LinearProgressIndicator(color: cs.primary),
             const Expanded(child: Center(child: Text('Product not found.'))),
           ],
         ),
@@ -104,7 +105,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     final headerVariant = p.imageUrl.isEmpty ? _firstVariantImage(p) : null;
 
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: 'Product Details',
         context: context,
@@ -152,10 +153,10 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       children: [
                         Text(
                           p.name,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 17,
-                            color: kDark,
+                            color: cs.onSurface,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -165,7 +166,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                               : p.description.trim(),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(color: kGrey, fontSize: 12),
+                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                         ),
                       ],
                     ),
@@ -206,11 +207,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 children: [
                   Row(
                     children: [
-                      const Text(
+                      Text(
                         'Variants & Stock',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: kRed,
+                          color: cs.primary,
                         ),
                       ),
                     ],
@@ -242,6 +243,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
 
   // ── VARIANT TILE ──────────────────────────────────────────
   Widget _buildVariantTile(VariantModel v) {
+    final cs = Theme.of(context).colorScheme;
     final batches = v.batches;
     final totalStock = v.totalStock;
     final primaryDue = v.nearestExpiryIndicator;
@@ -253,9 +255,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: kBg,
+        color: cs.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,14 +313,14 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: kRedLight,
+                        color: cs.primaryContainer,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
                         '${c.name}  ${AppHelpers.peso(c.price)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 11,
-                          color: kRed,
+                          color: cs.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -350,11 +352,11 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
             const SizedBox(height: 8),
             const Divider(height: 1),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Batches',
               style: TextStyle(
                 fontSize: 11,
-                color: kGrey,
+                color: cs.onSurfaceVariant,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -370,7 +372,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   children: [
                     Text(
                       '${b.qty} pcs',
-                      style: const TextStyle(fontSize: 12, color: kDark),
+                      style: TextStyle(fontSize: 12, color: cs.onSurface),
                     ),
                     ...indicators.map(
                       (i) => Text(
@@ -384,7 +386,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     if (b.costPrice > 0)
                       Text(
                         'Cost: ${AppHelpers.peso(b.costPrice)}',
-                        style: const TextStyle(fontSize: 11, color: kGrey),
+                        style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
                       ),
                   ],
                 ),
@@ -415,32 +417,35 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     return '$productName - $variantName';
   }
 
-  Widget _detRow(String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 1),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 100,
-          child: Text(
-            label,
-            style: const TextStyle(color: kGrey, fontSize: 11),
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 12,
-              color: kDark,
-              fontWeight: FontWeight.w500,
+  Widget _detRow(String label, String value) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 1),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
             ),
           ),
-        ),
-      ],
-    ),
-  );
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 12,
+                color: cs.onSurface,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   VariantModel? _firstVariantImage(ProductModel product) {
     for (final variant in product.variants) {
@@ -450,7 +455,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
   }
 
   Color _lifeIndicatorColor(LifeIndicator indicator) {
-    if (!indicator.affectsExpiry) return kGrey;
+    if (!indicator.affectsExpiry) return Theme.of(context).colorScheme.onSurfaceVariant;
     return AppHelpers.statusColor(AppHelpers.expiryStatus(indicator.date));
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/constants/app_icons.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/category_model.dart';
@@ -95,8 +96,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(title: 'Categories', context: context),
       drawer: AppDrawer(
         changeTab: widget.changeTab,
@@ -104,20 +106,20 @@ class _CategoriesPageState extends State<CategoriesPage> {
       ),
       floatingActionButton: FloatingActionButton.small(
         heroTag: 'categories_add_fab',
-        backgroundColor: kRed,
-        foregroundColor: Colors.white,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
         onPressed: () => _showDialog(),
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          if (_loading) LinearProgressIndicator(color: cs.primary),
           Expanded(
             child: _categories.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No categories yet.',
-                      style: TextStyle(color: kGrey),
+                      style: TextStyle(color: cs.onSurfaceVariant),
                     ),
                   )
                 : GridView.builder(
@@ -140,6 +142,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
 
   // ── CATEGORY CARD ─────────────────────────────────────────
   Widget _catCard(CategoryModel cat) {
+    final cs = Theme.of(context).colorScheme;
     final color =
         kCategoryColors[cat.colorIndex.clamp(0, kCategoryColors.length - 1)];
     final icon = AppIcons.get(cat.iconIndex);
@@ -157,7 +160,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: kCard,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
@@ -183,7 +186,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 ),
                 Icon(
                   Icons.chevron_right,
-                  color: Colors.grey.shade400,
+                  color: cs.outlineVariant,
                   size: 20,
                 ),
               ],
@@ -191,16 +194,16 @@ class _CategoriesPageState extends State<CategoriesPage> {
             const Spacer(),
             Text(
               cat.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
-                color: kDark,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               '$count product${count != 1 ? 's' : ''}',
-              style: const TextStyle(color: kGrey, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
           ],
         ),
@@ -210,6 +213,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
 
   // ── ADD / EDIT DIALOG ─────────────────────────────────────
   void _showDialog({CategoryModel? existing}) {
+    final cs = Theme.of(context).colorScheme;
     final isEdit = existing != null;
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
     final detCtrl = TextEditingController(text: existing?.details ?? '');
@@ -229,7 +233,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ),
           title: Text(
             isEdit ? 'Edit Category' : 'Add Category',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: kRed),
+            style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
           ),
           content: ConstrainedBox(
             constraints: BoxConstraints(
@@ -244,13 +248,13 @@ class _CategoriesPageState extends State<CategoriesPage> {
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    decoration: AppInput.dialog('Category name'),
+                    decoration: AppInput.dialog(context, 'Category name'),
                   ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: detCtrl,
                     maxLines: 2,
-                    decoration: AppInput.dialog('Details (optional)'),
+                    decoration: AppInput.dialog(context, 'Details (optional)'),
                   ),
                   const SizedBox(height: 14),
 
@@ -277,12 +281,12 @@ class _CategoriesPageState extends State<CategoriesPage> {
                           onTap: () => setD(() => selIcon = i),
                           child: Container(
                             decoration: BoxDecoration(
-                              color: active ? kRed : kInputFill,
+                              color: active ? cs.primary : cs.surfaceContainerHighest,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Icon(
                               AppIcons.icons[i],
-                              color: active ? Colors.white : kGrey,
+                              color: active ? cs.onPrimary : cs.onSurfaceVariant,
                               size: 20,
                             ),
                           ),
@@ -313,11 +317,11 @@ class _CategoriesPageState extends State<CategoriesPage> {
                             color: kCategoryColors[i],
                             shape: BoxShape.circle,
                             border: active
-                                ? Border.all(color: kDark, width: 2.5)
+                                ? Border.all(color: cs.onSurface, width: 2.5)
                                 : null,
                           ),
                           child: active
-                              ? const Icon(
+                              ? Icon(
                                   Icons.check,
                                   color: Colors.white,
                                   size: 16,
@@ -338,8 +342,8 @@ class _CategoriesPageState extends State<CategoriesPage> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: kRed,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
               ),
               onPressed: () async {
                 if (nameCtrl.text.trim().isEmpty) return;

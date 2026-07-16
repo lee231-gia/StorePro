@@ -2,6 +2,7 @@ part of 'reports_page.dart';
 
 extension _ReportsExport on _ReportsPageState {
   void _showExportOptions({bool preferredPdf = true}) {
+    final cs = Theme.of(context).colorScheme;
     final timeframes = <String, bool>{
       'hour': true,
       'today': true,
@@ -37,9 +38,9 @@ extension _ReportsExport on _ReportsPageState {
               controller: controller,
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
               children: [
-                const Text(
+                Text(
                   'Generate Report Copy',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cs.onSurface),
                 ),
                 const SizedBox(height: 12),
                 _exportGroupTitle('Timeframes'),
@@ -94,8 +95,8 @@ extension _ReportsExport on _ReportsPageState {
                     Expanded(
                       child: ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: kRed,
-                          foregroundColor: Colors.white,
+                          backgroundColor: cs.primary,
+                          foregroundColor: cs.onPrimary,
                         ),
                         onPressed: () {
                           Navigator.pop(ctx);
@@ -113,9 +114,9 @@ extension _ReportsExport on _ReportsPageState {
                   ],
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'Photo export captures the visible report screen. PDF export uses the selected timeframes and modules.',
-                  style: TextStyle(color: kGrey, fontSize: 10),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
                 ),
               ],
             ),
@@ -125,17 +126,20 @@ extension _ReportsExport on _ReportsPageState {
     );
   }
 
-  Widget _exportGroupTitle(String label) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Text(
-      label,
-      style: const TextStyle(
-        color: kDark,
-        fontWeight: FontWeight.bold,
-        fontSize: 13,
+  Widget _exportGroupTitle(String label) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: cs.onSurface,
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _exportCheckbox(
     String label,
@@ -147,7 +151,7 @@ extension _ReportsExport on _ReportsPageState {
     controlAffinity: ListTileControlAffinity.leading,
     title: Text(label, style: const TextStyle(fontSize: 13)),
     value: value,
-    activeColor: kRed,
+    activeColor: Theme.of(context).colorScheme.primary,
     onChanged: (v) => onChanged(v ?? false),
   );
 

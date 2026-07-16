@@ -6,7 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/sale_model.dart';
 import '../../widgets/shared_widgets.dart';
@@ -198,11 +198,13 @@ class _ReceiptPageState extends State<ReceiptPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final sale = widget.sale;
     final paymentInfo = _paymentInfo(sale);
 
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: 'Successful Transaction',
         context: context,
@@ -210,13 +212,13 @@ class _ReceiptPageState extends State<ReceiptPage> {
         showBack: true,
         actions: [
           if (_saving)
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                  color: Colors.white,
+                  color: cs.onPrimary,
                   strokeWidth: 2,
                 ),
               ),
@@ -244,11 +246,11 @@ class _ReceiptPageState extends State<ReceiptPage> {
               width: 340,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: cs.onPrimary,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: cs.shadow.withValues(alpha: 0.08),
                     blurRadius: 16,
                   ),
                 ],
@@ -259,16 +261,16 @@ class _ReceiptPageState extends State<ReceiptPage> {
                   // Store name
                   Text(
                     Session.storeName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 18,
-                      color: kDark,
+                      color: cs.onSurface,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const Text(
+                  Text(
                     'SUCCESSFUL TRANSACTION',
-                    style: TextStyle(color: kGrey, fontSize: 12),
+                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                   ),
                   if (paymentInfo.detail.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -283,7 +285,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: kBg,
+                      color: cs.surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -302,10 +304,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          height: 1,
-                          color: Colors.grey.shade300,
-                        ),
+                        child: Container(height: 1, color: cs.outlineVariant),
                       ),
                     ],
                   ),
@@ -332,14 +331,14 @@ class _ReceiptPageState extends State<ReceiptPage> {
                                 '${item.variantName}'
                                 '${item.conditionName.isNotEmpty ? ' / ${item.conditionName}' : ''}'
                                 ' x ${item.qty} @ ${AppHelpers.peso(item.price)}',
-                                style: const TextStyle(
-                                  color: kGrey,
+                                style: TextStyle(
+                                  color: cs.onSurfaceVariant,
                                   fontSize: 12,
                                 ),
                               ),
                               Text(
                                 AppHelpers.peso(item.subtotal),
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -350,8 +349,10 @@ class _ReceiptPageState extends State<ReceiptPage> {
                             Text(
                               'Discount: -'
                               '${AppHelpers.peso(item.discount)}',
-                              style: const TextStyle(
-                                color: kOrange,
+                              style: TextStyle(
+                                color: isDark
+                                    ? PaletteDark.warning
+                                    : PaletteLight.warning,
                                 fontSize: 11,
                               ),
                             ),
@@ -366,7 +367,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: kRedLight,
+                      color: cs.primaryContainer,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -390,7 +391,9 @@ class _ReceiptPageState extends State<ReceiptPage> {
                           _receiptRow(
                             'Utang Balance',
                             AppHelpers.peso(paymentInfo.balance),
-                            valueColor: kOrange,
+                            valueColor: isDark
+                                ? PaletteDark.warning
+                                : PaletteLight.warning,
                           ),
                         _receiptRow('Change', AppHelpers.peso(sale.change)),
                       ],
@@ -401,23 +404,26 @@ class _ReceiptPageState extends State<ReceiptPage> {
                     const SizedBox(height: 8),
                     Text(
                       'Note: ${sale.notes}',
-                      style: const TextStyle(color: kGrey, fontSize: 11),
+                      style: TextStyle(
+                        color: cs.onSurfaceVariant,
+                        fontSize: 11,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                   ],
 
                   const SizedBox(height: 16),
-                  const Text(
+                  Text(
                     'Thank you!',
                     style: TextStyle(
-                      color: kRed,
+                      color: cs.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 15,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'See you again.',
-                    style: TextStyle(color: kGrey, fontSize: 12),
+                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                   ),
                 ],
               ),
@@ -456,6 +462,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
   );
 
   _PaymentInfo _paymentInfo(SaleModel sale) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final type = sale.paymentType.toLowerCase();
     final balance = (sale.total - sale.amountPaid)
         .clamp(0, double.infinity)
@@ -465,7 +472,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
         label: 'UTANG',
         detail: 'Utang recorded: ${AppHelpers.peso(balance)} balance',
         balance: balance,
-        color: kOrange,
+        color: isDark ? PaletteDark.warning : PaletteLight.warning,
         icon: Icons.account_balance_wallet_outlined,
       );
     }
@@ -475,7 +482,9 @@ class _ReceiptPageState extends State<ReceiptPage> {
         detail:
             'Multi payment: ${AppHelpers.peso(sale.amountPaid)} paid, ${AppHelpers.peso(balance)} utang',
         balance: balance,
-        color: balance > 0 ? kOrange : kGreen,
+        color: balance > 0
+            ? (isDark ? PaletteDark.warning : PaletteLight.warning)
+            : (isDark ? PaletteDark.success : PaletteLight.success),
         icon: Icons.payments_outlined,
       );
     }
@@ -483,7 +492,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
       label: 'CASH',
       detail: '',
       balance: 0,
-      color: kGreen,
+      color: isDark ? PaletteDark.success : PaletteLight.success,
       icon: Icons.payments_outlined,
     );
   }
@@ -493,30 +502,33 @@ class _ReceiptPageState extends State<ReceiptPage> {
     String value, {
     bool bold = false,
     Color? valueColor,
-  }) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            color: kGrey,
-            fontSize: 12,
-            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: cs.onSurfaceVariant,
+              fontSize: 12,
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            color: valueColor ?? kDark,
-            fontSize: bold ? 15 : 12,
-            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+          Text(
+            value,
+            style: TextStyle(
+              color: valueColor ?? cs.onSurface,
+              fontSize: bold ? 15 : 12,
+              fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
+        ],
+      ),
+    );
+  }
 }
 
 class _PaymentInfo {

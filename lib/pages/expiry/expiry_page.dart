@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/debouncer.dart';
 import '../../models/product_model.dart';
@@ -124,20 +124,21 @@ class _ExpiryPageState extends State<ExpiryPage> {
     }
   }
 
-  static Color _tierColor(String tier) {
+  Color _tierColor(String tier) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     switch (tier) {
       case 'expired':
-        return kRed;
+        return isDark ? PaletteDark.error : PaletteLight.error;
       case 'urgent':
         return const Color(0xFFE53935);
       case 'standard':
-        return kOrange;
+        return isDark ? PaletteDark.warning : PaletteLight.warning;
       case 'good':
         return const Color(0xFF43A047);
       case 'excellent':
-        return kGreen;
+        return isDark ? PaletteDark.success : PaletteLight.success;
       default:
-        return kGrey;
+        return const Color(0xFF888888);
     }
   }
 
@@ -322,8 +323,9 @@ class _ExpiryPageState extends State<ExpiryPage> {
   // ── BUILD ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: 'Expiry Tracker',
         context: context,
@@ -382,7 +384,7 @@ class _ExpiryPageState extends State<ExpiryPage> {
         currentIndex: widget.currentIndex,
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: kRed))
+          ? Center(child: CircularProgressIndicator(color: cs.primary))
           : Column(
               children: [
                 _buildFilters(),

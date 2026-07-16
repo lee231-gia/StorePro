@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_colors.dart';
 import '../../widgets/shared_widgets.dart';
 
 class AppSearchField extends StatelessWidget {
@@ -20,7 +19,7 @@ class AppSearchField extends StatelessWidget {
     return TextField(
       controller: controller,
       onChanged: onChanged,
-      decoration: AppInput.field(hint, icon: Icons.search),
+      decoration: AppInput.field(context, hint, icon: Icons.search),
     );
   }
 }
@@ -39,6 +38,7 @@ class AppFilterChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -54,17 +54,17 @@ class AppFilterChips extends StatelessWidget {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: active ? kRed : kCard,
+                  color: active ? cs.primary : cs.surface,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: active ? kRed : Colors.grey.shade300,
+                    color: active ? cs.primary : cs.outlineVariant,
                   ),
                 ),
                 child: Text(
                   option.label,
                   style: TextStyle(
                     fontSize: 12,
-                    color: active ? Colors.white : kGrey,
+                    color: active ? cs.onPrimary : cs.onSurfaceVariant,
                     fontWeight: active ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),

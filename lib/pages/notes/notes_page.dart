@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../core/services/sync_service.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/note_model.dart';
 import '../../repositories/note_repository.dart';
@@ -110,8 +110,9 @@ class _NotesPageState extends State<NotesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(title: 'Notes & Tasks', context: context),
       drawer: AppDrawer(
         changeTab: widget.changeTab,
@@ -119,25 +120,25 @@ class _NotesPageState extends State<NotesPage> {
       ),
       floatingActionButton: FloatingActionButton.small(
         heroTag: 'notes_add_fab',
-        backgroundColor: kRed,
-        foregroundColor: Colors.white,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
         onPressed: () => _showForm(),
         child: const Icon(Icons.add),
       ),
       body: Column(
         children: [
           _buildFilters(),
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          if (_loading) LinearProgressIndicator(color: cs.primary),
           Expanded(
             child: _filtered.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'Nothing here yet.',
-                      style: TextStyle(color: kGrey),
+                      style: TextStyle(color: cs.onSurfaceVariant),
                     ),
                   )
                 : RefreshIndicator(
-                    color: kRed,
+                    color: cs.primary,
                     onRefresh: _load,
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -153,6 +154,7 @@ class _NotesPageState extends State<NotesPage> {
 
   // ── FILTERS ───────────────────────────────────────────────
   Widget _buildFilters() {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Column(
@@ -160,7 +162,7 @@ class _NotesPageState extends State<NotesPage> {
           TextField(
             controller: _searchCtrl,
             onChanged: (v) => setState(() => _search = v),
-            decoration: AppInput.field(
+            decoration: AppInput.field(context, 
               'Search notes and tasks...',
               icon: Icons.search,
             ),
@@ -187,11 +189,11 @@ class _NotesPageState extends State<NotesPage> {
                           vertical: 5,
                         ),
                         decoration: BoxDecoration(
-                          color: _filter == f.key ? kRed : Colors.transparent,
+                          color: _filter == f.key ? cs.primary : Colors.transparent,
                           border: Border.all(
                             color: _filter == f.key
-                                ? kRed
-                                : Colors.grey.shade300,
+                                ? cs.primary
+                                : cs.outlineVariant,
                           ),
                           borderRadius: BorderRadius.circular(8),
                         ),
@@ -199,7 +201,7 @@ class _NotesPageState extends State<NotesPage> {
                           f.value,
                           style: TextStyle(
                             fontSize: 11,
-                            color: _filter == f.key ? Colors.white : kGrey,
+                            color: _filter == f.key ? cs.onPrimary : cs.onSurfaceVariant,
                             fontWeight: _filter == f.key
                                 ? FontWeight.bold
                                 : FontWeight.normal,
@@ -218,6 +220,8 @@ class _NotesPageState extends State<NotesPage> {
 
   // ── NOTE / TASK CARD ──────────────────────────────────────
   Widget _noteCard(NoteModel note) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isTask = note.type == 'task';
     final isDone = note.done;
     final preview = _notePreview(note.content);
@@ -229,14 +233,14 @@ class _NotesPageState extends State<NotesPage> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
         decoration: BoxDecoration(
-          color: kCard,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(12),
           border: isDone
-              ? Border.all(color: kGreen.withValues(alpha: 0.3))
+              ? Border.all(color: (isDark ? PaletteDark.success : PaletteLight.success).withValues(alpha: 0.3))
               : null,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: cs.shadow.withValues(alpha: 0.04),
               blurRadius: 8,
             ),
           ],
@@ -260,16 +264,16 @@ class _NotesPageState extends State<NotesPage> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: isDone ? kGreen : kGrey,
+                                color: isDone ? (isDark ? PaletteDark.success : PaletteLight.success) : cs.onSurfaceVariant,
                                 width: 1.4,
                               ),
-                              color: isDone ? kGreen : Colors.transparent,
+                              color: isDone ? (isDark ? PaletteDark.success : PaletteLight.success) : Colors.transparent,
                             ),
                             child: isDone
-                                ? const Icon(
+                                ? Icon(
                                     Icons.check,
                                     size: 13,
-                                    color: Colors.white,
+                                    color: cs.onPrimary,
                                   )
                                 : null,
                           ),
@@ -280,7 +284,7 @@ class _NotesPageState extends State<NotesPage> {
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
-                            color: isDone ? kGrey : kDark,
+                            color: isDone ? cs.onSurfaceVariant : cs.onSurface,
                             decoration: isDone
                                 ? TextDecoration.lineThrough
                                 : null,
@@ -296,8 +300,8 @@ class _NotesPageState extends State<NotesPage> {
                     const SizedBox(height: 6),
                     Text(
                       preview,
-                      style: const TextStyle(
-                        color: kGrey,
+                      style: TextStyle(
+                        color: cs.onSurfaceVariant,
                         fontSize: 12,
                         height: 1.35,
                       ),
@@ -314,7 +318,7 @@ class _NotesPageState extends State<NotesPage> {
                     children: [
                       Text(
                         'Modified ${AppHelpers.formatDate(modified.toIso8601String())}',
-                        style: const TextStyle(color: kGrey, fontSize: 11),
+                        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                       ),
                       if (note.reminderAt.isNotEmpty)
                         Container(
@@ -323,22 +327,22 @@ class _NotesPageState extends State<NotesPage> {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: kOrange.withValues(alpha: 0.12),
+                            color: (isDark ? PaletteDark.warning : PaletteLight.warning).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.notifications_outlined,
                                 size: 11,
-                                color: kOrange,
+                                color: isDark ? PaletteDark.warning : PaletteLight.warning,
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 _shortDateTime(note.reminderAt),
-                                style: const TextStyle(
-                                  color: kOrange,
+                                style: TextStyle(
+                                  color: isDark ? PaletteDark.warning : PaletteLight.warning,
                                   fontSize: 10,
                                 ),
                               ),
@@ -353,9 +357,9 @@ class _NotesPageState extends State<NotesPage> {
 
             GestureDetector(
               onTap: () => _deleteNote(note),
-              child: const Padding(
-                padding: EdgeInsets.all(6),
-                child: Icon(Icons.delete_outline, color: kGrey, size: 18),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: Icon(Icons.delete_outline, color: cs.onSurfaceVariant, size: 18),
               ),
             ),
           ],
@@ -369,6 +373,8 @@ class _NotesPageState extends State<NotesPage> {
 
   // ── ADD / EDIT FORM ───────────────────────────────────────
   void _showForm({NoteModel? existing}) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final isEdit = existing != null;
     String selType = existing?.type ?? 'note';
     final titCtrl = TextEditingController(text: existing?.title ?? '');
@@ -387,7 +393,7 @@ class _NotesPageState extends State<NotesPage> {
           ),
           title: Text(
             isEdit ? 'Edit Note' : 'New Note',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: kRed),
+            style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
           ),
           content: ConstrainedBox(
             constraints: BoxConstraints(
@@ -422,7 +428,7 @@ class _NotesPageState extends State<NotesPage> {
                   // Title
                   TextField(
                     controller: titCtrl,
-                    decoration: AppInput.dialog('Title *'),
+                    decoration: AppInput.dialog(context, 'Title *'),
                   ),
                   const SizedBox(height: 10),
 
@@ -432,7 +438,7 @@ class _NotesPageState extends State<NotesPage> {
                     minLines: 5,
                     maxLines: 12,
                     keyboardType: TextInputType.multiline,
-                    decoration: AppInput.dialog('Notes'),
+                    decoration: AppInput.dialog(context, 'Notes'),
                   ),
 
                   const SizedBox(height: 12),
@@ -453,7 +459,7 @@ class _NotesPageState extends State<NotesPage> {
                             DateTime.tryParse(pickedReminder) ??
                                 DateTime.now(),
                           ),
-                    color: pickedReminder.isEmpty ? kGrey : kOrange,
+                    color: pickedReminder.isEmpty ? null : (isDark ? PaletteDark.warning : PaletteLight.warning),
                   ),
                   const SizedBox(height: 6),
                   Row(
@@ -499,14 +505,14 @@ class _NotesPageState extends State<NotesPage> {
                             }
                             setD(() => pickedReminder = dt.toIso8601String());
                           },
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.notifications_outlined,
                             size: 16,
-                            color: kOrange,
+                            color: isDark ? PaletteDark.warning : PaletteLight.warning,
                           ),
-                          label: const Text(
+                          label: Text(
                             'Set Reminder',
-                            style: TextStyle(color: kOrange),
+                            style: TextStyle(color: isDark ? PaletteDark.warning : PaletteLight.warning),
                           ),
                         ),
                       ),
@@ -514,7 +520,7 @@ class _NotesPageState extends State<NotesPage> {
                         IconButton(
                           tooltip: 'Clear reminder',
                           onPressed: () => setD(() => pickedReminder = ''),
-                          icon: const Icon(Icons.close, color: kGrey, size: 18),
+                          icon: Icon(Icons.close, color: cs.onSurfaceVariant, size: 18),
                         ),
                     ],
                   ),
@@ -529,8 +535,8 @@ class _NotesPageState extends State<NotesPage> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: kRed,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
               ),
               onPressed: () async {
                 if (titCtrl.text.trim().isEmpty) return;
@@ -587,28 +593,30 @@ class _NotesPageState extends State<NotesPage> {
     required IconData icon,
     required String label,
     required String value,
-    Color color = kGrey,
+    Color? color,
   }) {
+    final cs = Theme.of(context).colorScheme;
+    final effectiveColor = color ?? cs.onSurfaceVariant;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: kInputFill,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
-          Icon(icon, color: color, size: 16),
+          Icon(icon, color: effectiveColor, size: 16),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(color: kGrey, fontSize: 10)),
+                Text(label, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10)),
                 Text(
                   value,
                   style: TextStyle(
-                    color: color == kGrey ? kDark : color,
+                    color: effectiveColor == cs.onSurfaceVariant ? cs.onSurface : effectiveColor,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -633,25 +641,28 @@ class _NotesPageState extends State<NotesPage> {
     _load();
   }
 
-  Widget _typeBtn(String label, bool active, VoidCallback onTap) => Expanded(
-    child: GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: active ? kRed : kInputFill,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: active ? Colors.white : kGrey,
-            fontWeight: FontWeight.w600,
-            fontSize: 13,
+  Widget _typeBtn(String label, bool active, VoidCallback onTap) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: active ? cs.primary : cs.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: active ? cs.onPrimary : cs.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+              fontSize: 13,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

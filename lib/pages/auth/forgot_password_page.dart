@@ -1,19 +1,10 @@
-// import 'package:flutter/material.dart';
-
-// class ForgotPasswordPage extends StatelessWidget {
-//   const ForgotPasswordPage({super.key});
-//   @override
-//   Widget build(BuildContext context) =>
-//       const Scaffold(body: Center(child: Text('Forgot Password')));
-// }
-
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
+import '../../core/theme/app_palette.dart';
 import '../../repositories/auth_repository.dart';
 import '../../widgets/shared_widgets.dart';
 
-// 4-step flow: Username → Security Question → OTP → New Password
+// 4-step flow: Username -> Security Question -> OTP -> New Password
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
   @override
@@ -24,10 +15,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
   int _step = 0; // 0=username, 1=question, 2=otp, 3=new password
   bool _loading = false;
 
-  // ── STEP DATA ─────────────────────────────────────────────
   String _storeId = '';
   String _question = '';
-  String _otp = ''; // shown to user after answer verified
+  String _otp = '';
   String _resetEmail = '';
 
   final _usernameCtrl = TextEditingController();
@@ -42,7 +32,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     super.dispose();
   }
 
-  // ── STEP 0: Find account by username ──────────────────────
   Future<void> _submitUsername() async {
     if (_usernameCtrl.text.trim().isEmpty) {
       showSnack(context, 'Enter your username.', isError: true);
@@ -67,7 +56,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
   }
 
-  // ── STEP 1: Verify security answer → get OTP ──────────────
   Future<void> _submitAnswer() async {
     if (_answerCtrl.text.trim().isEmpty) {
       showSnack(context, 'Enter your answer.', isError: true);
@@ -93,7 +81,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
   }
 
-  // ── STEP 2: Verify OTP ────────────────────────────────────
   Future<void> _submitOtp() async {
     if (_otpCtrl.text.trim().isEmpty) {
       showSnack(context, 'Enter the OTP.', isError: true);
@@ -106,7 +93,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     setState(() => _step = 3);
   }
 
-  // ── STEP 3: Set new password ──────────────────────────────
   Future<void> _submitNewPassword() async {
     await _runLoading(() async {
       final error = await AuthRepository.sendPasswordResetEmail(
@@ -140,8 +126,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final errorColor = isDark ? PaletteDark.error : PaletteLight.error;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: 'Forgot Password',
         context: context,
@@ -154,15 +143,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── STEP INDICATOR ────────────────────────────
-              _buildStepIndicator(),
+              _buildStepIndicator(cs, errorColor),
               const SizedBox(height: 28),
 
-              // ── STEP CONTENT ──────────────────────────────
-              if (_step == 0) _buildStep0(),
-              if (_step == 1) _buildStep1(),
-              if (_step == 2) _buildStep2(),
-              if (_step == 3) _buildStep3(),
+              if (_step == 0) _buildStep0(cs),
+              if (_step == 1) _buildStep1(cs),
+              if (_step == 2) _buildStep2(cs, errorColor),
+              if (_step == 3) _buildStep3(cs),
             ],
           ),
         ),
@@ -170,26 +157,26 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  // ── STEP INDICATOR ────────────────────────────────────────
-  Widget _buildStepIndicator() {
+  Widget _buildStepIndicator(ColorScheme cs, Color errorColor) {
     final labels = ['Username', 'Security', 'OTP', 'Password'];
-
     return Row(
       children: List.generate(4, (i) {
         final active = i <= _step;
-
         return Expanded(
           child: Column(
             children: [
               Text(
                 labels[i],
                 style: TextStyle(
-                  color: active ? kRed : Colors.grey,
+                  color: active ? cs.primary : cs.outlineVariant,
                   fontSize: 12,
                 ),
               ),
               const SizedBox(height: 4),
-              Container(height: 4, color: active ? kRed : Colors.grey.shade300),
+              Container(
+                height: 4,
+                color: active ? cs.primary : cs.surfaceContainerHighest,
+              ),
             ],
           ),
         );
@@ -197,28 +184,27 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     );
   }
 
-  // ── STEP 0: USERNAME ──────────────────────────────────────
-  Widget _buildStep0() => Column(
+  Widget _buildStep0(ColorScheme cs) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
+      Text(
         'Enter your username',
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 16,
-          color: kDark,
+          color: cs.onSurface,
         ),
       ),
       const SizedBox(height: 6),
-      const Text(
+      Text(
         'We\'ll look up your account.',
-        style: TextStyle(color: kGrey, fontSize: 13),
+        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
       ),
       const SizedBox(height: 20),
       fieldLabel('Username'),
       TextField(
         controller: _usernameCtrl,
-        decoration: AppInput.field(
+        decoration: AppInput.field(context, 
           'Enter username',
           icon: Icons.alternate_email,
         ),
@@ -232,26 +218,25 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     ],
   );
 
-  // ── STEP 1: SECURITY QUESTION ─────────────────────────────
-  Widget _buildStep1() => Column(
+  Widget _buildStep1(ColorScheme cs) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
+      Text(
         'Security Question',
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 16,
-          color: kDark,
+          color: cs.onSurface,
         ),
       ),
       const SizedBox(height: 16),
       appCard(
         child: Text(
           _question,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: kDark,
+            color: cs.onSurface,
           ),
         ),
       ),
@@ -259,7 +244,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       fieldLabel('Your Answer'),
       TextField(
         controller: _answerCtrl,
-        decoration: AppInput.field(
+        decoration: AppInput.field(context, 
           'Enter your answer',
           icon: Icons.security_outlined,
         ),
@@ -273,40 +258,37 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     ],
   );
 
-  // ── STEP 2: OTP ───────────────────────────────────────────
-  Widget _buildStep2() => Column(
+  Widget _buildStep2(ColorScheme cs, Color errorColor) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
+      Text(
         'Enter OTP',
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 16,
-          color: kDark,
+          color: cs.onSurface,
         ),
       ),
       const SizedBox(height: 6),
-      const Text(
+      Text(
         'Your OTP is shown below. It expires in 10 minutes.',
-        style: TextStyle(color: kGrey, fontSize: 13),
+        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
       ),
       const SizedBox(height: 16),
 
-      // ── OTP DISPLAY BOX ───────────────────────────────────
-      // Show the OTP on screen (system-generated, owner saves it)
       appCard(
-        color: kRedLight,
+        color: cs.primaryContainer,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.key, color: kRed, size: 22),
+            Icon(Icons.key, color: cs.primary, size: 22),
             const SizedBox(width: 12),
             Text(
               'OTP: $_otp',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: kRed,
+                color: cs.primary,
                 letterSpacing: 6,
               ),
             ),
@@ -320,7 +302,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         controller: _otpCtrl,
         keyboardType: TextInputType.number,
         maxLength: 6,
-        decoration: AppInput.field(
+        decoration: AppInput.field(context, 
           'Enter 6-digit OTP',
           icon: Icons.pin_outlined,
         ),
@@ -334,22 +316,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     ],
   );
 
-  // ── STEP 3: NEW PASSWORD ──────────────────────────────────
-  Widget _buildStep3() => Column(
+  Widget _buildStep3(ColorScheme cs) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
+      Text(
         'Request Password Reset',
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 16,
-          color: kDark,
+          color: cs.onSurface,
         ),
       ),
       const SizedBox(height: 6),
-      const Text(
+      Text(
         'Firebase will send a secure reset link to the account email.',
-        style: TextStyle(color: kGrey, fontSize: 13),
+        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
       ),
       const SizedBox(height: 24),
       PrimaryButton(

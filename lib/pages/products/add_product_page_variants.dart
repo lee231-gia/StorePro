@@ -2,6 +2,7 @@ part of 'add_product_page.dart';
 
 extension _AddProductPageVariants on _AddProductPageState {
   Widget _buildStep2() {
+    final cs = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -9,12 +10,12 @@ extension _AddProductPageVariants on _AddProductPageState {
         children: [
           if (!_hasVariants) ...[
             // Single product — show one variant form inline
-            const Text(
+            Text(
               'Product Details',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
-                color: kDark,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -30,16 +31,16 @@ extension _AddProductPageVariants on _AddProductPageState {
                 Text(
                   '${_variants.length} variant'
                   '${_variants.length != 1 ? 's' : ''}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
-                    color: kDark,
+                    color: cs.onSurface,
                   ),
                 ),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kRed,
-                    foregroundColor: Colors.white,
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -63,16 +64,16 @@ extension _AddProductPageVariants on _AddProductPageState {
                 child: Column(
                   children: [
                     const SizedBox(height: 40),
-                    const Icon(Icons.layers_outlined, color: kGrey, size: 48),
+                    Icon(Icons.layers_outlined, color: cs.onSurfaceVariant, size: 48),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'No variants yet.',
-                      style: TextStyle(color: kGrey),
+                      style: TextStyle(color: cs.onSurfaceVariant),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
+                    Text(
                       'Tap "Add Variant" to add sizes or types.',
-                      style: TextStyle(color: kGrey, fontSize: 12),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                       textAlign: TextAlign.center,
                     ),
                   ],
@@ -90,6 +91,7 @@ extension _AddProductPageVariants on _AddProductPageState {
 
   // Single product inline form
   Widget _buildSingleVariantForm() {
+    final cs = Theme.of(context).colorScheme;
     final namCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
     final costCtrl = TextEditingController();
@@ -117,7 +119,7 @@ extension _AddProductPageVariants on _AddProductPageState {
                   width: 104,
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: kInputFill,
+                    color: cs.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(10),
                     image: variantImageFile != null
                         ? DecorationImage(
@@ -127,18 +129,18 @@ extension _AddProductPageVariants on _AddProductPageState {
                         : null,
                   ),
                   child: variantImageFile == null
-                      ? const Column(
+                      ? Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.add_photo_alternate_outlined,
-                              color: kGrey,
+                              color: cs.onSurfaceVariant,
                               size: 28,
                             ),
                             Text(
                               'Variant image (optional)',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: kGrey, fontSize: 11),
+                              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                             ),
                           ],
                         )
@@ -168,14 +170,14 @@ extension _AddProductPageVariants on _AddProductPageState {
                 children: [
                   Icon(
                     showCond ? Icons.expand_less : Icons.add_circle_outline,
-                    color: kRed,
+                    color: cs.primary,
                     size: 18,
                   ),
                   const SizedBox(width: 6),
-                  const Text(
+                  Text(
                     '+ Add Conditions',
                     style: TextStyle(
-                      color: kRed,
+                      color: cs.primary,
                       fontWeight: FontWeight.w600,
                       fontSize: 13,
                     ),
@@ -198,8 +200,8 @@ extension _AddProductPageVariants on _AddProductPageState {
               width: double.infinity,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kRed,
-                  foregroundColor: Colors.white,
+                  backgroundColor: cs.primary,
+                  foregroundColor: cs.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -269,24 +271,25 @@ extension _AddProductPageVariants on _AddProductPageState {
   // STEP 3 — STOCKS
   // ══════════════════════════════════════════════════════════
   Widget _buildStep3() {
+    final cs = Theme.of(context).colorScheme;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Add Stock Batches',
             style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 16,
-              color: kDark,
+              color: cs.onSurface,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Add stock for each variant. '
             'Each batch tracks quantity and product life.',
-            style: TextStyle(color: kGrey, fontSize: 12),
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
           ),
           const SizedBox(height: 16),
 

@@ -87,6 +87,7 @@ extension _InventoryProductViews on _InventoryPageState {
   }
 
   Widget _replenishTrailing(ProductDisplayItem item) {
+    final cs = Theme.of(context).colorScheme;
     final variant = item.variant;
     if (variant == null) return _stockTrailing(item);
     return Row(
@@ -94,7 +95,7 @@ extension _InventoryProductViews on _InventoryPageState {
       children: [
         _iconAction(
           Icons.add_circle_outline,
-          kGreen,
+          cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success,
           () => _showAdjustDialog(
             product: item.product,
             variant: variant,
@@ -104,7 +105,7 @@ extension _InventoryProductViews on _InventoryPageState {
         const SizedBox(width: 4),
         _iconAction(
           Icons.remove_circle_outline,
-          kRed,
+          cs.error,
           () => _showAdjustDialog(
             product: item.product,
             variant: variant,
@@ -116,12 +117,13 @@ extension _InventoryProductViews on _InventoryPageState {
   }
 
   Widget _replenishActionPair(ProductDisplayItem item) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.92),
+        color: cs.onPrimary.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(9),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6),
+          BoxShadow(color: cs.shadow.withValues(alpha: 0.08), blurRadius: 6),
         ],
       ),
       child: Row(
@@ -129,13 +131,13 @@ extension _InventoryProductViews on _InventoryPageState {
         children: [
           _iconAction(
             Icons.add,
-            kGreen,
+            cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success,
             () => _showAdjustForItem(item, isAdding: true),
           ),
-          Container(width: 1, height: 22, color: Colors.grey.shade200),
+          Container(width: 1, height: 22, color: cs.outlineVariant),
           _iconAction(
             Icons.remove,
-            kRed,
+            cs.error,
             () => _showAdjustForItem(item, isAdding: false),
           ),
         ],
@@ -159,6 +161,7 @@ extension _InventoryProductViews on _InventoryPageState {
   }
 
   void _showAdjustForItem(ProductDisplayItem item, {required bool isAdding}) {
+    final cs = Theme.of(context).colorScheme;
     if (item.variant != null) {
       _showAdjustDialog(
         product: item.product,
@@ -216,7 +219,7 @@ extension _InventoryProductViews on _InventoryPageState {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _iconAction(Icons.add_circle_outline, kGreen, () {
+                      _iconAction(Icons.add_circle_outline, cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success, () {
                         Navigator.pop(context);
                         _showAdjustDialog(
                           product: item.product,
@@ -224,7 +227,7 @@ extension _InventoryProductViews on _InventoryPageState {
                           isAdding: true,
                         );
                       }),
-                      _iconAction(Icons.remove_circle_outline, kRed, () {
+                      _iconAction(Icons.remove_circle_outline, cs.error, () {
                         Navigator.pop(context);
                         _showAdjustDialog(
                           product: item.product,
@@ -243,57 +246,59 @@ extension _InventoryProductViews on _InventoryPageState {
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color color) =>
-      Expanded(
-        child: Container(
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: kCard,
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 18),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      value,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                    ),
-                    Text(
-                      label,
-                      style: const TextStyle(fontSize: 10, color: kGrey),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+  Widget _statCard(String label, String value, IconData icon, Color color) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: cs.shadow.withValues(alpha: 0.04),
+              blurRadius: 8,
+            ),
+          ],
         ),
-      );
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 18),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _actionBtn({
     required IconData icon,

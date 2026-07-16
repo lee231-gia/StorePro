@@ -2,7 +2,8 @@ part of 'reports_page.dart';
 
 extension _ReportsProfit on _ReportsPageState {
   Widget _buildProfitTab() {
-    // Build profit margin table from products
+    final cs = Theme.of(context).colorScheme;
+
     final items = <Map<String, dynamic>>[];
     for (final p in _products) {
       for (final v in p.variants) {
@@ -28,7 +29,6 @@ extension _ReportsProfit on _ReportsPageState {
       }
     }
 
-    // Sort by margin descending
     items.sort(
       (a, b) => (b['margin'] as double).compareTo(a['margin'] as double),
     );
@@ -38,36 +38,35 @@ extension _ReportsProfit on _ReportsPageState {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── FORMULA BOX ─────────────────────────
           appCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.functions, color: kRed, size: 16),
+                    Icon(Icons.functions, color: cs.primary, size: 16),
                     const SizedBox(width: 6),
-                    const Text(
+                    Text(
                       'Profit Margin Formula',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        color: kRed,
+                        color: cs.primary,
                         fontSize: 13,
                       ),
                     ),
                   ],
                 ),
                 const Divider(height: 12),
-                _formulaRow('Profit per Unit', 'Selling Price − Cost Price'),
-                _formulaRow('Margin %', '(Profit ÷ Selling Price) × 100'),
-                _formulaRow('Markup %', '(Profit ÷ Cost Price) × 100'),
+                _formulaRow('Profit per Unit', 'Selling Price \u2212 Cost Price'),
+                _formulaRow('Margin %', '(Profit \u00f7 Selling Price) \u00d7 100'),
+                _formulaRow('Markup %', '(Profit \u00f7 Cost Price) \u00d7 100'),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Margin tells you what % of the '
                   'selling price is profit.\n'
                   'Markup tells you how much above '
                   'cost you are selling.',
-                  style: TextStyle(color: kGrey, fontSize: 11, height: 1.5),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11, height: 1.5),
                 ),
               ],
             ),
@@ -78,14 +77,14 @@ extension _ReportsProfit on _ReportsPageState {
           Text(
             '${items.length} product variant'
             '${items.length != 1 ? 's' : ''}',
-            style: const TextStyle(color: kGrey, fontSize: 12),
+            style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
           ),
           const SizedBox(height: 8),
 
           if (items.isEmpty)
-            const Text(
+            Text(
               'Add cost prices to see margins.',
-              style: TextStyle(color: kGrey),
+              style: TextStyle(color: cs.onSurfaceVariant),
             )
           else
             ...items.map((item) => _profitRow(item)),
@@ -95,18 +94,23 @@ extension _ReportsProfit on _ReportsPageState {
   }
 
   Widget _profitRow(Map<String, dynamic> item) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final success = isDark ? PaletteDark.success : PaletteLight.success;
+    final warning = isDark ? PaletteDark.warning : PaletteLight.warning;
+    final error = isDark ? PaletteDark.error : PaletteLight.error;
     final margin = item['margin'] as double;
     final color = margin >= 30
-        ? kGreen
+        ? success
         : margin >= 15
-        ? kOrange
-        : kRed;
+        ? warning
+        : error;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: kCard,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
@@ -133,25 +137,24 @@ extension _ReportsProfit on _ReportsPageState {
                   children: [
                     Text(
                       item['productName'],
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                     ),
                     Text(
                       item['variantName'],
-                      style: const TextStyle(color: kGrey, fontSize: 11),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                     ),
                     if ((item['sku'] as String).isNotEmpty)
                       Text(
                         item['sku'],
-                        style: const TextStyle(color: kGrey, fontSize: 10),
+                        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
                       ),
                   ],
                 ),
               ),
-              // Margin badge
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -175,21 +178,20 @@ extension _ReportsProfit on _ReportsPageState {
 
           const SizedBox(height: 6),
 
-          // Price table (Kotatsu style)
           Row(
             children: [
               Expanded(
                 child: _priceCell(
                   'Cost',
                   AppHelpers.peso(item['costPrice']),
-                  kGrey,
+                  cs.onSurfaceVariant,
                 ),
               ),
               Expanded(
                 child: _priceCell(
                   'Price',
                   AppHelpers.peso(item['sellPrice']),
-                  kDark,
+                  cs.onSurface,
                 ),
               ),
               Expanded(
@@ -203,7 +205,7 @@ extension _ReportsProfit on _ReportsPageState {
                 child: _priceCell(
                   'Markup',
                   '${(item['markup'] as double).toStringAsFixed(1)}%',
-                  kOrange,
+                  warning,
                 ),
               ),
             ],
@@ -213,74 +215,79 @@ extension _ReportsProfit on _ReportsPageState {
     );
   }
 
-  Widget _priceCell(String label, String value, Color color) => Column(
-    children: [
-      Text(
-        value,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          color: color,
-        ),
-      ),
-      Text(label, style: const TextStyle(fontSize: 9, color: kGrey)),
-    ],
-  );
-
-  // ── SHARED HELPERS ────────────────────────────────────────
-  Widget _statCard2(String label, String value, Color color) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            value,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: color,
-            ),
+  Widget _priceCell(String label, String value, Color color) {
+    final cs = Theme.of(context).colorScheme;
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+            color: color,
           ),
-          Text(label, style: const TextStyle(color: kGrey, fontSize: 11)),
-        ],
-      ),
-    ),
-  );
+        ),
+        Text(label, style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant)),
+      ],
+    );
+  }
 
-  Widget _formulaRow(String label, String formula, {bool highlight = false}) =>
-      Padding(
-        padding: const EdgeInsets.only(bottom: 4),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: 110,
-              child: Text(
-                label,
-                style: const TextStyle(color: kGrey, fontSize: 12),
-              ),
-            ),
-            Expanded(
-              child: Text(
-                formula,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: highlight ? kRed : kDark,
-                  fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ),
+  Widget _statCard2(String label, String value, Color color) {
+    final cs = Theme.of(context).colorScheme;
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.surface,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
           ],
         ),
-      );
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              value,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: color,
+              ),
+            ),
+            Text(label, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
+          ],
+        ),
+      ),
+    );
+  }
 
-  // ── EXPORT ────────────────────────────────────────────────
+  Widget _formulaRow(String label, String formula, {bool highlight = false}) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              formula,
+              style: TextStyle(
+                fontSize: 12,
+                color: highlight ? cs.primary : cs.onSurface,
+                fontWeight: highlight ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

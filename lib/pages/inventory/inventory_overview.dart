@@ -15,8 +15,9 @@ extension _InventoryOverview on _InventoryPageState {
       }
     }
 
+    final cs = Theme.of(context).colorScheme;
     return RefreshIndicator(
-      color: kRed,
+      color: cs.primary,
       onRefresh: _load,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
@@ -31,14 +32,14 @@ extension _InventoryOverview on _InventoryPageState {
                   'Products',
                   '${_products.length}',
                   Icons.inventory_2_outlined,
-                  kRed,
+                  cs.primary,
                 ),
                 const SizedBox(width: 10),
                 _statCard(
                   'Total Stock',
                   '$totalStock pcs',
                   Icons.warehouse_outlined,
-                  kGreen,
+                  cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success,
                 ),
               ],
             ),
@@ -49,10 +50,10 @@ extension _InventoryOverview on _InventoryPageState {
                   'Low Stock',
                   '$lowCount',
                   Icons.warning_amber_outlined,
-                  kOrange,
+                  cs.brightness == Brightness.dark ? PaletteDark.warning : PaletteLight.warning,
                 ),
                 const SizedBox(width: 10),
-                _statCard('No Stock', '$noStock', Icons.block_outlined, kRed),
+                _statCard('No Stock', '$noStock', Icons.block_outlined, cs.primary),
               ],
             ),
             const SizedBox(height: 10),
@@ -61,8 +62,8 @@ extension _InventoryOverview on _InventoryPageState {
               width: double.infinity,
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [kRed, kRedDark],
+                gradient: LinearGradient(
+                  colors: [cs.primary, Color.lerp(cs.primary, Colors.black, 0.15)!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -71,21 +72,21 @@ extension _InventoryOverview on _InventoryPageState {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Total Inventory Value',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.7), fontSize: 12),
                   ),
                   Text(
                     AppHelpers.peso(invValue),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: cs.onPrimary,
                       fontWeight: FontWeight.bold,
                       fontSize: 22,
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Stock on Hand × Cost Price',
-                    style: TextStyle(color: Colors.white60, fontSize: 11),
+                    style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.6), fontSize: 11),
                   ),
                 ],
               ),
@@ -102,7 +103,7 @@ extension _InventoryOverview on _InventoryPageState {
             Text(
               '${_filtered.length} product'
               '${_filtered.length != 1 ? 's' : ''}',
-              style: const TextStyle(color: kGrey, fontSize: 12),
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
             ),
             const SizedBox(height: 8),
             _buildProductView(_filtered, showStock: true),

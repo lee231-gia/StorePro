@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_colors.dart';
 import '../../core/enums/product_browser_enums.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/shared_widgets.dart';
@@ -32,6 +31,7 @@ class ProductBrowserToolbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: controller,
       builder: (_, _) => Column(
@@ -43,11 +43,11 @@ class ProductBrowserToolbar extends StatelessWidget {
                 child: TextField(
                   controller: searchController,
                   onChanged: (value) => controller.search = value,
-                  decoration: AppInput.field(searchHint, icon: Icons.search),
+                  decoration: AppInput.field(context, searchHint, icon: Icons.search),
                 ),
               ),
-              if (showViewMode) _viewMenu(),
-              _sortMenu(),
+              if (showViewMode) _viewMenu(cs),
+              _sortMenu(cs),
             ],
           ),
           const SizedBox(height: 8),
@@ -76,7 +76,7 @@ class ProductBrowserToolbar extends StatelessWidget {
                 if (itemCount != null)
                   Text(
                     '$itemCount item${itemCount == 1 ? '' : 's'}',
-                    style: const TextStyle(color: kGrey, fontSize: 12),
+                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                   ),
               ],
             ),
@@ -85,9 +85,9 @@ class ProductBrowserToolbar extends StatelessWidget {
     );
   }
 
-  Widget _viewMenu() {
+  Widget _viewMenu(ColorScheme cs) {
     return PopupMenuButton<ProductViewMode>(
-      icon: const Icon(Icons.view_module, color: kGrey),
+      icon: Icon(Icons.view_module, color: cs.onSurfaceVariant),
       initialValue: controller.viewMode,
       onSelected: (value) => controller.viewMode = value,
       itemBuilder: (_) => ProductViewMode.values
@@ -96,9 +96,9 @@ class ProductBrowserToolbar extends StatelessWidget {
     );
   }
 
-  Widget _sortMenu() {
+  Widget _sortMenu(ColorScheme cs) {
     return PopupMenuButton<ProductSortOption>(
-      icon: const Icon(Icons.sort, color: kGrey),
+      icon: Icon(Icons.sort, color: cs.onSurfaceVariant),
       initialValue: controller.sortOption,
       onSelected: (value) => controller.sortOption = value,
       itemBuilder: (_) => sortOptions

@@ -2,13 +2,14 @@ part of 'inventory_page.dart';
 
 extension _InventoryLogs on _InventoryPageState {
   Widget _buildLogs() {
+    final cs = Theme.of(context).colorScheme;
     if (_logs.isEmpty) {
-      return const Center(
-        child: Text('No inventory logs yet.', style: TextStyle(color: kGrey)),
+      return Center(
+        child: Text('No inventory logs yet.', style: TextStyle(color: cs.onSurfaceVariant)),
       );
     }
     return RefreshIndicator(
-      color: kRed,
+      color: cs.primary,
       onRefresh: _load,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -19,8 +20,9 @@ extension _InventoryLogs on _InventoryPageState {
   }
 
   Widget _logCard(InventoryLogModel log) {
+    final cs = Theme.of(context).colorScheme;
     final isAdd = log.qty > 0;
-    final color = isAdd ? kGreen : kRed;
+    final color = isAdd ? (cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success) : cs.error;
     final icon = isAdd ? Icons.add_circle_outline : Icons.remove_circle_outline;
     final currentStock = _currentStockForLog(log);
 
@@ -36,11 +38,11 @@ extension _InventoryLogs on _InventoryPageState {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: kCard,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
+              color: cs.shadow.withValues(alpha: 0.03),
               blurRadius: 6,
             ),
           ],
@@ -63,15 +65,15 @@ extension _InventoryLogs on _InventoryPageState {
                 children: [
                   Text(
                     log.productName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
-                      color: kDark,
+                      color: cs.onSurface,
                     ),
                   ),
                   Text(
                     '${log.variantName} • ${_reasonLabel(log.reason)}',
-                    style: const TextStyle(color: kGrey, fontSize: 11),
+                    style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                   ),
                   if (currentStock != null)
                     Text(
@@ -98,7 +100,7 @@ extension _InventoryLogs on _InventoryPageState {
                 ),
                 Text(
                   _logDateTime(log),
-                  style: const TextStyle(color: kGrey, fontSize: 11),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                 ),
               ],
             ),

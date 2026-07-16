@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_routes.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -8,8 +7,9 @@ class WelcomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -17,61 +17,57 @@ class WelcomePage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // ── LOGO ──────────────────────────────────
                 Container(
                   width: 90,
                   height: 90,
                   decoration: BoxDecoration(
-                    color: kRed,
+                    color: cs.primary,
                     borderRadius: BorderRadius.circular(24),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.storefront,
-                    color: Colors.white,
+                    color: cs.onPrimary,
                     size: 48,
                   ),
                 ),
 
                 const SizedBox(height: 28),
 
-                // ── APP NAME ───────────────────────────────
-                const Text(
+                Text(
                   'welcome to',
                   style: TextStyle(
-                    color: kRed,
+                    color: cs.primary,
                     fontSize: 16,
                     fontStyle: FontStyle.italic,
                   ),
                 ),
-                const Text(
+                Text(
                   'STOREPRO',
                   style: TextStyle(
-                    color: kDark,
+                    color: cs.onSurface,
                     fontSize: 46,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 4,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
+                Text(
                   'Store Management Made Easy',
-                  style: TextStyle(color: kGrey, fontSize: 13),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
                 ),
 
                 const SizedBox(height: 20),
 
-                // ── DIVIDER ────────────────────────────────
                 Row(
                   children: [
-                    Container(width: 10, height: 10, color: kRed),
-                    Expanded(child: Container(height: 1.5, color: kRed)),
-                    Container(width: 10, height: 10, color: kRed),
+                    Container(width: 10, height: 10, color: cs.primary),
+                    Expanded(child: Container(height: 1.5, color: cs.primary)),
+                    Container(width: 10, height: 10, color: cs.primary),
                   ],
                 ),
 
                 const SizedBox(height: 36),
 
-                // ── BUTTONS ────────────────────────────────
                 PrimaryButton(
                   label: 'Login',
                   onTap: () => Navigator.pushNamed(context, AppRoutes.login),

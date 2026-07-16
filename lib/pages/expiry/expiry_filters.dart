@@ -2,6 +2,7 @@ part of 'expiry_page.dart';
 
 extension _ExpiryFilters on _ExpiryPageState {
   Widget _buildFilters() {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
       child: Column(
@@ -14,7 +15,7 @@ extension _ExpiryFilters on _ExpiryPageState {
               _search = v;
               _searchDebouncer.call(() => _update(() {}));
             },
-            decoration: AppInput.field(
+            decoration: AppInput.field(context, 
               'Search products...',
               icon: Icons.search,
             ),
@@ -40,17 +41,17 @@ extension _ExpiryFilters on _ExpiryPageState {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: active ? kRed : kCard,
+                        color: active ? cs.primary : cs.surface,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: active ? kRed : Colors.grey.shade300,
+                          color: active ? cs.primary : cs.outlineVariant,
                         ),
                       ),
                       child: Text(
                         cat,
                         style: TextStyle(
                           fontSize: 11,
-                          color: active ? Colors.white : kGrey,
+                          color: active ? cs.onPrimary : cs.onSurfaceVariant,
                           fontWeight: active
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -95,6 +96,7 @@ extension _ExpiryFilters on _ExpiryPageState {
   }
 
   Widget _expiryOverviewLine() {
+    final cs = Theme.of(context).colorScheme;
     final counts = _tierCounts;
     final total = counts.values.fold<int>(0, (sum, count) => sum + count);
     final parts = [
@@ -108,41 +110,45 @@ extension _ExpiryFilters on _ExpiryPageState {
       parts.join(' \u2022 '),
       maxLines: 2,
       overflow: TextOverflow.ellipsis,
-      style: const TextStyle(color: kGrey, fontSize: 12),
+      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
     );
   }
 
-  Widget _liChip(String value, String label) => Padding(
-    padding: const EdgeInsets.only(right: 6),
-    child: GestureDetector(
-      onTap: () => _update(() => _liFilter = value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: _liFilter == value
-              ? kRed.withValues(alpha: 0.15)
-              : Colors.transparent,
-          border: Border.all(
-            color: _liFilter == value ? kRed : Colors.grey.shade300,
+  Widget _liChip(String value, String label) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: GestureDetector(
+        onTap: () => _update(() => _liFilter = value),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: _liFilter == value
+                ? cs.primary.withValues(alpha: 0.15)
+                : Colors.transparent,
+            border: Border.all(
+              color: _liFilter == value ? cs.primary : cs.outlineVariant,
+            ),
+            borderRadius: BorderRadius.circular(8),
           ),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 10,
-            color: _liFilter == value ? kRed : kGrey,
-            fontWeight: _liFilter == value
-                ? FontWeight.bold
-                : FontWeight.normal,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: _liFilter == value ? cs.primary : cs.onSurfaceVariant,
+              fontWeight: _liFilter == value
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   // ── 5-TIER STATUS STRIP ───────────────────────────────────
   Widget _buildTierStrip() {
+    final cs = Theme.of(context).colorScheme;
     final counts = _tierCounts;
     final tiers = ['expired', 'urgent', 'standard', 'good', 'excellent'];
 
@@ -151,7 +157,7 @@ extension _ExpiryFilters on _ExpiryPageState {
       child: Row(
         children: tiers.map((t) {
           final active = _tier == t;
-          final color = _ExpiryPageState._tierColor(t);
+          final color = _tierColor(t);
           final count = counts[t] ?? 0;
           return Expanded(
             child: GestureDetector(
@@ -160,10 +166,10 @@ extension _ExpiryFilters on _ExpiryPageState {
                 margin: const EdgeInsets.only(right: 4),
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
-                  color: active ? color.withValues(alpha: 0.15) : kCard,
+                  color: active ? color.withValues(alpha: 0.15) : cs.surface,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: active ? color : Colors.grey.shade200,
+                    color: active ? color : cs.outlineVariant,
                     width: active ? 1.5 : 1,
                   ),
                 ),
@@ -171,7 +177,7 @@ extension _ExpiryFilters on _ExpiryPageState {
                   children: [
                     Icon(
                       _ExpiryPageState._tierIcon(t),
-                      color: active ? color : kGrey,
+                      color: active ? color : cs.onSurfaceVariant,
                       size: 16,
                     ),
                     const SizedBox(height: 2),
@@ -180,7 +186,7 @@ extension _ExpiryFilters on _ExpiryPageState {
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: active ? color : kDark,
+                        color: active ? color : cs.onSurface,
                       ),
                     ),
                     Text(
@@ -193,7 +199,7 @@ extension _ExpiryFilters on _ExpiryPageState {
                           : t == 'good'
                           ? '3-6m'
                           : '6m+',
-                      style: const TextStyle(fontSize: 9, color: kGrey),
+                      style: TextStyle(fontSize: 9, color: cs.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -207,6 +213,7 @@ extension _ExpiryFilters on _ExpiryPageState {
 
   // ── DATE RANGE BAR ────────────────────────────────────────
   Widget _buildDateRangeBar() {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: Row(
@@ -237,13 +244,13 @@ extension _ExpiryFilters on _ExpiryPageState {
                           ),
                           decoration: BoxDecoration(
                             color: _dateRange == r.key && _selectedDate == null
-                                ? kRed
+                                ? cs.primary
                                 : Colors.transparent,
                             border: Border.all(
                               color:
                                   _dateRange == r.key && _selectedDate == null
-                                  ? kRed
-                                  : Colors.grey.shade300,
+                                  ? cs.primary
+                                  : cs.outlineVariant,
                             ),
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -253,8 +260,8 @@ extension _ExpiryFilters on _ExpiryPageState {
                               fontSize: 11,
                               color:
                                   _dateRange == r.key && _selectedDate == null
-                                  ? Colors.white
-                                  : kGrey,
+                                  ? cs.onPrimary
+                                  : cs.onSurfaceVariant,
                             ),
                           ),
                         ),
@@ -275,7 +282,7 @@ extension _ExpiryFilters on _ExpiryPageState {
                 lastDate: DateTime(2040),
                 builder: (ctx, child) => Theme(
                   data: Theme.of(ctx).copyWith(
-                    colorScheme: const ColorScheme.light(primary: kRed),
+                    colorScheme: ColorScheme.light(primary: cs.primary),
                   ),
                   child: child!,
                 ),
@@ -290,17 +297,17 @@ extension _ExpiryFilters on _ExpiryPageState {
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: _selectedDate != null ? kRed : kCard,
+                color: _selectedDate != null ? cs.primary : cs.surface,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: _selectedDate != null ? kRed : Colors.grey.shade300,
+                  color: _selectedDate != null ? cs.primary : cs.outlineVariant,
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.calendar_today_outlined,
-                    color: _selectedDate != null ? Colors.white : kGrey,
+                    color: _selectedDate != null ? cs.onPrimary : cs.onSurfaceVariant,
                     size: 16,
                   ),
                   if (_selectedDate != null) ...[
@@ -308,7 +315,7 @@ extension _ExpiryFilters on _ExpiryPageState {
                     Text(
                       '${_selectedDate!.day}/'
                       '${_selectedDate!.month}',
-                      style: const TextStyle(color: Colors.white, fontSize: 11),
+                      style: TextStyle(color: cs.onPrimary, fontSize: 11),
                     ),
                   ],
                 ],

@@ -12,6 +12,7 @@ extension _InventoryReplenish on _InventoryPageState {
 
   // ignore: unused_element
   Widget _replenishCard(ProductModel p) {
+    final cs = Theme.of(context).colorScheme;
     final color =
         kCategoryColors[p.colorIndex.clamp(0, kCategoryColors.length - 1)];
 
@@ -38,15 +39,15 @@ extension _InventoryReplenish on _InventoryPageState {
                   children: [
                     Text(
                       p.name,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                     ),
                     Text(
                       p.categoryName,
-                      style: const TextStyle(color: kGrey, fontSize: 11),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                     ),
                   ],
                 ),
@@ -75,10 +76,10 @@ extension _InventoryReplenish on _InventoryPageState {
                           children: [
                             Text(
                               v.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: kDark,
+                                color: cs.onSurface,
                               ),
                             ),
                             // Cost + stock info
@@ -94,8 +95,8 @@ extension _InventoryReplenish on _InventoryPageState {
                                 const SizedBox(width: 8),
                                 Text(
                                   'Cost: ${AppHelpers.peso(v.avgCostPrice)}',
-                                  style: const TextStyle(
-                                    color: kGrey,
+                                  style: TextStyle(
+                                    color: cs.onSurfaceVariant,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -103,8 +104,8 @@ extension _InventoryReplenish on _InventoryPageState {
                                   const SizedBox(width: 8),
                                   Text(
                                     v.sku,
-                                    style: const TextStyle(
-                                      color: kGrey,
+                                    style: TextStyle(
+                                      color: cs.onSurfaceVariant,
                                       fontSize: 10,
                                     ),
                                   ),
@@ -118,7 +119,7 @@ extension _InventoryReplenish on _InventoryPageState {
                       // Add / Remove buttons
                       _actionBtn(
                         icon: Icons.add_circle_outline,
-                        color: kGreen,
+                        color: cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success,
                         label: 'Add',
                         onTap: () => _showAdjustDialog(
                           product: p,
@@ -129,7 +130,7 @@ extension _InventoryReplenish on _InventoryPageState {
                       const SizedBox(width: 6),
                       _actionBtn(
                         icon: Icons.remove_circle_outline,
-                        color: kRed,
+                        color: cs.error,
                         label: 'Remove',
                         onTap: () => _showAdjustDialog(
                           product: p,
@@ -154,6 +155,7 @@ extension _InventoryReplenish on _InventoryPageState {
     required VariantModel variant,
     required bool isAdding,
   }) {
+    final cs = Theme.of(context).colorScheme;
     final qtyCtrl = TextEditingController();
     final costCtrl = TextEditingController(
       text: variant.costPrice.toStringAsFixed(2),
@@ -176,7 +178,7 @@ extension _InventoryReplenish on _InventoryPageState {
             isAdding ? 'Add Stock' : 'Remove Stock',
             style: TextStyle(
               fontWeight: FontWeight.bold,
-              color: isAdding ? kGreen : kRed,
+              color: isAdding ? (cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success) : cs.error,
             ),
           ),
           content: SingleChildScrollView(
@@ -186,7 +188,7 @@ extension _InventoryReplenish on _InventoryPageState {
               children: [
                 // Product info
                 appCard(
-                  color: kBg,
+                  color: Theme.of(context).colorScheme.surfaceContainerLowest,
                   margin: const EdgeInsets.only(bottom: 12),
                   child: Column(
                     children: [
@@ -214,7 +216,7 @@ extension _InventoryReplenish on _InventoryPageState {
                         icon: const Icon(Icons.tune, size: 14),
                         label: const Text('Edit Reasons'),
                         style: TextButton.styleFrom(
-                          foregroundColor: kRed,
+                          foregroundColor: cs.primary,
                           textStyle: const TextStyle(fontSize: 11),
                         ),
                       ),
@@ -224,7 +226,7 @@ extension _InventoryReplenish on _InventoryPageState {
                     initialValue: _removeReasons.contains(reason)
                         ? reason
                         : _removeReasons.first,
-                    decoration: AppInput.dialog('Select reason'),
+                    decoration: AppInput.dialog(context, 'Select reason'),
                     items: _removeReasons
                         .map(
                           (r) => DropdownMenuItem(
@@ -247,7 +249,7 @@ extension _InventoryReplenish on _InventoryPageState {
                 TextField(
                   controller: qtyCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: AppInput.dialog('Enter qty'),
+                  decoration: AppInput.dialog(context, 'Enter qty'),
                 ),
 
                 if (isAdding) ...[
@@ -256,7 +258,7 @@ extension _InventoryReplenish on _InventoryPageState {
                   TextField(
                     controller: costCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: AppInput.dialog('0.00'),
+                    decoration: AppInput.dialog(context, '0.00'),
                   ),
                   const SizedBox(height: 12),
 
@@ -277,10 +279,10 @@ extension _InventoryReplenish on _InventoryPageState {
                             LifeIndicator(type: 'Expiry Date', date: ''),
                           ),
                         ),
-                        icon: const Icon(Icons.add, size: 14, color: kGreen),
-                        label: const Text(
+                        icon: Icon(Icons.add, size: 14, color: cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success),
+                        label: Text(
                           'Add',
-                          style: TextStyle(color: kGreen, fontSize: 12),
+                          style: TextStyle(color: cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success, fontSize: 12),
                         ),
                       ),
                     ],
@@ -297,7 +299,7 @@ extension _InventoryReplenish on _InventoryPageState {
                             child: DropdownButtonFormField<String>(
                               initialValue: ind.type,
                               isExpanded: true,
-                              decoration: AppInput.dialog('Type').copyWith(
+                              decoration: AppInput.dialog(context, 'Type').copyWith(
                                 contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 8,
                                   vertical: 8,
@@ -369,7 +371,7 @@ extension _InventoryReplenish on _InventoryPageState {
                                   vertical: 12,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: kInputFill,
+                                  color: cs.surfaceContainerHighest,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Text(
@@ -379,7 +381,7 @@ extension _InventoryReplenish on _InventoryPageState {
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                   style: TextStyle(
-                                    color: ind.date.isEmpty ? kGrey : kDark,
+                                    color: ind.date.isEmpty ? cs.onSurfaceVariant : cs.onSurface,
                                     fontSize: 12,
                                   ),
                                 ),
@@ -389,10 +391,10 @@ extension _InventoryReplenish on _InventoryPageState {
                           const SizedBox(width: 4),
                           GestureDetector(
                             onTap: () => setD(() => indicators.removeAt(i)),
-                            child: const Icon(
+                            child: Icon(
                               Icons.close,
                               size: 16,
-                              color: kGrey,
+                              color: cs.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -410,8 +412,8 @@ extension _InventoryReplenish on _InventoryPageState {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: isAdding ? kGreen : kRed,
-                foregroundColor: Colors.white,
+                backgroundColor: isAdding ? (cs.brightness == Brightness.dark ? PaletteDark.success : PaletteLight.success) : cs.error,
+                foregroundColor: cs.onPrimary,
               ),
               onPressed: () async {
                 final qty = int.tryParse(qtyCtrl.text) ?? 0;
@@ -535,7 +537,7 @@ extension _InventoryReplenish on _InventoryPageState {
                     Expanded(
                       child: TextField(
                         controller: ctrl,
-                        decoration: AppInput.dialog('New reason'),
+                        decoration: AppInput.dialog(context, 'New reason'),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -551,7 +553,7 @@ extension _InventoryReplenish on _InventoryPageState {
                         });
                         onChanged();
                       },
-                      icon: const Icon(Icons.add, color: kRed),
+                      icon: Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
                     ),
                   ],
                 ),
@@ -575,10 +577,10 @@ extension _InventoryReplenish on _InventoryPageState {
                         ),
                         IconButton(
                           visualDensity: VisualDensity.compact,
-                          icon: const Icon(
+                          icon: Icon(
                             Icons.delete_outline,
                             size: 18,
-                            color: kRed,
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                           onPressed: _removeReasons.length <= 1
                               ? null

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/constants/app_colors.dart';
-
 class AppEmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -18,25 +16,29 @@ class AppEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Colors.grey.shade300, size: 56),
+            Icon(icon, color: cs.outlineVariant, size: 56),
             const SizedBox(height: 12),
             Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: kGrey, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             if (message != null) ...[
               const SizedBox(height: 4),
               Text(
                 message!,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: kGrey, fontSize: 12),
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
               ),
             ],
             if (action != null) ...[const SizedBox(height: 14), action!],
@@ -54,8 +56,12 @@ class AppLoadingLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return visible
-        ? const LinearProgressIndicator(color: kRed)
+        ? LinearProgressIndicator(
+            color: cs.primary,
+            backgroundColor: cs.primary.withValues(alpha: 0.12),
+          )
         : const SizedBox.shrink();
   }
 }

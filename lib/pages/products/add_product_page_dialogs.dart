@@ -2,6 +2,7 @@ part of 'add_product_page.dart';
 
 extension _AddProductPageDialogs on _AddProductPageState {
   void _showVariantDialog({VariantModel? existing, int? editIndex}) {
+    final cs = Theme.of(context).colorScheme;
     final namCtrl = TextEditingController(text: existing?.name ?? '');
     final priceCtrl = TextEditingController(
       text: existing != null ? existing.price.toStringAsFixed(2) : '',
@@ -31,7 +32,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
           ),
           title: Text(
             existing != null ? 'Edit Variant' : 'Add Variant',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: kRed),
+            style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -39,7 +40,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 appCard(
-                  color: kBg,
+                  color: cs.surfaceContainerLowest,
                   margin: EdgeInsets.zero,
                   child: Center(
                     child: GestureDetector(
@@ -53,9 +54,9 @@ extension _AddProductPageDialogs on _AddProductPageState {
                         height: 116,
                         clipBehavior: Clip.antiAlias,
                         decoration: BoxDecoration(
-                          color: kInputFill,
+                          color: cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.grey.shade200),
+                          border: Border.all(color: cs.outlineVariant),
                           image: varImgFile != null
                               ? DecorationImage(
                                   image: FileImage(varImgFile!),
@@ -69,19 +70,19 @@ extension _AddProductPageDialogs on _AddProductPageState {
                               : null,
                         ),
                         child: varImgFile == null && varImgUrl.isEmpty
-                            ? const Column(
+                            ? Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     Icons.add_photo_alternate_outlined,
-                                    color: kGrey,
+                                    color: cs.onSurfaceVariant,
                                     size: 28,
                                   ),
-                                  SizedBox(height: 4),
+                                  const SizedBox(height: 4),
                                   Text(
                                     'Variant image',
                                     style: TextStyle(
-                                      color: kGrey,
+                                      color: cs.onSurfaceVariant,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -117,14 +118,14 @@ extension _AddProductPageDialogs on _AddProductPageState {
                     children: [
                       Icon(
                         showCond ? Icons.expand_less : Icons.add_circle_outline,
-                        color: kRed,
+                        color: cs.primary,
                         size: 16,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         showCond ? 'Hide Conditions' : '+ Add Conditions',
-                        style: const TextStyle(
-                          color: kRed,
+                        style: TextStyle(
+                          color: cs.primary,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -150,8 +151,8 @@ extension _AddProductPageDialogs on _AddProductPageState {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: kRed,
-                foregroundColor: Colors.white,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
               ),
               onPressed: () {
                 if (namCtrl.text.trim().isEmpty || priceCtrl.text.isEmpty) {
@@ -215,6 +216,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
     required String productName,
     bool isDialog = false,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -222,14 +224,14 @@ extension _AddProductPageDialogs on _AddProductPageState {
           fieldLabel('Variant Name (optional)'),
           TextField(
             controller: namCtrl,
-            decoration: AppInput.field('e.g. 1L Bottle'),
+            decoration: AppInput.field(context, 'e.g. 1L Bottle'),
           ),
           const SizedBox(height: 10),
         ] else ...[
           fieldLabel('Variant Name *'),
           TextField(
             controller: namCtrl,
-            decoration: AppInput.field(
+            decoration: AppInput.field(context, 
               'e.g. Liter Solo',
               icon: Icons.label_outline,
             ),
@@ -249,7 +251,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                     initialValue: _AddProductPageOptions(
                       this,
                     )._optionValueOrNull(_uomOptions, unit),
-                    decoration: AppInput.field('Unit'),
+                    decoration: AppInput.field(context, 'Unit'),
                     items: _uomOptions
                         .map(
                           (u) => DropdownMenuItem(
@@ -281,7 +283,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                       icon: const Icon(Icons.tune, size: 14),
                       label: const Text('Edit UOM'),
                       style: TextButton.styleFrom(
-                        foregroundColor: kRed,
+                        foregroundColor: cs.primary,
                         textStyle: const TextStyle(fontSize: 11),
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(0, 28),
@@ -301,7 +303,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                     initialValue: _AddProductPageOptions(
                       this,
                     )._optionValueOrNull(_packagingOptions, packaging),
-                    decoration: AppInput.field('Packaging'),
+                    decoration: AppInput.field(context, 'Packaging'),
                     items: _packagingOptions
                         .map(
                           (p) => DropdownMenuItem(
@@ -328,7 +330,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                       icon: const Icon(Icons.tune, size: 14),
                       label: const Text('Edit Packaging'),
                       style: TextButton.styleFrom(
-                        foregroundColor: kRed,
+                        foregroundColor: cs.primary,
                         textStyle: const TextStyle(fontSize: 11),
                         padding: EdgeInsets.zero,
                         minimumSize: const Size(0, 28),
@@ -353,7 +355,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                   TextField(
                     controller: ppuCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: AppInput.field('1'),
+                    decoration: AppInput.field(context, '1'),
                   ),
                 ],
               ),
@@ -368,7 +370,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                     controller: priceCtrl,
                     keyboardType: TextInputType.number,
                     textAlign: TextAlign.right,
-                    decoration: AppInput.field('0.00'),
+                    decoration: AppInput.field(context, '0.00'),
                   ),
                 ],
               ),
@@ -388,7 +390,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                   fieldLabel('SKU (optional)'),
                   TextField(
                     controller: skuCtrl,
-                    decoration: AppInput.field(
+                    decoration: AppInput.field(context, 
                       'Auto-generate or enter custom',
                       icon: Icons.qr_code,
                     ),
@@ -406,9 +408,9 @@ extension _AddProductPageDialogs on _AddProductPageState {
                     namCtrl.text.isEmpty ? 'default' : namCtrl.text,
                   );
                 },
-                child: const Text(
+                child: Text(
                   'Auto',
-                  style: TextStyle(color: kRed, fontSize: 12),
+                  style: TextStyle(color: cs.primary, fontSize: 12),
                 ),
               ),
             ),
@@ -423,6 +425,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
     required List<ConditionModel> conditions,
     required void Function(List<ConditionModel>) onChanged,
   }) {
+    final cs = Theme.of(context).colorScheme;
     final nameCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
     return StatefulBuilder(
@@ -442,7 +445,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                     ),
                     Text(
                       '+₱${e.value.additionalPrice.toStringAsFixed(2)}',
-                      style: const TextStyle(fontSize: 12, color: kGrey),
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
                     ),
                     const SizedBox(width: 4),
                     GestureDetector(
@@ -451,7 +454,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                         onChanged(conditions);
                         setC(() {});
                       },
-                      child: const Icon(Icons.close, size: 14, color: kGrey),
+                      child: Icon(Icons.close, size: 14, color: cs.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -463,7 +466,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                 flex: 2,
                 child: TextField(
                   controller: nameCtrl,
-                  decoration: AppInput.dialog('Name (e.g. Cold)'),
+                  decoration: AppInput.dialog(context, 'Name (e.g. Cold)'),
                 ),
               ),
               const SizedBox(width: 6),
@@ -471,7 +474,7 @@ extension _AddProductPageDialogs on _AddProductPageState {
                 child: TextField(
                   controller: priceCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: AppInput.dialog('+Price'),
+                  decoration: AppInput.dialog(context, '+Price'),
                 ),
               ),
               const SizedBox(width: 6),
@@ -494,10 +497,10 @@ extension _AddProductPageDialogs on _AddProductPageState {
                 child: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: kRed,
+                    color: cs.primary,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 18),
+                  child: Icon(Icons.add, color: cs.onPrimary, size: 18),
                 ),
               ),
             ],

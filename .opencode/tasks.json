@@ -1,0 +1,19 @@
+{
+  "tasks": [
+    { "id": 1, "description": "T1 — Theme System: Create app_palette.dart, app_theme.dart, theme_provider.dart, update app_colors.dart", "status": "done" },
+    { "id": 2, "description": "T2 — Refactor Navigation Shell: Responsive layout with NavigationRail/Drawer", "status": "done" },
+    { "id": 3, "description": "T3 — Modernize Shared Widgets: Theme-aware components + AppSkeleton shimmer", "status": "done" },
+    { "id": 4, "description": "T4 — Refactor Dashboard Page: Controller + extracted widgets + skeletons", "status": "done" },
+    { "id": 5, "description": "T5 — Refactor Sales Page: Split 1,263-line page into focused files", "status": "done" },
+    { "id": 6, "description": "T6 — Refactor Utang Page: Split 997-line page into focused files", "status": "done" },
+    { "id": 7, "description": "T7 — Refactor Products Pages: Clean up product wizard, theme cards", "status": "pending" },
+    { "id": 8, "description": "T8 — Apply Theme to All Remaining Pages", "status": "pending" },
+    { "id": 9, "description": "T9 — Skeleton & Empty States: Reusable shimmer system across all pages", "status": "pending" },
+    { "id": 10, "description": "T10 — Micro-animations & Polish: Page transitions, hero, press feedback", "status": "pending" },
+    { "id": 11, "description": "T11 — Dark Mode Persistence: Save/load theme preference", "status": "pending" },
+    { "id": 12, "description": "T12 — Adaptive/Responsive Layout: Breakpoints, split-pane, responsive grid", "status": "pending" },
+    { "id": 13, "description": "T13 — Polish & Cleanup: Audit hardcoded colors, dead code, verify routes", "status": "pending" }
+  ],
+  "release": { "enabled": false },
+  "completed": false
+}

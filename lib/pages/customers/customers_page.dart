@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../models/customer_model.dart';
 import '../../repositories/customer_repository.dart';
@@ -78,8 +77,9 @@ class _CustomersPageState extends State<CustomersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(title: 'Customers', context: context),
       drawer: AppDrawer(
         changeTab: widget.changeTab,
@@ -87,8 +87,8 @@ class _CustomersPageState extends State<CustomersPage> {
       ),
       floatingActionButton: FloatingActionButton.small(
         heroTag: 'customers_add_fab',
-        backgroundColor: kRed,
-        foregroundColor: Colors.white,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
         onPressed: () => _showForm(),
         child: const Icon(Icons.person_add),
       ),
@@ -100,7 +100,7 @@ class _CustomersPageState extends State<CustomersPage> {
             child: TextField(
               controller: _searchCtrl,
               onChanged: (v) => setState(() => _search = v),
-              decoration: AppInput.field(
+              decoration: AppInput.field(context, 
                 'Search customers...',
                 icon: Icons.search,
               ),
@@ -115,7 +115,7 @@ class _CustomersPageState extends State<CustomersPage> {
               child: Text(
                 '${_filtered.length} customer'
                 '${_filtered.length != 1 ? 's' : ''}',
-                style: const TextStyle(color: kGrey, fontSize: 12),
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
               ),
             ),
           ),
@@ -123,17 +123,17 @@ class _CustomersPageState extends State<CustomersPage> {
           const SizedBox(height: 8),
 
           // List
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          if (_loading) LinearProgressIndicator(color: cs.primary),
           Expanded(
             child: _filtered.isEmpty
-                ? const Center(
+                ? Center(
                     child: Text(
                       'No customers yet.',
-                      style: TextStyle(color: kGrey),
+                      style: TextStyle(color: cs.onSurfaceVariant),
                     ),
                   )
                 : RefreshIndicator(
-                    color: kRed,
+                    color: cs.primary,
                     onRefresh: _load,
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -149,6 +149,7 @@ class _CustomersPageState extends State<CustomersPage> {
 
   // ── CUSTOMER CARD ─────────────────────────────────────────
   Widget _customerCard(CustomerModel c) {
+    final cs = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => _showDetail(c),
       onLongPress: () => _showForm(existing: c),
@@ -156,11 +157,11 @@ class _CustomersPageState extends State<CustomersPage> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: kCard,
+          color: cs.surface,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: cs.shadow.withValues(alpha: 0.04),
               blurRadius: 8,
             ),
           ],
@@ -170,11 +171,11 @@ class _CustomersPageState extends State<CustomersPage> {
             // Avatar circle with first letter
             CircleAvatar(
               radius: 22,
-              backgroundColor: kRedLight,
+              backgroundColor: cs.primaryContainer,
               child: Text(
                 c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-                style: const TextStyle(
-                  color: kRed,
+                style: TextStyle(
+                  color: cs.primary,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -188,21 +189,21 @@ class _CustomersPageState extends State<CustomersPage> {
                 children: [
                   Text(
                     c.name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
-                      color: kDark,
+                      color: cs.onSurface,
                     ),
                   ),
                   if (c.phone.isNotEmpty)
                     Text(
                       c.phone,
-                      style: const TextStyle(color: kGrey, fontSize: 12),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
                     ),
                   if (c.address.isNotEmpty)
                     Text(
                       c.address,
-                      style: const TextStyle(color: kGrey, fontSize: 11),
+                      style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -215,15 +216,15 @@ class _CustomersPageState extends State<CustomersPage> {
               children: [
                 Text(
                   AppHelpers.peso(c.totalPurchases),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
-                    color: kRed,
+                    color: cs.primary,
                   ),
                 ),
-                const Text(
+                Text(
                   'total purchases',
-                  style: TextStyle(fontSize: 10, color: kGrey),
+                  style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
                 ),
               ],
             ),
@@ -235,6 +236,7 @@ class _CustomersPageState extends State<CustomersPage> {
 
   // ── DETAIL SHEET ──────────────────────────────────────────
   void _showDetail(CustomerModel c) async {
+    final cs = Theme.of(context).colorScheme;
     final sales = await SaleRepository.getAll();
     final utangs = await UtangRepository.getAll();
 
@@ -264,7 +266,7 @@ class _CustomersPageState extends State<CustomersPage> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: cs.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -280,11 +282,11 @@ class _CustomersPageState extends State<CustomersPage> {
                     children: [
                       CircleAvatar(
                         radius: 28,
-                        backgroundColor: kRedLight,
+                        backgroundColor: cs.primaryContainer,
                         child: Text(
                           c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
-                          style: const TextStyle(
-                            color: kRed,
+                          style: TextStyle(
+                            color: cs.primary,
                             fontWeight: FontWeight.bold,
                             fontSize: 20,
                           ),
@@ -297,17 +299,17 @@ class _CustomersPageState extends State<CustomersPage> {
                           children: [
                             Text(
                               c.name,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 18,
-                                color: kDark,
+                                color: cs.onSurface,
                               ),
                             ),
                             if (c.phone.isNotEmpty)
                               Text(
                                 c.phone,
-                                style: const TextStyle(
-                                  color: kGrey,
+                                style: TextStyle(
+                                  color: cs.onSurfaceVariant,
                                   fontSize: 13,
                                 ),
                               ),
@@ -316,7 +318,7 @@ class _CustomersPageState extends State<CustomersPage> {
                       ),
                       // Edit button
                       IconButton(
-                        icon: const Icon(Icons.edit_outlined, color: kGrey),
+                        icon: Icon(Icons.edit_outlined, color: cs.onSurfaceVariant),
                         onPressed: () {
                           Navigator.pop(context);
                           _showForm(existing: c);
@@ -324,7 +326,7 @@ class _CustomersPageState extends State<CustomersPage> {
                       ),
                       // Delete button
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, color: kRed),
+                        icon: Icon(Icons.delete_outline, color: cs.error),
                         onPressed: () => _confirmDelete(c),
                       ),
                     ],
@@ -371,12 +373,12 @@ class _CustomersPageState extends State<CustomersPage> {
 
                   // Purchase history
                   if (custSales.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       'Purchase History',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 15,
-                        color: kDark,
+                        color: cs.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -387,9 +389,9 @@ class _CustomersPageState extends State<CustomersPage> {
                             margin: const EdgeInsets.only(bottom: 8),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: kBg,
+                              color: cs.surfaceContainerLowest,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey.shade200),
+                              border: Border.all(color: cs.outlineVariant),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,9 +409,9 @@ class _CustomersPageState extends State<CustomersPage> {
                                     ),
                                     Text(
                                       AppHelpers.peso(s.total),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.bold,
-                                        color: kRed,
+                                        color: cs.primary,
                                         fontSize: 13,
                                       ),
                                     ),
@@ -431,16 +433,16 @@ class _CustomersPageState extends State<CustomersPage> {
                                                 '${i.conditionName.isNotEmpty ? ' / ${i.conditionName}' : ''}',
                                                 maxLines: 1,
                                                 overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  color: kDark,
+                                                style: TextStyle(
+                                                  color: cs.onSurface,
                                                   fontSize: 11,
                                                 ),
                                               ),
                                             ),
                                             Text(
                                               'x${i.qty} @ ${AppHelpers.peso(i.price)}',
-                                              style: const TextStyle(
-                                                color: kGrey,
+                                              style: TextStyle(
+                                                color: cs.onSurfaceVariant,
                                                 fontSize: 10,
                                               ),
                                             ),
@@ -452,8 +454,8 @@ class _CustomersPageState extends State<CustomersPage> {
                                   Text(
                                     '+${s.items.length - 4} more item'
                                     '${s.items.length - 4 == 1 ? '' : 's'}',
-                                    style: const TextStyle(
-                                      color: kGrey,
+                                    style: TextStyle(
+                                      color: cs.onSurfaceVariant,
                                       fontSize: 10,
                                     ),
                                   ),
@@ -473,6 +475,7 @@ class _CustomersPageState extends State<CustomersPage> {
 
   // ── ADD / EDIT FORM ───────────────────────────────────────
   void _showForm({CustomerModel? existing}) {
+    final cs = Theme.of(context).colorScheme;
     final isEdit = existing != null;
     final namCtrl = TextEditingController(text: existing?.name ?? '');
     final phCtrl = TextEditingController(text: existing?.phone ?? '');
@@ -485,7 +488,7 @@ class _CustomersPageState extends State<CustomersPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           isEdit ? 'Edit Customer' : 'Add Customer',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: kRed),
+          style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
         ),
         content: SingleChildScrollView(
           child: Column(
@@ -505,7 +508,7 @@ class _CustomersPageState extends State<CustomersPage> {
               TextField(
                 controller: notCtrl,
                 maxLines: 3,
-                decoration: AppInput.dialog('Notes (optional)'),
+                decoration: AppInput.dialog(context, 'Notes (optional)'),
               ),
               if (isEdit) ...[
                 const SizedBox(height: 10),
@@ -529,8 +532,8 @@ class _CustomersPageState extends State<CustomersPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: kRed,
-              foregroundColor: Colors.white,
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
             ),
             onPressed: () async {
               if (namCtrl.text.trim().isEmpty) return;
@@ -558,6 +561,7 @@ class _CustomersPageState extends State<CustomersPage> {
   }
 
   Future<void> _confirmDelete(CustomerModel c) async {
+    final cs = Theme.of(context).colorScheme;
     Navigator.pop(context);
     final ok = await showDialog<bool>(
       context: context,
@@ -571,8 +575,8 @@ class _CustomersPageState extends State<CustomersPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: kRed,
-              foregroundColor: Colors.white,
+              backgroundColor: cs.error,
+              foregroundColor: cs.onPrimary,
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Delete'),
@@ -594,15 +598,16 @@ class _CustomersPageState extends State<CustomersPage> {
   }) => TextField(
     controller: ctrl,
     keyboardType: type,
-    decoration: AppInput.dialog(hint),
+    decoration: AppInput.dialog(context, hint),
   );
 
   Widget _formInfoRow({required String label, required String value}) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: kInputFill,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -611,13 +616,13 @@ class _CustomersPageState extends State<CustomersPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(color: kGrey, fontSize: 10)),
+                Text(label, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10)),
                 Text(
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: kDark,
+                  style: TextStyle(
+                    color: cs.onSurface,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),

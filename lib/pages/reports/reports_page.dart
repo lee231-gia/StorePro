@@ -7,7 +7,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import '../../core/constants/app_colors.dart';
 import '../../core/services/sync_service.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
@@ -20,6 +19,9 @@ import '../../models/inventory_model.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../widgets/app_drawer.dart';
+import '../../shared/widgets/state_views.dart';
+import '../../shared/widgets/app_skeleton.dart';
+import '../../core/theme/app_palette.dart';
 import '../products/product_detail_page.dart';
 
 part 'reports_filters.dart';
@@ -49,12 +51,10 @@ class _ReportsPageState extends State<ReportsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
 
-  // ── RANGE ─────────────────────────────────────────────────
   String _range = 'today';
   DateTime _from = DateTime.now();
   DateTime _to = DateTime.now();
 
-  // ── DATA ──────────────────────────────────────────────────
   Map<String, dynamic>? _summary;
   Map<String, Map<String, dynamic>> _rangeSummaries = {};
   List<ProductModel> _products = [];
@@ -96,7 +96,6 @@ class _ReportsPageState extends State<ReportsPage>
     super.dispose();
   }
 
-  // ── DATE RANGE ────────────────────────────────────────────
   void _setRange(String range) {
     final now = DateTime.now();
     setState(() => _range = range);
@@ -139,7 +138,6 @@ class _ReportsPageState extends State<ReportsPage>
       '${d.month.toString().padLeft(2, '0')}-'
       '${d.day.toString().padLeft(2, '0')}';
 
-  // ── GENERATE ──────────────────────────────────────────────
   Future<void> _generate() async {
     setState(() => _loading = true);
     Map<String, dynamic>? summary;
@@ -183,6 +181,7 @@ class _ReportsPageState extends State<ReportsPage>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final pendingTab = ReportsPage.pendingTab;
     if (pendingTab != null && pendingTab >= 0 && pendingTab < _tabCtrl.length) {
       ReportsPage.pendingTab = null;
@@ -191,20 +190,20 @@ class _ReportsPageState extends State<ReportsPage>
       });
     }
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: 'Reports',
         context: context,
         actions: [
           if (_summary != null && !_loading) ...[
             if (_exporting)
-              const Padding(
-                padding: EdgeInsets.all(14),
+              Padding(
+                padding: const EdgeInsets.all(14),
                 child: SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                    color: Colors.white,
+                    color: cs.onPrimary,
                     strokeWidth: 2,
                   ),
                 ),
@@ -231,7 +230,7 @@ class _ReportsPageState extends State<ReportsPage>
       body: Column(
         children: [
           _buildTabBar(),
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          AppLoadingLine(visible: _loading),
           Expanded(
             child: TabBarView(
               controller: _tabCtrl,
@@ -247,6 +246,4 @@ class _ReportsPageState extends State<ReportsPage>
       ),
     );
   }
-
-  // ── RANGE SELECTOR ────────────────────────────────────────
 }

@@ -2,14 +2,22 @@ part of 'reports_page.dart';
 
 extension _ReportsInventory on _ReportsPageState {
   Widget _buildInventoryTab() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final success = isDark ? PaletteDark.success : PaletteLight.success;
+    final warning = isDark ? PaletteDark.warning : PaletteLight.warning;
+    final error = isDark ? PaletteDark.error : PaletteLight.error;
+
     return FutureBuilder<List<InventoryLogModel>>(
       future: ReportRepository.getInventoryLogs(
         _fmt(_from),
         _fmt(_to),
       ).timeout(const Duration(seconds: 4), onTimeout: () => const []),
       builder: (ctx, snap) {
+        final cs = Theme.of(context).colorScheme;
         if (snap.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: kRed));
+          return const Center(
+            child: AppSkeletonList(itemCount: 3),
+          );
         }
 
         final logs = snap.data ?? const <InventoryLogModel>[];
@@ -47,8 +55,8 @@ extension _ReportsInventory on _ReportsPageState {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [kGreen, Color(0xFF1B5E20)],
+                gradient: LinearGradient(
+                  colors: [success, Color.lerp(success, Colors.black, 0.2)!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -57,25 +65,25 @@ extension _ReportsInventory on _ReportsPageState {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Total Inventory Value',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.7), fontSize: 12),
                   ),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(
                       AppHelpers.peso(invValue),
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: cs.onPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 24,
                       ),
                     ),
                   ),
-                  const Text(
+                  Text(
                     'Stock on hand x average cost price',
-                    style: TextStyle(color: Colors.white60, fontSize: 11),
+                    style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.6), fontSize: 11),
                   ),
                 ],
               ),
@@ -83,17 +91,17 @@ extension _ReportsInventory on _ReportsPageState {
             const SizedBox(height: 12),
             Row(
               children: [
-                _statCard2('Stock Added', '+$added pcs', kGreen),
+                _statCard2('Stock Added', '+$added pcs', success),
                 const SizedBox(width: 10),
-                _statCard2('Stock Removed', '-$removed pcs', kOrange),
+                _statCard2('Stock Removed', '-$removed pcs', warning),
               ],
             ),
             const SizedBox(height: 10),
             Row(
               children: [
-                _statCard2('Total Low Stock', '${lowStock.length}', kOrange),
+                _statCard2('Total Low Stock', '${lowStock.length}', warning),
                 const SizedBox(width: 10),
-                _statCard2('Total No Stock', '${noStock.length}', kRed),
+                _statCard2('Total No Stock', '${noStock.length}', error),
               ],
             ),
             const SizedBox(height: 10),
@@ -102,10 +110,10 @@ extension _ReportsInventory on _ReportsPageState {
                 _statCard2(
                   'Damaged/Shrinkage',
                   AppHelpers.peso(damagedLoss),
-                  kRed,
+                  error,
                 ),
                 const SizedBox(width: 10),
-                _statCard2('At Risk Loss', AppHelpers.peso(riskLoss), kOrange),
+                _statCard2('At Risk Loss', AppHelpers.peso(riskLoss), warning),
               ],
             ),
             const SizedBox(height: 12),
@@ -114,26 +122,26 @@ extension _ReportsInventory on _ReportsPageState {
               'Low Stock Products',
               lowStock,
               emptyText: 'No low-stock products.',
-              color: kOrange,
+              color: warning,
             ),
             _inventoryListSection(
               'No Stock Products',
               noStock,
               emptyText: 'No out-of-stock products.',
-              color: kRed,
+              color: error,
             ),
             _inventoryListSection(
               'At Risk Products',
               atRisk,
               emptyText: 'No urgent expiry risk found.',
-              color: kRed,
+              color: error,
               amountKey: 'risk',
             ),
             _inventoryListSection(
               'Shrinkage / Damaged Losses',
               damaged,
               emptyText: 'No shrinkage or damaged losses in this range.',
-              color: kRed,
+              color: error,
               amountKey: 'loss',
             ),
           ],
@@ -217,6 +225,9 @@ extension _ReportsInventory on _ReportsPageState {
   }
 
   Widget _reorderWarning(List<Map<String, dynamic>> lowStock) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final warning = isDark ? PaletteDark.warning : PaletteLight.warning;
     final critical = lowStock
         .where((row) => (row['stock'] as int) <= 5)
         .toList();
@@ -229,19 +240,19 @@ extension _ReportsInventory on _ReportsPageState {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: kOrange.withValues(alpha: 0.1),
+        color: warning.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: kOrange.withValues(alpha: 0.35)),
+        border: Border.all(color: warning.withValues(alpha: 0.35)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_outlined, color: kOrange, size: 20),
+          Icon(Icons.warning_amber_outlined, color: warning, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               'Reorder Warning: $names ${critical.length > 2 ? 'and ${critical.length - 2} more are' : 'are'} critically low.',
-              style: const TextStyle(
-                color: kDark,
+              style: TextStyle(
+                color: cs.onSurface,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -259,6 +270,7 @@ extension _ReportsInventory on _ReportsPageState {
     required Color color,
     String? amountKey,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return appCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,9 +280,9 @@ extension _ReportsInventory on _ReportsPageState {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: kDark,
+                    color: cs.onSurface,
                     fontSize: 14,
                   ),
                 ),
@@ -280,7 +292,7 @@ extension _ReportsInventory on _ReportsPageState {
           ),
           const SizedBox(height: 8),
           if (rows.isEmpty)
-            Text(emptyText, style: const TextStyle(color: kGrey, fontSize: 11))
+            Text(emptyText, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11))
           else
             ...rows.take(8).map((row) {
               final amount = amountKey == null
@@ -311,8 +323,8 @@ extension _ReportsInventory on _ReportsPageState {
                               (row['name'] ?? '').toString(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: kDark,
+                              style: TextStyle(
+                                color: cs.onSurface,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
                               ),
@@ -321,8 +333,8 @@ extension _ReportsInventory on _ReportsPageState {
                               (row['subtitle'] ?? '').toString(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: kGrey,
+                              style: TextStyle(
+                                color: cs.onSurfaceVariant,
                                 fontSize: 11,
                               ),
                             ),

@@ -1,13 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'core/constants/app_colors.dart';
 import 'core/constants/app_routes.dart';
 import 'core/services/alert_service.dart';
 import 'core/services/data_sync_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/services/sync_service.dart';
 import 'core/services/sqlite_service.dart';
+import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
+import 'widgets/app_drawer.dart';
 import 'core/utils/session.dart';
 import 'repositories/auth_repository.dart';
 import 'pages/auth/welcome_page.dart';
@@ -28,8 +30,13 @@ import 'pages/reports/reports_page.dart';
 
 class StorePro extends StatefulWidget {
   final bool localBootstrapped;
+  final ThemeProvider themeProvider;
 
-  const StorePro({super.key, this.localBootstrapped = false});
+  const StorePro({
+    super.key,
+    this.localBootstrapped = false,
+    required this.themeProvider,
+  });
 
   @override
   State<StorePro> createState() => _StoreProState();
@@ -88,43 +95,31 @@ class _StoreProState extends State<StorePro> {
   Widget build(BuildContext context) {
     if (!_bootstrapped) return const _StoreProBootScreen();
 
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'StorePro',
-      theme: ThemeData(
-        fontFamily: 'Poppins',
-        colorScheme: ColorScheme.fromSeed(seedColor: kRed),
-        useMaterial3: true,
-        scaffoldBackgroundColor: kBg,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: kRed,
-          foregroundColor: Colors.white,
-          elevation: 0,
-        ),
-        switchTheme: SwitchThemeData(
-          thumbColor: WidgetStateProperty.resolveWith(
-            (s) => s.contains(WidgetState.selected) ? kRed : Colors.white,
-          ),
-          trackColor: WidgetStateProperty.resolveWith(
-            (s) => s.contains(WidgetState.selected)
-                ? kRedLight
-                : Colors.grey.shade300,
-          ),
-        ),
-      ),
-      initialRoute: Session.storeId.isEmpty
-          ? AppRoutes.welcome
-          : AppRoutes.home,
-      routes: {
-        AppRoutes.welcome: (_) =>
-            Session.storeId.isEmpty ? const WelcomePage() : const MainNavPage(),
-        AppRoutes.login: (_) =>
-            Session.storeId.isEmpty ? const LoginPage() : const MainNavPage(),
-        AppRoutes.signup: (_) =>
-            Session.storeId.isEmpty ? const SignupPage() : const MainNavPage(),
-        AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
-        AppRoutes.settings: (_) => const SettingsPage(),
-        AppRoutes.home: (_) => const MainNavPage(),
+    return ListenableBuilder(
+      listenable: widget.themeProvider,
+      builder: (context, _) {
+        final theme = widget.themeProvider;
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          title: 'StorePro',
+          theme: AppTheme.light(),
+          darkTheme: AppTheme.dark(),
+          themeMode: theme.themeMode,
+          initialRoute: Session.storeId.isEmpty
+              ? AppRoutes.welcome
+              : AppRoutes.home,
+          routes: {
+            AppRoutes.welcome: (_) =>
+                Session.storeId.isEmpty ? const WelcomePage() : const MainNavPage(),
+            AppRoutes.login: (_) =>
+                Session.storeId.isEmpty ? const LoginPage() : const MainNavPage(),
+            AppRoutes.signup: (_) =>
+                Session.storeId.isEmpty ? const SignupPage() : const MainNavPage(),
+            AppRoutes.forgotPassword: (_) => const ForgotPasswordPage(),
+            AppRoutes.settings: (_) => const SettingsPage(),
+            AppRoutes.home: (_) => const MainNavPage(),
+          },
+        );
       },
     );
   }
@@ -139,17 +134,19 @@ class _StoreProBootScreen extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Poppins',
-        colorScheme: ColorScheme.fromSeed(seedColor: kRed),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF8B1A1A),
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
-        scaffoldBackgroundColor: kBg,
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
       ),
       home: const Scaffold(
-        backgroundColor: kBg,
         body: Center(
           child: SizedBox(
             width: 34,
             height: 34,
-            child: CircularProgressIndicator(color: kRed, strokeWidth: 3),
+            child: CircularProgressIndicator(strokeWidth: 3),
           ),
         ),
       ),
@@ -203,16 +200,24 @@ class _MainNavPageState extends State<MainNavPage> {
     });
   }
 
-  Widget _buildPageStack() {
-    _pageFor(_index);
-    return Stack(
-      children: _pageCache.entries.map((entry) {
-        final active = entry.key == _index;
-        return Offstage(
-          offstage: !active,
-          child: TickerMode(enabled: active, child: entry.value),
+  Widget _buildPageContent() {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      switchInCurve: Curves.easeOut,
+      switchOutCurve: Curves.easeIn,
+      transitionBuilder: (child, animation) {
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.02, 0),
+            end: Offset.zero,
+          ).animate(animation),
+          child: FadeTransition(opacity: animation, child: child),
         );
-      }).toList(),
+      },
+      child: KeyedSubtree(
+        key: ValueKey(_index),
+        child: _pageFor(_index),
+      ),
     );
   }
 
@@ -226,7 +231,66 @@ class _MainNavPageState extends State<MainNavPage> {
           _changeTab(0);
         }
       },
-      child: Scaffold(body: _buildPageStack()),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth >= 720) {
+            return Scaffold(body: _buildWideLayout());
+          }
+          return Scaffold(
+            drawer: AppDrawer(changeTab: _changeTab, currentIndex: _index),
+            body: _buildPageContent(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildWideLayout() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      children: [
+        NavigationRail(
+          selectedIndex: _index,
+          onDestinationSelected: _changeTab,
+          labelType: NavigationRailLabelType.all,
+          leading: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: colorScheme.primary,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.storefront_outlined, color: colorScheme.onPrimary, size: 22),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'StorePro',
+                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: colorScheme.primary),
+                ),
+              ],
+            ),
+          ),
+          destinations: const [
+            NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), label: Text('Dashboard')),
+            NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), label: Text('Products')),
+            NavigationRailDestination(icon: Icon(Icons.warehouse_outlined), label: Text('Inventory')),
+            NavigationRailDestination(icon: Icon(Icons.event_busy_outlined), label: Text('Expiry')),
+            NavigationRailDestination(icon: Icon(Icons.point_of_sale_outlined), label: Text('Sales')),
+            NavigationRailDestination(icon: Icon(Icons.account_balance_wallet_outlined), label: Text('Utang')),
+            NavigationRailDestination(icon: Icon(Icons.sticky_note_2_outlined), label: Text('Notes')),
+            NavigationRailDestination(icon: Icon(Icons.category_outlined), label: Text('Categories')),
+            NavigationRailDestination(icon: Icon(Icons.people_outline), label: Text('Customers')),
+            NavigationRailDestination(icon: Icon(Icons.bar_chart_outlined), label: Text('Reports')),
+          ],
+        ),
+        const VerticalDivider(width: 1),
+        Expanded(child: _buildPageContent()),
+      ],
     );
   }
 }

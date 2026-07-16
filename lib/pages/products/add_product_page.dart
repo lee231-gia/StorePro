@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/constants/app_icons.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
@@ -274,8 +275,9 @@ class _AddProductPageState extends State<AddProductPage> {
   // ── BUILD ─────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: isEditing ? 'Edit Product' : 'Add Product',
         context: context,
@@ -284,7 +286,7 @@ class _AddProductPageState extends State<AddProductPage> {
       ),
       body: Column(
         children: [
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          if (_loading) LinearProgressIndicator(color: cs.primary),
           _buildStepBar(),
           Expanded(
             child: IndexedStack(

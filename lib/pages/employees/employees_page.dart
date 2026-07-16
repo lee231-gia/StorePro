@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/theme/app_palette.dart';
 import '../../core/utils/app_helpers.dart';
 import '../../core/utils/session.dart';
 import '../../models/employee_model.dart';
@@ -89,10 +89,11 @@ class _EmployeesPageState extends State<EmployeesPage>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     // If employee feature is off, show disabled screen
     if (!Session.employeeFeature) {
       return Scaffold(
-        backgroundColor: kBg,
+        backgroundColor: cs.surfaceContainerLowest,
         appBar: buildAppBar(title: 'Employees', context: context),
         drawer: AppDrawer(
           changeTab: widget.changeTab,
@@ -102,22 +103,22 @@ class _EmployeesPageState extends State<EmployeesPage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.badge_outlined, color: kGrey, size: 60),
+              Icon(Icons.badge_outlined, color: cs.onSurfaceVariant, size: 60),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Employee feature is disabled.',
-                style: TextStyle(color: kGrey, fontSize: 15),
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 15),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Enable it in Settings → Preferences.',
-                style: TextStyle(color: kGrey, fontSize: 12),
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kRed,
-                  foregroundColor: Colors.white,
+                  backgroundColor: cs.primary,
+                  foregroundColor: cs.onPrimary,
                 ),
                 onPressed: () => Navigator.pushNamed(context, '/settings'),
                 child: const Text('Go to Settings'),
@@ -129,15 +130,15 @@ class _EmployeesPageState extends State<EmployeesPage>
     }
 
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       appBar: buildAppBar(
         title: 'Employees',
         context: context,
         bottom: TabBar(
           controller: _tabCtrl,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white60,
+          indicatorColor: cs.onPrimary,
+          labelColor: cs.onPrimary,
+          unselectedLabelColor: cs.onPrimary.withValues(alpha: 0.6),
           labelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 13,
@@ -163,39 +164,40 @@ class _EmployeesPageState extends State<EmployeesPage>
   // TEAM TAB
   // ══════════════════════════════════════════════════════════
   Widget _buildTeamTab() {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       floatingActionButton: FloatingActionButton.small(
         heroTag: 'employees_add_fab',
-        backgroundColor: kRed,
-        foregroundColor: Colors.white,
+        backgroundColor: cs.primary,
+        foregroundColor: cs.onPrimary,
         onPressed: () => _showForm(),
         child: const Icon(Icons.person_add),
       ),
       body: Column(
         children: [
-          if (_loading) const LinearProgressIndicator(color: kRed),
+          if (_loading) LinearProgressIndicator(color: cs.primary),
           Expanded(
             child: _employees.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.people_outline,
-                          color: kGrey,
+                          color: cs.onSurfaceVariant,
                           size: 56,
                         ),
                         const SizedBox(height: 12),
-                        const Text(
+                        Text(
                           'No employees yet.',
-                          style: TextStyle(color: kGrey),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         ),
                         const SizedBox(height: 16),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: kRed,
-                            foregroundColor: Colors.white,
+                            backgroundColor: cs.primary,
+                            foregroundColor: cs.onPrimary,
                           ),
                           onPressed: _showForm,
                           icon: const Icon(Icons.add),
@@ -205,7 +207,7 @@ class _EmployeesPageState extends State<EmployeesPage>
                     ),
                   )
                 : RefreshIndicator(
-                    color: kRed,
+                    color: cs.primary,
                     onRefresh: _load,
                     child: ListView.builder(
                       padding: const EdgeInsets.all(16),
@@ -220,10 +222,12 @@ class _EmployeesPageState extends State<EmployeesPage>
   }
 
   Widget _employeeCard(EmployeeModel e) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: kCard,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8),
@@ -239,11 +243,11 @@ class _EmployeesPageState extends State<EmployeesPage>
                 // Avatar
                 CircleAvatar(
                   radius: 22,
-                  backgroundColor: kRedLight,
+                  backgroundColor: cs.primaryContainer,
                   child: Text(
                     e.name.isNotEmpty ? e.name[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                      color: kRed,
+                    style: TextStyle(
+                      color: cs.primary,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
@@ -257,20 +261,20 @@ class _EmployeesPageState extends State<EmployeesPage>
                     children: [
                       Text(
                         e.name,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: kDark,
+                          color: cs.onSurface,
                         ),
                       ),
                       Row(
                         children: [
                           if (e.pin.isNotEmpty) ...[
-                            statusBadge('PIN SET', kOrange),
+                            statusBadge('PIN SET', isDark ? PaletteDark.warning : PaletteLight.warning),
                           ] else ...[
-                            const Text(
+                            Text(
                               'No PIN',
-                              style: TextStyle(color: kGrey, fontSize: 11),
+                              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11),
                             ),
                           ],
                         ],
@@ -280,16 +284,16 @@ class _EmployeesPageState extends State<EmployeesPage>
                 ),
 
                 // Actions
-                _iconBtn(Icons.bar_chart_outlined, kRed, () {
+                _iconBtn(Icons.bar_chart_outlined, cs.primary, () {
                   _tabCtrl.animateTo(1);
                   _loadLogs(employeeId: e.id);
                 }),
                 _iconBtn(
                   Icons.edit_outlined,
-                  kGrey,
+                  cs.onSurfaceVariant,
                   () => _showForm(existing: e),
                 ),
-                _iconBtn(Icons.delete_outline, kRed, () => _confirmDelete(e)),
+                _iconBtn(Icons.delete_outline, cs.error, () => _confirmDelete(e)),
               ],
             ),
           ),
@@ -310,8 +314,9 @@ class _EmployeesPageState extends State<EmployeesPage>
   // ACTIVITY TAB
   // ══════════════════════════════════════════════════════════
   Widget _buildActivityTab() {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: cs.surfaceContainerLowest,
       body: Column(
         children: [
           // Filter by employee
@@ -332,17 +337,17 @@ class _EmployeesPageState extends State<EmployeesPage>
           Expanded(
             child: Column(
               children: [
-                if (_logsLoading) const LinearProgressIndicator(color: kRed),
+                if (_logsLoading) LinearProgressIndicator(color: cs.primary),
                 Expanded(
                   child: _allLogs.isEmpty
-                      ? const Center(
+                      ? Center(
                           child: Text(
                             'No activity logged yet.',
-                            style: TextStyle(color: kGrey),
+                            style: TextStyle(color: cs.onSurfaceVariant),
                           ),
                         )
                       : RefreshIndicator(
-                          color: kRed,
+                          color: cs.primary,
                           onRefresh: _loadLogs,
                           child: ListView.builder(
                             padding: const EdgeInsets.all(16),
@@ -360,6 +365,7 @@ class _EmployeesPageState extends State<EmployeesPage>
   }
 
   Widget _empFilterChip(String label, String? employeeId) {
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(right: 8),
       child: GestureDetector(
@@ -367,13 +373,13 @@ class _EmployeesPageState extends State<EmployeesPage>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           decoration: BoxDecoration(
-            color: kRedLight,
+            color: cs.primaryContainer,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             label,
-            style: const TextStyle(
-              color: kRed,
+            style: TextStyle(
+              color: cs.primary,
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
@@ -384,22 +390,24 @@ class _EmployeesPageState extends State<EmployeesPage>
   }
 
   Widget _logCard(Map<String, dynamic> log) {
+    final cs = Theme.of(context).colorScheme;
     final action = (log['action'] as String? ?? '').replaceAll('_', ' ');
     final empName = log['employeeName'] as String? ?? '';
     final targetName = log['targetName'] as String? ?? '';
     final timestamp = log['timestamp'] as String? ?? '';
 
-    Color dotColor = kGrey;
-    if (action.contains('add')) dotColor = kGreen;
-    if (action.contains('delete')) dotColor = kRed;
-    if (action.contains('sale')) dotColor = kOrange;
-    if (action.contains('edit')) dotColor = kOrange;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Color dotColor = cs.onSurfaceVariant;
+    if (action.contains('add')) dotColor = isDark ? PaletteDark.success : PaletteLight.success;
+    if (action.contains('delete')) dotColor = cs.error;
+    if (action.contains('sale')) dotColor = isDark ? PaletteDark.warning : PaletteLight.warning;
+    if (action.contains('edit')) dotColor = isDark ? PaletteDark.warning : PaletteLight.warning;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: kCard,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 6),
@@ -423,7 +431,7 @@ class _EmployeesPageState extends State<EmployeesPage>
               children: [
                 RichText(
                   text: TextSpan(
-                    style: const TextStyle(fontSize: 13, color: kDark),
+                    style: TextStyle(fontSize: 13, color: cs.onSurface),
                     children: [
                       TextSpan(
                         text: empName.isNotEmpty ? empName : 'System',
@@ -438,13 +446,13 @@ class _EmployeesPageState extends State<EmployeesPage>
                         ),
                       ),
                       if (targetName.isNotEmpty) ...[
-                        const TextSpan(
+                        TextSpan(
                           text: '  →  ',
-                          style: TextStyle(color: kGrey),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         ),
                         TextSpan(
                           text: targetName,
-                          style: const TextStyle(color: kGrey),
+                          style: TextStyle(color: cs.onSurfaceVariant),
                         ),
                       ],
                     ],
@@ -454,7 +462,7 @@ class _EmployeesPageState extends State<EmployeesPage>
                   AppHelpers.formatDateTime(
                     DateTime.tryParse(timestamp) ?? DateTime.now(),
                   ),
-                  style: const TextStyle(color: kGrey, fontSize: 10),
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 10),
                 ),
               ],
             ),
@@ -466,6 +474,7 @@ class _EmployeesPageState extends State<EmployeesPage>
 
   // ── FORM ──────────────────────────────────────────────────
   void _showForm({EmployeeModel? existing}) {
+    final cs = Theme.of(context).colorScheme;
     final isEdit = existing != null;
     final namCtrl = TextEditingController(text: existing?.name ?? '');
     final pinCtrl = TextEditingController(text: existing?.pin ?? '');
@@ -476,21 +485,21 @@ class _EmployeesPageState extends State<EmployeesPage>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Text(
           isEdit ? 'Edit Employee' : 'Add Employee',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: kRed),
+          style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary),
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: namCtrl,
-              decoration: AppInput.dialog('Employee name *'),
+              decoration: AppInput.dialog(context, 'Employee name *'),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: pinCtrl,
               keyboardType: TextInputType.number,
               maxLength: 6,
-              decoration: AppInput.dialog('PIN (optional, max 6 digits)'),
+              decoration: AppInput.dialog(context, 'PIN (optional, max 6 digits)'),
             ),
           ],
         ),
@@ -501,8 +510,8 @@ class _EmployeesPageState extends State<EmployeesPage>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: kRed,
-              foregroundColor: Colors.white,
+              backgroundColor: cs.primary,
+              foregroundColor: cs.onPrimary,
             ),
             onPressed: () async {
               if (namCtrl.text.trim().isEmpty) return;
@@ -527,6 +536,7 @@ class _EmployeesPageState extends State<EmployeesPage>
   }
 
   Future<void> _confirmDelete(EmployeeModel e) async {
+    final cs = Theme.of(context).colorScheme;
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
@@ -539,8 +549,8 @@ class _EmployeesPageState extends State<EmployeesPage>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: kRed,
-              foregroundColor: Colors.white,
+              backgroundColor: cs.error,
+              foregroundColor: cs.onPrimary,
             ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Remove'),
