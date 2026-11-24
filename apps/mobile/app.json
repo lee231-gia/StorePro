@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "StorePro",
+    "slug": "storepro-mobile",
+    "scheme": "storepro",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-system-ui",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "StorePro uses your photos to add product images.",
+          "cameraPermission": "StorePro uses your camera to take product photos.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": false
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.storepro.mobile"
+    },
+    "android": {
+      "package": "com.storepro.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#3D5A56",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function ownsStore(storeId) {
+      return request.auth != null && request.auth.uid == storeId;
+    }
+
+    match /stores/{storeId} {
+      allow get: if ownsStore(storeId);
+      allow list: if false;
+      allow create, update: if ownsStore(storeId)
+        && request.resource.data.id == storeId;
+      allow delete: if false;
+
+      match /{document=**} {
+        allow read, write: if ownsStore(storeId);
+      }
+    }
+
+    // New React sign-ups use email authentication and the store profile.
+    // Keep legacy username index records private to avoid exposing their email
+    // and password recovery metadata.
+    match /usernames/{username} {
+      allow read, write: if false;
+    }
+  }
+}

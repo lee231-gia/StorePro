@@ -1,0 +1,20 @@
+{
+  "name": "storepro",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "web:install": "npm --prefix apps/web ci",
+    "web:dev": "npm --prefix apps/web run dev -- --host 0.0.0.0",
+    "web:build": "npm --prefix apps/web run build",
+    "web:preview": "npm --prefix apps/web run preview -- --host 0.0.0.0",
+    "mobile:install": "npm --prefix apps/mobile ci",
+    "mobile:start": "npm --prefix apps/mobile start",
+    "mobile:android": "npm --prefix apps/mobile run android",
+    "mobile:web": "npm --prefix apps/mobile run web",
+    "mobile:lint": "npm --prefix apps/mobile run lint",
+    "deploy:web": "npm run web:build && firebase deploy --only hosting,firestore:rules",
+    "mobile:typecheck": "npm --prefix apps/mobile run typecheck",
+    "mobile:build:android": "cd apps/mobile && npx eas-cli@latest build --platform android --profile production",
+    "mobile:preview:android": "cd apps/mobile && npx eas-cli@latest build --platform android --profile preview"
+  }
+}
